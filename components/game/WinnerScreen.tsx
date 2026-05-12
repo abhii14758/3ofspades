@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import type { Team, Player, RoundHistory, Suit } from '@/types';
-import Button from '@/components/ui/Button';
+
 
 const SUIT_SYMBOLS: Record<Suit, string> = {
   spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣',
@@ -61,7 +61,7 @@ export default function WinnerScreen({
   ).length;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center overflow-hidden">
       {/* Confetti */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {Array.from({ length: 40 }).map((_, i) => (
@@ -70,12 +70,16 @@ export default function WinnerScreen({
       </div>
 
       <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl w-full">
+        {/* Gold radial glow behind trophy */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full bg-amber-500/8 blur-3xl pointer-events-none" />
+
         {/* Trophy */}
         <motion.div
           initial={{ scale: 0, rotate: -20 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: 'spring', stiffness: 280, damping: 18, delay: 0.1 }}
-          className="text-8xl mb-4 drop-shadow-2xl"
+          className="text-8xl mb-4 drop-shadow-2xl relative z-10"
+          style={{ filter: 'drop-shadow(0 0 24px rgba(212,160,23,0.5))' }}
         >
           🏆
         </motion.div>
@@ -85,7 +89,7 @@ export default function WinnerScreen({
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="text-4xl sm:text-5xl font-black text-white mb-2 tracking-tight"
+          className="text-4xl sm:text-5xl font-black mb-2 tracking-tight bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent"
         >
           Team {winnerTeamId} Wins!
         </motion.h1>
@@ -118,18 +122,20 @@ export default function WinnerScreen({
                   key={tid}
                   className={clsx(
                     'px-5 py-4 text-center',
-                    isWinner ? 'bg-yellow-900/15' : ''
+                    isWinner
+                      ? 'bg-amber-900/20 border border-amber-600/30'
+                      : 'bg-slate-800/40'
                   )}
                 >
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide">
                       Team {tid}
                     </p>
-                    {isWinner && <span className="text-xs">🏆</span>}
+                    {isWinner && <span className="text-xs text-amber-400 font-bold">🏆 WINNER</span>}
                   </div>
                   <p className={clsx(
                     'text-3xl font-black',
-                    isWinner ? 'text-yellow-300' : 'text-slate-400'
+                    isWinner ? 'text-amber-300' : 'text-slate-400'
                   )}>
                     {team.totalPoints}
                   </p>
@@ -152,7 +158,7 @@ export default function WinnerScreen({
               {roundHistory.length} Round{roundHistory.length !== 1 ? 's' : ''} Played
             </p>
           </div>
-          <div className="max-h-36 overflow-y-auto divide-y divide-slate-700/30">
+          <div className="max-h-40 overflow-y-auto divide-y divide-slate-700/30">
             {roundHistory.map((rh) => (
               <div key={rh.roundNumber} className="flex items-center justify-between px-4 py-2 text-xs">
                 <span className="text-slate-500">R{rh.roundNumber}</span>
@@ -182,12 +188,18 @@ export default function WinnerScreen({
           transition={{ delay: 0.9 }}
           className="flex gap-3 w-full"
         >
-          <Button variant="ghost" size="lg" className="flex-1" onClick={onHome}>
+          <button
+            onClick={onHome}
+            className="flex-1 bg-slate-800/80 hover:bg-slate-700/80 transition-colors border border-slate-600/60 text-slate-300 font-bold rounded-xl py-3 text-sm"
+          >
             🏠 Home
-          </Button>
-          <Button size="lg" className="flex-1" onClick={onPlayAgain}>
+          </button>
+          <button
+            onClick={onPlayAgain}
+            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 transition-all text-white font-bold rounded-xl py-3 text-sm shadow-lg shadow-green-900/40"
+          >
             🎮 Play Again
-          </Button>
+          </button>
         </motion.div>
       </div>
     </div>
