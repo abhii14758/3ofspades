@@ -141,7 +141,7 @@ export function afterTrumpSelected(gameState: GameState, trumpSuit: Suit): GameS
  * - Those players (excluding the bid winner) become Team A partners.
  * - Team B = remaining players.
  * - Previous round totals are carried forward from the placeholder teams.
- * - Transitions to 'playing'; first trick lead goes to the player left of dealer.
+ * - Transitions to 'playing'; first trick lead goes to the bid winner (fallback: player left of dealer).
  */
 export function afterPartnersSelected(
   gameState: GameState,
@@ -187,8 +187,9 @@ export function afterPartnersSelected(
   teams.A.totalPoints = gameState.teams?.A.totalPoints ?? 0;
   teams.B.totalPoints = gameState.teams?.B.totalPoints ?? 0;
 
-  // First trick lead = player to the left of the dealer
-  const leadPlayer = getPlayerToLeftOfDealer(gameState.players, gameState.dealerIndex);
+  // First trick lead = bid winner; fall back to player left of dealer if not found
+  const bidWinnerPlayer = gameState.players.find((p) => p.id === gameState.bidWinnerId);
+  const leadPlayer = bidWinnerPlayer ?? getPlayerToLeftOfDealer(gameState.players, gameState.dealerIndex);
   const firstTrick = initTrick(0);
 
   return {

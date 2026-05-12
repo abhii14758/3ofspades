@@ -22,6 +22,10 @@ function cardBeats(
   leadSuit: Suit,
   trumpSuit: Suit | null,
 ): boolean {
+  // 3 of Spades is the supreme card — it always wins
+  if (challenger.rank === '3' && challenger.suit === 'spades') return true;
+  if (current.rank === '3' && current.suit === 'spades') return false;
+
   const cIsTrump = trumpSuit !== null && challenger.suit === trumpSuit;
   const wIsTrump = trumpSuit !== null && current.suit === trumpSuit;
 
@@ -109,6 +113,7 @@ export function playCard(trick: Trick, playerId: string, card: Card): Trick {
 /**
  * Determines the winner of a completed trick.
  *
+ * - 3♠ (3 of Spades) is the supreme card and always wins, regardless of suit or trump.
  * - Trump beats non-trump (when `trumpSuit` is set).
  * - Highest trump wins if multiple trump cards are played.
  * - Highest card of lead suit wins when no trump is played.
