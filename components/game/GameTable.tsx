@@ -866,18 +866,20 @@ export default function GameTable({
 
       </div>
 
-      {/* ── Bid panel — between table and cards so cards stay fully visible ── */}
+      {/* ── Bid panel — centered dialog overlay ── */}
       {showBidPanel && (
-        <div className="shrink-0 z-30 px-3 py-1">
-          <BidPanel
-            bidState={bidState!}
-            players={players}
-            myPlayerId={myPlayerId}
-            isMyTurn={bidState?.currentBidderId === myPlayerId}
-            onBid={onBid ?? (() => {})}
-            onPass={onPass ?? (() => {})}
-            maxBid={maxBid}
-          />
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="pointer-events-auto w-full max-w-sm mx-4">
+            <BidPanel
+              bidState={bidState!}
+              players={players}
+              myPlayerId={myPlayerId}
+              isMyTurn={bidState?.currentBidderId === myPlayerId}
+              onBid={onBid ?? (() => {})}
+              onPass={onPass ?? (() => {})}
+              maxBid={maxBid}
+            />
+          </div>
         </div>
       )}
 
