@@ -489,7 +489,7 @@ export default function GameTable({
       className="flex flex-row overflow-hidden select-none"
       style={{
         height: '100dvh',
-        background: 'radial-gradient(ellipse 140% 100% at 50% 70%, #0f2a0f 0%, #050d05 50%, #000000 100%)',
+        background: 'radial-gradient(ellipse 110% 90% at 50% 60%, #0b1a0b 0%, #040c04 45%, #010301 100%)',
       }}
     >
       {/* ── Game section ── */}
@@ -567,13 +567,17 @@ export default function GameTable({
       </motion.div>
 
       {/* ── Table area ────────────────────────────────────────────────────── */}
-      <div className="flex-1 relative flex items-center justify-center overflow-hidden min-h-0 p-2">
+      <div className="flex-1 relative flex items-center justify-center overflow-hidden min-h-0 p-1"
+           style={{ background: 'radial-gradient(ellipse 80% 70% at 50% 40%, #0a0f0a 0%, #050808 60%, #020404 100%)' }}>
 
-        {/* Ambient ceiling light */}
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(255,220,100,0.12) 0%, transparent 70%)' }}
-        />
+        {/* Overhead casino lamp glow — strong warm cone from top */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255,230,120,0.16) 0%, rgba(255,200,60,0.07) 40%, transparent 70%)',
+        }} />
+        {/* Side ambient bounce */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse 30% 60% at 0% 50%, rgba(20,80,20,0.08) 0%, transparent 70%), radial-gradient(ellipse 30% 60% at 100% 50%, rgba(20,80,20,0.08) 0%, transparent 70%)',
+        }} />
 
         {/* ── Casino Table ── */}
         <motion.div
@@ -583,60 +587,101 @@ export default function GameTable({
           transition={{ type: 'spring', stiffness: 160, damping: 26, delay: 0.04 }}
           className="relative"
           style={{
-            width: 'min(92vw, 860px)',
-            height: 'min(58vh, 540px)',
-            minHeight: '280px',
-            perspective: '1000px',
+            width: 'min(92vw, 900px)',
+            height: 'min(60vh, 560px)',
+            minHeight: '300px',
+            perspective: '1100px',
             transformStyle: 'preserve-3d',
           }}
         >
-          {/* ── Table layers (bottom to top) ── */}
-          {/* Outer wood shadow — creates the table "body" depth */}
+          {/* ── Table layers (bottom → top) ── */}
+
+          {/* 1. Outer table body — deep mahogany/ebony base with strong drop shadow */}
           <div className="absolute inset-0 rounded-[50%]" style={{
-            background: 'linear-gradient(180deg, #6b3010 0%, #3d1808 40%, #200c04 75%, #0a0301 100%)',
-            boxShadow: '0 40px 80px rgba(0,0,0,0.95), 0 12px 32px rgba(0,0,0,0.85), 0 0 120px rgba(0,0,0,0.9), inset 0 -8px 20px rgba(0,0,0,0.5)',
+            background: 'linear-gradient(175deg, #5a2208 0%, #321005 30%, #1c0803 65%, #080301 100%)',
+            boxShadow: [
+              '0 50px 100px rgba(0,0,0,0.98)',
+              '0 20px 50px rgba(0,0,0,0.9)',
+              '0 6px 18px rgba(0,0,0,0.8)',
+              '0 0 140px rgba(0,0,0,0.95)',
+              'inset 0 -12px 28px rgba(0,0,0,0.6)',
+            ].join(', '),
           }} />
-          {/* Outer gold rail — wide, bright */}
-          <div className="absolute inset-[3px] rounded-[50%]" style={{
+
+          {/* 2. Gold bead rail — thick, bright amber with strong glow */}
+          <div className="absolute inset-[2px] rounded-[50%]" style={{
             background: 'transparent',
-            boxShadow: '0 0 0 8px rgba(184,134,11,0.9), 0 0 0 9px rgba(212,160,23,0.5), 0 0 30px rgba(212,160,23,0.5), 0 0 60px rgba(212,160,23,0.15), inset 0 0 0 6px rgba(212,160,23,0.35)',
+            boxShadow: [
+              '0 0 0 10px rgba(212,160,23,0.92)',      /* solid gold band          */
+              '0 0 0 11px rgba(255,200,50,0.55)',       /* bright highlight edge    */
+              '0 0 30px 4px rgba(212,160,23,0.75)',     /* close amber glow         */
+              '0 0 70px 10px rgba(212,160,23,0.3)',     /* mid diffuse glow         */
+              '0 0 130px 20px rgba(212,160,23,0.12)',   /* wide room glow           */
+              'inset 0 0 0 8px rgba(140,95,10,0.6)',   /* inner darker gold shadow */
+            ].join(', '),
           }} />
-          {/* Inner wood ring between rail and felt */}
-          <div className="absolute inset-[16px] rounded-[50%]" style={{
-            background: 'linear-gradient(160deg, #5c2a0a 0%, #2d1206 50%, #1a0803 100%)',
+
+          {/* 3. Inner mahogany wood ring — between rail and felt */}
+          <div className="absolute inset-[18px] rounded-[50%]" style={{
+            background: 'linear-gradient(155deg, #4a2008 0%, #241004 45%, #120602 100%)',
+            boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.7)',
           }} />
-          {/* Felt surface — vibrant casino green */}
-          <div className="absolute inset-[20px] rounded-[50%]" style={{
-            background: 'radial-gradient(ellipse at 48% 36%, #27a34a 0%, #1d8038 25%, #156630 55%, #0d4820 80%, #072e14 100%)',
-            boxShadow: 'inset 0 24px 70px rgba(0,0,0,0.45), inset 0 -16px 40px rgba(0,0,0,0.35), inset 0 0 80px rgba(0,0,0,0.2)',
+
+          {/* 4. Felt surface — vibrant Kelly green (#1a883d → #0f5c28) */}
+          <div className="absolute inset-[24px] rounded-[50%]" style={{
+            background: 'radial-gradient(ellipse at 48% 34%, #22a845 0%, #1a883d 22%, #136830 48%, #0c4e22 72%, #072e14 100%)',
+            boxShadow: [
+              'inset 0 28px 80px rgba(0,0,0,0.5)',
+              'inset 0 -18px 50px rgba(0,0,0,0.4)',
+              'inset 0 0 100px rgba(0,0,0,0.25)',
+            ].join(', '),
           }} />
-          {/* Felt cloth texture */}
-          <div className="absolute inset-[20px] rounded-[50%] pointer-events-none" style={{
-            opacity: 0.04,
-            backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 5px,rgba(255,255,255,1) 5px,rgba(255,255,255,1) 6px),repeating-linear-gradient(90deg,transparent,transparent 5px,rgba(255,255,255,1) 5px,rgba(255,255,255,1) 6px)',
+
+          {/* 5. Felt cloth weave texture */}
+          <div className="absolute inset-[24px] rounded-[50%] pointer-events-none" style={{
+            opacity: 0.045,
+            backgroundImage: [
+              'repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(255,255,255,1) 4px, rgba(255,255,255,1) 5px)',
+              'repeating-linear-gradient(90deg, transparent, transparent 4px, rgba(255,255,255,1) 4px, rgba(255,255,255,1) 5px)',
+            ].join(', '),
           }} />
-          {/* Felt top highlight — simulates overhead light */}
-          <div className="absolute inset-[20px] rounded-[50%] pointer-events-none" style={{
-            background: 'radial-gradient(ellipse 60% 35% at 50% 28%, rgba(255,255,255,0.06) 0%, transparent 100%)',
+
+          {/* 6. Felt top highlight — overhead casino lamp cone */}
+          <div className="absolute inset-[24px] rounded-[50%] pointer-events-none" style={{
+            background: 'radial-gradient(ellipse 65% 40% at 50% 26%, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 55%, transparent 100%)',
           }} />
-          {/* Gold inner ring on felt edge */}
-          <div className="absolute inset-[20px] rounded-[50%] pointer-events-none" style={{
-            boxShadow: 'inset 0 0 0 2px rgba(212,160,23,0.18)',
+
+          {/* 7. Gold inner trim ring on felt edge */}
+          <div className="absolute inset-[24px] rounded-[50%] pointer-events-none" style={{
+            boxShadow: 'inset 0 0 0 2.5px rgba(212,160,23,0.28), inset 0 0 12px rgba(212,160,23,0.08)',
           }} />
 
           {/* Trump badge + trick counter — center of table */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            {/* Center emblem — gold pot circle like reference image */}
+            {/* 8. Center emblem — double-ring gold circle with ♠ */}
             <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 0 }}>
+              {/* Outer dim ring */}
               <div style={{
-                width: 100, height: 100, borderRadius: '50%',
-                border: '3px solid rgba(212,160,23,0.6)',
-                background: 'radial-gradient(circle, rgba(212,160,23,0.12) 0%, rgba(212,160,23,0.04) 60%, transparent 100%)',
-                boxShadow: '0 0 0 1px rgba(212,160,23,0.2), 0 0 30px rgba(212,160,23,0.2), 0 0 60px rgba(212,160,23,0.08)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                position: 'absolute',
+                width: 120, height: 120, borderRadius: '50%',
+                border: '1px solid rgba(212,160,23,0.15)',
+                boxShadow: '0 0 40px rgba(212,160,23,0.1)',
+              }} />
+              {/* Main emblem ring */}
+              <div style={{
+                width: 96, height: 96, borderRadius: '50%',
+                border: '2.5px solid rgba(212,160,23,0.7)',
+                background: 'radial-gradient(circle at 50% 40%, rgba(212,160,23,0.14) 0%, rgba(212,160,23,0.05) 55%, transparent 100%)',
+                boxShadow: [
+                  '0 0 0 1px rgba(212,160,23,0.25)',
+                  '0 0 20px rgba(212,160,23,0.35)',
+                  '0 0 50px rgba(212,160,23,0.15)',
+                  'inset 0 0 20px rgba(212,160,23,0.1)',
+                ].join(', '),
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
               }}>
-                <span style={{ fontSize: 20, opacity: 0.55, color: '#d4a017', lineHeight: 1 }}>♠</span>
-                <span style={{ fontSize: 9, opacity: 0.5, color: '#d4a017', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase' }}>3 of Spades</span>
+                <span style={{ fontSize: 26, color: 'rgba(212,160,23,0.75)', lineHeight: 1, textShadow: '0 0 12px rgba(212,160,23,0.6)' }}>♠</span>
+                <span style={{ fontSize: 7.5, color: 'rgba(212,160,23,0.65)', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase' }}>3 of Spades</span>
               </div>
             </div>
             <div className="flex flex-col items-center gap-2" style={{ position: 'relative', zIndex: 1 }}>
