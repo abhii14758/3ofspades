@@ -84,12 +84,16 @@ function getPlayerPositions(
 }
 
 // ── Deal animation ─────────────────────────────────────────────────────────────
+// CARD_INTERVAL controls pace; total duration = N_players * cardsPerPlayer * CARD_INTERVAL
+const DEAL_INTERVAL = 0.28; // seconds per card — 6p×8cards = 13.4s, 10p×9cards = 25.2s capped
+
 function DealAnimation({
   players,
   myPlayerId,
   cardsPerPlayer,
   tableW,
   tableH,
+  onCardDealtToMe,
   onComplete,
 }: {
   players: Player[];
@@ -97,17 +101,38 @@ function DealAnimation({
   cardsPerPlayer: number;
   tableW: number;
   tableH: number;
+  onCardDealtToMe: () => void;
   onComplete: () => void;
 }) {
   const N = players.length;
-  const CARD_INTERVAL = 0.18; // seconds between each card
-  const ROUNDS = Math.min(cardsPerPlayer, 8); // number of rounds to show
-  const totalCards = N * ROUNDS;
+  // Cap animation at ~13s worth of cards (≈46 cards at 0.28s each)
+  const ROUNDS = Math.min(cardsPerPlayer, Math.floor(13 / (N * DEAL_INTERVAL)));
+  const clampedRounds = Math.max(ROUNDS, cardsPerPlayer); // always do all rounds
+  const totalCards = N * clampedRounds;
+  const totalDuration = totalCards * DEAL_INTERVAL;
 
+  // Fire onComplete
   useEffect(() => {
-    const t = setTimeout(onComplete, totalCards * CARD_INTERVAL * 1000 + 900);
+    const t = setTimeout(onComplete, totalDuration * 1000 + 600);
     return () => clearTimeout(t);
-  }, [totalCards, onComplete]);
+  }, [totalDuration, onComplete]);
+
+  // Fire onCardDealtToMe for each card arriving at local player (relIndex === 0)
+  useEffect(() => {
+    const myIdx = players.findIndex((p) => p.id === myPlayerId);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    for (let round = 0; round < clampedRounds; round++) {
+      for (let pi = 0; pi < N; pi++) {
+        const player = players[pi];
+        const relIdx = (players.findIndex(p => p.id === player.id) - myIdx + N) % N;
+        if (relIdx === 0) {
+          const delay = (round * N + pi) * DEAL_INTERVAL * 1000 + 500; // +500ms = card arrives
+          timers.push(setTimeout(onCardDealtToMe, delay));
+        }
+      }
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [players, myPlayerId, N, clampedRounds, onCardDealtToMe]);
 
   // Calculate player positions as pixel offsets from table center
   const positions = useMemo(() => {
@@ -118,7 +143,7 @@ function DealAnimation({
       const relIdx = (i - myIdx + N) % N;
       const angleDeg = 90 + (360 * relIdx) / N;
       const angleRad = (angleDeg * Math.PI) / 180;
-      const dx = rx * Math.cos(angleRad) * tableW; // px from center
+      const dx = rx * Math.cos(angleRad) * tableW;
       const dy = ry * Math.sin(angleRad) * tableH;
       return { dx, dy };
     });
@@ -127,46 +152,49 @@ function DealAnimation({
   // Round-robin deal sequence
   const cards = useMemo(() => {
     const result: { key: number; delay: number; playerIdx: number; rotation: number }[] = [];
-    for (let round = 0; round < ROUNDS; round++) {
+    for (let round = 0; round < clampedRounds; round++) {
       for (let pi = 0; pi < N; pi++) {
         result.push({
           key: round * N + pi,
-          delay: (round * N + pi) * CARD_INTERVAL,
+          delay: (round * N + pi) * DEAL_INTERVAL,
           playerIdx: pi,
-          rotation: (Math.random() - 0.5) * 24,
+          rotation: (Math.random() - 0.5) * 18,
         });
       }
     }
     return result;
-  }, [N, ROUNDS]);
+  }, [N, clampedRounds]);
 
   return (
     <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden rounded-[50%]">
-      {/* Deck stack at center — face-down blue backs */}
-      <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2 }}>
-        {[4, 3, 2, 1, 0].map((i) => (
+      {/* Deck stack at center */}
+      <motion.div
+        style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2 }}
+        animate={{ y: [0, -1, 0] }}
+        transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
+      >
+        {[6, 5, 4, 3, 2, 1, 0].map((i) => (
           <div
             key={i}
             style={{
               position: 'absolute',
-              width: 36, height: 52,
-              borderRadius: 5,
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 60%, #1d4ed8 100%)',
-              border: '1px solid rgba(96,165,250,0.45)',
-              boxShadow: '0 3px 10px rgba(0,0,0,0.55)',
-              top: -(i * 0.7),
-              left: i * 0.3,
+              width: 40, height: 58,
+              borderRadius: 6,
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 55%, #2563eb 100%)',
+              border: '1px solid rgba(96,165,250,0.5)',
+              boxShadow: i === 0 ? '0 4px 14px rgba(0,0,0,0.65), 0 0 8px rgba(59,130,246,0.25)' : 'none',
+              top: -(i * 0.8),
+              left: i * 0.4,
             }}
           >
-            {/* Card back pattern */}
             <div style={{
               position: 'absolute', inset: 3, borderRadius: 3,
-              border: '1px solid rgba(96,165,250,0.25)',
-              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.03) 3px, rgba(255,255,255,0.03) 6px)',
+              border: '1px solid rgba(96,165,250,0.22)',
+              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.035) 3px, rgba(255,255,255,0.035) 6px)',
             }} />
           </div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Flying cards — one at a time, round-robin */}
       {cards.map(({ key, delay, playerIdx, rotation }) => {
@@ -178,39 +206,105 @@ function DealAnimation({
               position: 'absolute',
               left: '50%',
               top: '50%',
-              width: 34,
-              height: 50,
+              width: 38,
+              height: 54,
               borderRadius: 5,
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 60%, #1d4ed8 100%)',
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 55%, #2563eb 100%)',
               border: '1px solid rgba(96,165,250,0.45)',
-              boxShadow: '0 6px 18px rgba(0,0,0,0.6)',
+              boxShadow: '0 8px 20px rgba(0,0,0,0.6), 0 0 6px rgba(59,130,246,0.2)',
               zIndex: 10 + key,
             }}
-            initial={{ x: '-50%', y: '-50%', opacity: 0, scale: 0.75, rotate: 0 }}
+            initial={{ x: '-50%', y: '-50%', opacity: 0, scale: 0.7, rotate: 0 }}
             animate={{
               x: `calc(-50% + ${dx}px)`,
               y: `calc(-50% + ${dy}px)`,
               opacity: [0, 1, 1, 1, 0],
-              scale: [0.75, 1.1, 0.9],
+              scale: [0.7, 1.05, 0.88],
               rotate: rotation,
             }}
             transition={{
               delay,
-              duration: 0.55,
+              duration: 0.52,
               ease: [0.16, 1, 0.3, 1],
-              opacity: { times: [0, 0.08, 0.6, 0.85, 1], duration: 0.6, delay },
-              scale: { times: [0, 0.25, 1], duration: 0.55, delay },
+              opacity: { times: [0, 0.07, 0.55, 0.82, 1], duration: 0.58, delay },
+              scale: { times: [0, 0.3, 1], duration: 0.52, delay },
             }}
           >
-            {/* Card back inner pattern */}
             <div style={{
               position: 'absolute', inset: 3, borderRadius: 3,
-              border: '1px solid rgba(96,165,250,0.25)',
+              border: '1px solid rgba(96,165,250,0.22)',
               backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 6px)',
             }} />
           </motion.div>
         );
       })}
+    </div>
+  );
+}
+
+// ── DealHandReveal — cards appear face-up one by one during deal ────────────────
+const RANK_DISPLAY: Record<string, string> = {
+  A: 'A', K: 'K', Q: 'Q', J: 'J', '10': '10',
+  '9': '9', '8': '8', '7': '7', '6': '6', '5': '5',
+  '4': '4', '3': '3',
+};
+const SUIT_SYM: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+
+function DealHandReveal({ cards, revealedCount }: { cards: CardType[]; revealedCount: number }) {
+  const visible = cards.slice(0, revealedCount);
+  const isRed = (suit: string) => suit === 'hearts' || suit === 'diamonds';
+
+  return (
+    <div className="flex flex-col items-center gap-1 py-1">
+      <p className="text-[10px] text-slate-400 font-medium tracking-widest uppercase">
+        Dealing your cards…
+      </p>
+      <div className="flex items-end justify-center gap-1 flex-wrap px-4">
+        <AnimatePresence mode="popLayout">
+          {visible.map((card, idx) => (
+            <motion.div
+              key={card.id}
+              layout
+              initial={{ rotateY: 90, opacity: 0, y: 20, scale: 0.8 }}
+              animate={{ rotateY: 0, opacity: 1, y: 0, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 28, delay: 0.04 }}
+              style={{ perspective: 600 }}
+            >
+              <div
+                className={`flex flex-col items-center justify-between rounded-lg border shadow-lg select-none`}
+                style={{
+                  width: 44, height: 64,
+                  background: '#fff',
+                  borderColor: isRed(card.suit) ? '#fca5a5' : '#94a3b8',
+                  padding: '3px 4px',
+                  boxShadow: idx === visible.length - 1
+                    ? '0 0 12px rgba(250,204,21,0.5), 0 4px 12px rgba(0,0,0,0.4)'
+                    : '0 3px 8px rgba(0,0,0,0.35)',
+                  outline: idx === visible.length - 1 ? '2px solid rgba(250,204,21,0.6)' : 'none',
+                }}
+              >
+                <span style={{ fontSize: 11, fontWeight: 800, lineHeight: 1, color: isRed(card.suit) ? '#dc2626' : '#1e293b' }}>
+                  {RANK_DISPLAY[card.rank] ?? card.rank}
+                </span>
+                <span style={{ fontSize: 18, lineHeight: 1, color: isRed(card.suit) ? '#dc2626' : '#1e293b' }}>
+                  {SUIT_SYM[card.suit]}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 800, lineHeight: 1, transform: 'rotate(180deg)', color: isRed(card.suit) ? '#dc2626' : '#1e293b' }}>
+                  {RANK_DISPLAY[card.rank] ?? card.rank}
+                </span>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        {/* Placeholder slots for undealt cards */}
+        {Array.from({ length: Math.max(0, cards.length - visible.length) }).map((_, i) => (
+          <div
+            key={`ph-${i}`}
+            className="rounded-lg border border-dashed border-slate-700/50"
+            style={{ width: 44, height: 64, background: 'rgba(255,255,255,0.03)' }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -255,6 +349,7 @@ export default function GameTable({
   const handleUnread = useCallback(() => setUnread(n => n + 1), []);
   useEffect(() => { if (chatOpen) setUnread(0); }, [chatOpen]);
   const [dealAnimDone, setDealAnimDone] = useState(false);
+  const [dealRevealedCount, setDealRevealedCount] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const myCalledCards = useGameStore((s) => s.myCalledCards);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -279,10 +374,17 @@ export default function GameTable({
 
   // Reset deal anim when phase changes to dealing
   useEffect(() => {
-    if (gameState.phase === 'dealing') setDealAnimDone(false);
+    if (gameState.phase === 'dealing') {
+      setDealAnimDone(false);
+      setDealRevealedCount(0);
+    }
   }, [gameState.phase]);
 
   const handleDealComplete = useCallback(() => setDealAnimDone(true), []);
+  const handleSkipDeal = useCallback(() => {
+    setDealAnimDone(true);
+    setDealRevealedCount(myHand.length);
+  }, [myHand.length]);
 
   const {
     players,
@@ -386,6 +488,22 @@ export default function GameTable({
             🔴 End
           </motion.button>
         )}
+
+        {/* Skip deal animation — host only */}
+        <AnimatePresence>
+          {isHost && showDealAnim && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              whileTap={{ scale: 0.93 }}
+              onClick={handleSkipDeal}
+              className="shrink-0 px-2.5 py-1 bg-amber-900/80 hover:bg-amber-800 border border-amber-600/60 text-amber-300 text-xs rounded-lg font-bold transition-colors"
+            >
+              ⏭ Skip Deal
+            </motion.button>
+          )}
+        </AnimatePresence>
 
         <div className="flex-1 min-w-0">
           <TurnIndicator currentPlayer={currentTurnPlayer} isMyTurn={isMyTurn} />
@@ -549,6 +667,7 @@ export default function GameTable({
               cardsPerPlayer={cardsPerPlayer}
               tableW={tableDims.w}
               tableH={tableDims.h}
+              onCardDealtToMe={() => setDealRevealedCount(n => n + 1)}
               onComplete={handleDealComplete}
             />
           )}
@@ -613,46 +732,45 @@ export default function GameTable({
         className="shrink-0 z-10 pt-2 pb-3"
         style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)' }}
       >
-        {calledCards.length > 0 && phase === 'playing' && (
-          <div className="flex items-center justify-center gap-2 mb-2 px-4 flex-wrap">
-            <span className="text-[10px] text-slate-400 shrink-0 font-medium">
-              {bidWinnerId === myPlayerId ? '🤝 Your partner cards:' : '🤝 Partner cards:'}
-            </span>
-            {calledCards.map((card) => {
-              const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
-              const SUIT_SYM: Record<string, string> = {
-                spades: '♠',
-                hearts: '♥',
-                diamonds: '♦',
-                clubs: '♣',
-              };
-              const isMyCard = myHand.some(
-                (c) => c.suit === card.suit && c.rank === card.rank
-              );
-              return (
-                <span
-                  key={card.id}
-                  className={`text-xs font-bold px-1.5 py-0.5 rounded border ${
-                    isMyCard
-                      ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40'
-                      : isRed
-                      ? 'text-red-400 border-red-700/50 bg-red-950/40'
-                      : 'text-slate-200 border-slate-600/50 bg-slate-800/60'
-                  }`}
-                  title={isMyCard ? 'You hold this partner card!' : undefined}
-                >
-                  {card.rank}
-                  {SUIT_SYM[card.suit]}
-                  {isMyCard ? ' 🤝' : ''}
-                </span>
-              );
-            })}
-          </div>
+        {/* During deal animation — show cards arriving one by one */}
+        {showDealAnim && (
+          <DealHandReveal cards={myHand} revealedCount={dealRevealedCount} />
         )}
-        <CardHand
-          cards={myHand}
-          playableCardIds={playableCardIds}
-          selectedCardId={selectedCardId}
+
+        {/* Normal play — partner cards bar + full hand */}
+        {!showDealAnim && (
+          <>
+            {calledCards.length > 0 && phase === 'playing' && (
+              <div className="flex items-center justify-center gap-2 mb-2 px-4 flex-wrap">
+                <span className="text-[10px] text-slate-400 shrink-0 font-medium">
+                  {bidWinnerId === myPlayerId ? '🤝 Your partner cards:' : '🤝 Partner cards:'}
+                </span>
+                {calledCards.map((card) => {
+                  const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
+                  const SUIT_SYM: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+                  const isMyCard = myHand.some((c) => c.suit === card.suit && c.rank === card.rank);
+                  return (
+                    <span
+                      key={card.id}
+                      className={`text-xs font-bold px-1.5 py-0.5 rounded border ${
+                        isMyCard
+                          ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40'
+                          : isRed
+                          ? 'text-red-400 border-red-700/50 bg-red-950/40'
+                          : 'text-slate-200 border-slate-600/50 bg-slate-800/60'
+                      }`}
+                      title={isMyCard ? 'You hold this partner card!' : undefined}
+                    >
+                      {card.rank}{SUIT_SYM[card.suit]}{isMyCard ? ' 🤝' : ''}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            <CardHand
+              cards={myHand}
+              playableCardIds={playableCardIds}
+              selectedCardId={selectedCardId}
           onCardSelect={(card) => setSelectedCardId(card.id)}
           onCardPlay={(card) => {
             setSelectedCardId(null);
@@ -662,6 +780,8 @@ export default function GameTable({
           leadSuit={currentTrick?.leadSuit}
           trumpSuit={trumpSuit}
         />
+          </>
+        )}
       </div>
 
       {/* ── Full-screen overlays ──────────────────────────────────────────── */}
