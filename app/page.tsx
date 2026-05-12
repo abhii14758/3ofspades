@@ -54,16 +54,16 @@ export default function HomePage() {
         <motion.div variants={container} initial="hidden" animate="visible" className="flex flex-col items-center gap-6 max-w-lg w-full">
 
           {/* Suit icons */}
-          <motion.div variants={item} className="flex gap-4 text-4xl">
-            <span className="text-slate-100 drop-shadow">♠</span>
-            <span className="text-red-500 drop-shadow">♥</span>
-            <span className="text-red-500 drop-shadow">♦</span>
-            <span className="text-slate-100 drop-shadow">♣</span>
+          <motion.div variants={item} className="flex gap-4 text-5xl">
+            <span className="text-slate-200 drop-shadow">♠</span>
+            <span className="text-red-400 drop-shadow">♥</span>
+            <span className="text-red-400 drop-shadow">♦</span>
+            <span className="text-slate-200 drop-shadow">♣</span>
           </motion.div>
 
           {/* Title */}
           <motion.div variants={item}>
-            <h1 className="text-7xl sm:text-8xl font-black tracking-tighter leading-none bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent">
+            <h1 className="text-7xl sm:text-8xl font-black tracking-tighter leading-none bg-gradient-to-br from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
               3 of Spades
             </h1>
             <p className="text-slate-500 tracking-[0.25em] text-sm uppercase mt-3 font-medium">
@@ -72,7 +72,7 @@ export default function HomePage() {
           </motion.div>
 
           {/* Special card badge */}
-          <motion.div variants={item} className="inline-flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-full px-4 py-1.5 text-yellow-400 text-sm font-semibold">
+          <motion.div variants={item} className="inline-flex items-center gap-2 bg-amber-900/30 border border-amber-500/50 rounded-full px-5 py-2 text-amber-400 text-sm font-bold shadow-lg shadow-amber-900/20">
             ♠ 3 of Spades — 30 Points — The Crown Jewel
           </motion.div>
 
@@ -85,13 +85,13 @@ export default function HomePage() {
           <motion.div variants={item} className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
             <Link
               href="/lobby?tab=create"
-              className="flex-1 py-4 rounded-2xl font-bold text-sm bg-green-600 hover:bg-green-500 active:scale-95 transition-all text-center shadow-xl shadow-green-900/50 border border-green-500/60 text-white"
+              className="flex-1 py-4 rounded-2xl font-bold text-sm bg-gradient-to-br from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 active:scale-95 transition-all text-center shadow-xl shadow-green-900/40 border border-green-500/50 text-white"
             >
               🎴 Create Room
             </Link>
             <Link
               href="/lobby?tab=join"
-              className="flex-1 py-4 rounded-2xl font-bold text-sm bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-center border border-slate-600/60 text-slate-200"
+              className="flex-1 py-4 rounded-2xl font-bold text-sm bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-center border border-slate-600 hover:border-slate-400 text-slate-200"
             >
               🔑 Join Room
             </Link>
@@ -137,9 +137,9 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.07 }}
-                className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-2"
+                className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col gap-2 hover:border-slate-700 hover:bg-slate-800/50 transition-all"
               >
-                <span className="text-2xl">{r.icon}</span>
+                <span className="text-3xl">{r.icon}</span>
                 <p className="font-bold text-sm text-white">{r.title}</p>
                 <p className="text-xs text-slate-500 leading-relaxed">{r.desc}</p>
               </motion.div>
@@ -160,9 +160,18 @@ export default function HomePage() {
           <p className="text-slate-500 text-center text-sm mb-8">Total points per round = 250</p>
           <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
             {CARD_VALUES.map((cv, i) => (
-              <div key={i} className={`flex items-center justify-between px-6 py-4 ${i < CARD_VALUES.length - 1 ? 'border-b border-slate-800' : ''}`}>
-                <span className={`font-bold text-sm ${cv.color}`}>{cv.label}</span>
-                <span className={`font-black text-lg ${cv.pts > 0 ? 'text-yellow-400' : 'text-slate-700'}`}>
+              <div
+                key={i}
+                className={`flex items-center justify-between px-6 py-4 ${
+                  i === 0
+                    ? 'bg-amber-950/30 border-b border-amber-900/30'
+                    : i < CARD_VALUES.length - 1
+                    ? 'border-b border-slate-800'
+                    : ''
+                }`}
+              >
+                <span className={`font-bold text-sm ${i === 0 ? 'text-amber-400' : cv.color}`}>{cv.label}</span>
+                <span className={`font-black text-lg ${i === 0 ? 'text-amber-400' : cv.pts > 0 ? 'text-yellow-400' : 'text-slate-600 font-bold'}`}>
                   {cv.pts > 0 ? `${cv.pts} pts` : '—'}
                 </span>
               </div>
@@ -191,7 +200,7 @@ export default function HomePage() {
               ['Repeat', 'First team to 500 total points wins the game'],
             ].map(([step, desc], i) => (
               <li key={step} className="relative">
-                <span className="absolute -left-[2.35rem] w-6 h-6 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-xs font-bold text-slate-400">{i + 1}</span>
+                <span className="absolute -left-[2.35rem] w-6 h-6 rounded-full bg-slate-800 border border-amber-700/40 flex items-center justify-center text-xs font-black text-amber-400">{i + 1}</span>
                 <p className="font-bold text-sm text-white">{step}</p>
                 <p className="text-xs text-slate-500 mt-0.5">{desc}</p>
               </li>
@@ -208,10 +217,10 @@ export default function HomePage() {
           viewport={{ once: true }}
           className="flex flex-col sm:flex-row gap-3"
         >
-          <Link href="/lobby?tab=create" className="px-10 py-4 rounded-2xl font-bold text-sm bg-green-600 hover:bg-green-500 active:scale-95 transition-all shadow-xl shadow-green-900/50 border border-green-500/60 text-white text-center">
+          <Link href="/lobby?tab=create" className="px-10 py-4 rounded-2xl font-bold text-sm bg-gradient-to-br from-green-600 to-emerald-700 hover:from-green-500 hover:to-emerald-600 active:scale-95 transition-all shadow-xl shadow-green-900/40 border border-green-500/50 text-white text-center">
             🎴 Create Room
           </Link>
-          <Link href="/lobby?tab=join" className="px-10 py-4 rounded-2xl font-bold text-sm bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all border border-slate-600/60 text-slate-200 text-center">
+          <Link href="/lobby?tab=join" className="px-10 py-4 rounded-2xl font-bold text-sm bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all border border-slate-600 hover:border-slate-400 text-slate-200 text-center">
             🔑 Join Room
           </Link>
         </motion.div>

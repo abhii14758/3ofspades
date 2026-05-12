@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import Button from '@/components/ui/Button';
 import { useLobbyStore } from '@/store/lobbyStore';
 import { usePlayerStore } from '@/store/playerStore';
 import { useGameStore } from '@/store/gameStore';
@@ -53,7 +52,7 @@ function PlayerAvatar({ player, isLocal }: { player: Player; isLocal: boolean })
 
 function ConfigPill({ icon, label }: { icon: string; label: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs bg-slate-800/80 border border-slate-700/60 text-slate-300 px-2.5 py-1.5 rounded-full font-medium">
+    <span className="inline-flex items-center gap-1.5 text-xs bg-amber-900/20 border border-amber-700/40 text-amber-300 px-2.5 py-1.5 rounded-full font-medium">
       <span>{icon}</span>
       {label}
     </span>
@@ -223,7 +222,7 @@ export default function RoomPage() {
           <span
             className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
               isConnected
-                ? 'bg-green-900/40 border-green-700/50 text-green-400'
+                ? 'bg-green-900/40 border-green-700/50 text-green-400 shadow-[0_0_8px_rgba(74,222,128,0.2)]'
                 : 'bg-yellow-900/40 border-yellow-700/50 text-yellow-400'
             }`}
           >
@@ -238,11 +237,11 @@ export default function RoomPage() {
           transition={{ type: 'spring', stiffness: 280, damping: 26 }}
           className="relative mb-5 rounded-2xl overflow-hidden"
         >
-          <div className="bg-slate-900/95 border border-slate-700/60 backdrop-blur rounded-2xl p-5 text-center shadow-2xl">
+          <div className="bg-slate-900/95 border border-amber-600/40 backdrop-blur rounded-2xl p-5 text-center shadow-2xl">
             <p className="text-slate-500 text-[10px] uppercase tracking-[0.2em] mb-3">
               Room Code
             </p>
-            <div className="font-black text-white tracking-[0.3em] font-mono text-4xl sm:text-5xl mb-3 select-all">
+            <div className="font-black text-amber-300 tracking-[0.3em] font-mono text-4xl sm:text-5xl mb-3 select-all">
               {roomId}
             </div>
             <button
@@ -250,7 +249,7 @@ export default function RoomPage() {
               className={`inline-flex items-center gap-2 text-sm font-semibold px-5 py-2 rounded-xl transition-all ${
                 copied
                   ? 'bg-green-700/60 text-green-300 border border-green-600/50'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600/60'
+                  : 'bg-amber-900/30 hover:bg-amber-900/50 text-amber-300 border border-amber-700/50'
               }`}
             >
               {copied ? '✓ Copied!' : '📋 Copy Code'}
@@ -263,7 +262,7 @@ export default function RoomPage() {
           <motion.div
             animate={{ opacity: [0.3, 0.7, 0.3] }}
             transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-            className="absolute inset-0 rounded-2xl border-2 border-indigo-500/20 pointer-events-none"
+            className="absolute inset-0 rounded-2xl border-2 border-amber-500/50 pointer-events-none"
           />
         </motion.div>
 
@@ -378,7 +377,7 @@ export default function RoomPage() {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 16 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                    className={`flex items-center gap-3 px-5 py-3.5 ${
+                    className={`flex items-center gap-3 px-5 py-3.5 transition-colors ${
                       isLocal ? 'bg-indigo-900/20' : 'hover:bg-slate-800/30'
                     }`}
                   >
@@ -414,12 +413,12 @@ export default function RoomPage() {
 
                     <div className="shrink-0">
                       {ready ? (
-                        <span className="inline-flex items-center gap-1 text-xs bg-green-900/40 text-green-400 border border-green-700/40 px-2.5 py-1 rounded-full font-medium">
+                        <span className="inline-flex items-center gap-1 text-xs bg-green-900/40 text-emerald-400 border border-emerald-700/40 px-2.5 py-1 rounded-full font-medium">
                           ✓ Ready
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-xs bg-amber-900/30 text-amber-500 border border-amber-800/40 px-2.5 py-1 rounded-full font-medium">
-                          ⏳ Waiting
+                        <span className="inline-flex items-center gap-1 text-xs bg-slate-800/60 text-slate-500 border border-slate-700/40 px-2.5 py-1 rounded-full font-medium">
+                          Waiting…
                         </span>
                       )}
                     </div>
@@ -451,7 +450,7 @@ export default function RoomPage() {
                 onClick={handleReady}
                 className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all ${
                   isReady
-                    ? 'bg-green-700/40 text-green-300 border border-green-600/50 hover:bg-green-700/60'
+                    ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-600/50 hover:bg-emerald-800/50'
                     : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20'
                 }`}
               >
@@ -474,7 +473,7 @@ export default function RoomPage() {
           {canAddBot && (
             <button
               onClick={handleAddBot}
-              className="w-full py-3 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600/60 transition-all"
+              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 transition-all"
             >
               🤖 Add Bot ({room.maxPlayers - room.players.length} slot{room.maxPlayers - room.players.length !== 1 ? 's' : ''} open)
             </button>
@@ -498,9 +497,12 @@ export default function RoomPage() {
 
           {/* Start Game */}
           {isHost && !showNextRound && (
-            <Button
-              size="lg"
-              className="w-full"
+            <button
+              className={`w-full py-3.5 rounded-xl text-sm font-bold transition-all ${
+                canStart
+                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg shadow-green-900/40'
+                  : 'bg-slate-800 text-slate-500 border border-slate-700 opacity-60 cursor-not-allowed'
+              }`}
               disabled={!canStart}
               onClick={handleStart}
             >
@@ -509,14 +511,14 @@ export default function RoomPage() {
                 : room.players.length < room.maxPlayers
                   ? `Need ${room.maxPlayers - room.players.length} more player${room.maxPlayers - room.players.length !== 1 ? 's' : ''}`
                   : `Waiting for all to ready up (${readyCount}/${room.players.length})`}
-            </Button>
+            </button>
           )}
 
           {/* Terminate Game */}
           {showTerminate && (
             <button
               onClick={handleTerminate}
-              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-red-900/30 hover:bg-red-900/50 text-red-400 border border-red-800/50 transition-all"
+              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-red-900/60 hover:bg-red-800 text-red-300 border border-red-700 transition-all"
             >
               ✕ Terminate Game
             </button>

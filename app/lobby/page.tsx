@@ -74,7 +74,7 @@ function LobbyContent() {
       <div className="absolute top-5 right-5 z-10 flex items-center gap-2 text-xs text-slate-500">
         <span
           className={`w-2 h-2 rounded-full transition-colors ${
-            isConnected ? 'bg-green-400' : 'bg-yellow-500 animate-pulse'
+            isConnected ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.7)]' : 'bg-yellow-500 animate-pulse'
           }`}
         />
         {isConnected ? 'Connected' : 'Connecting…'}
@@ -104,8 +104,8 @@ function LobbyContent() {
               onClick={() => setActiveTab(tab)}
               className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${
                 activeTab === tab
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-300'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
               }`}
             >
               {tab === 'create' ? '🎴 Create Room' : '🔑 Join Room'}
@@ -118,7 +118,7 @@ function LobbyContent() {
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 p-3 rounded-lg bg-red-900/30 border border-red-700 text-red-300 text-sm"
+            className="mb-4 p-3 rounded-xl bg-red-950/50 border border-red-700/60 text-red-300 text-sm"
           >
             {error}
           </motion.div>
