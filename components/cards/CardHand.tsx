@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Card as CardType, Suit } from '@/types';
 import Card from './Card';
 
-const CARD_W = 56;
-const CARD_H = 80;
+const CARD_W = 64;
+const CARD_H = 96;
 
 const SUIT_ORDER: Record<Suit, number> = { spades: 0, clubs: 1, hearts: 2, diamonds: 3 };
 const RANK_ORDER: Record<string, number> = {
@@ -21,6 +21,7 @@ interface CardHandProps {
   isMyTurn?: boolean;
   leadSuit?: Suit | null;
   trumpSuit?: Suit | null;
+  expandedView?: boolean;
 }
 
 function getHighlightSuit(cards: CardType[], leadSuit?: Suit | null, trumpSuit?: Suit | null): Suit | null {
@@ -39,6 +40,7 @@ export default function CardHand({
   isMyTurn = false,
   leadSuit,
   trumpSuit,
+  expandedView = false,
 }: CardHandProps) {
   const [containerWidth, setContainerWidth] = useState(360);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -72,20 +74,23 @@ export default function CardHand({
   const isLeadHighlight = !!leadSuit && highlightSuit === leadSuit;
 
   // Scale: shrink cards when there are many
-  const cardScale = count > 14 ? 0.62 : count > 11 ? 0.72 : count > 8 ? 0.85 : 1;
+  const cardScale = count > 14 ? 0.68 : count > 11 ? 0.78 : count > 8 ? 0.90 : 1;
   const scaledW = CARD_W * cardScale;
   const scaledH = CARD_H * cardScale;
 
   // Step: spacing between card left-edges (with transformOrigin: top-left, step = scaledW means no overlap)
-  const availW = Math.max(containerWidth - 110, 60);
-  const step = count <= 1 ? scaledW : Math.max(10, Math.min(scaledW, (availW - scaledW) / (count - 1)));
+  const availW = Math.max(containerWidth - 120, 80);
+  const step = expandedView
+    ? Math.max(scaledW * 0.75, Math.min(scaledW * 0.90, (availW - scaledW) / (count - 1)))
+    : count <= 1
+    ? scaledW
+    : Math.max(28, Math.min(scaledW * 0.85, (availW - scaledW) / (count - 1)));
 
   // Container dimensions
   const containerW = count <= 1 ? scaledW : Math.ceil(step * (count - 1) + scaledW);
-  const containerH = scaledH + 32; // 32px headroom for lift animations
-
-  // Cards sit near the bottom of the container (top = containerH - scaledH - 4)
-  const baseTop = Math.round(containerH - scaledH - 4);
+  const containerH = scaledH + 40; // 40px headroom for lift animations
+  // Cards sit near the bottom of the container (top = containerH - scaledH - 6)
+  const baseTop = Math.round(containerH - scaledH - 6);
 
   // Ordered cards by user arrangement
   const orderedCards = cardOrder
@@ -121,6 +126,26 @@ export default function CardHand({
 
   return (
     <div className="flex flex-col items-center gap-1 select-none w-full" ref={containerRef}>
+      {expandedView && (
+        <div style={{
+          textAlign: 'center',
+          fontSize: '11px',
+          color: 'rgba(212,160,23,0.8)',
+          fontWeight: 600,
+          letterSpacing: '0.05em',
+          marginBottom: '4px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: '#d4a017', display: 'inline-block'
+          }} />
+          View your cards to bid wisely
+        </div>
+      )}
       {/* Header: hint + sort button */}
       <div className="flex items-center w-full px-3 min-h-5">
         <AnimatePresence>

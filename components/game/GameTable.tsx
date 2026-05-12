@@ -284,27 +284,63 @@ function DealHandReveal({ cards, revealedCount }: { cards: CardType[]; revealedC
               style={{ perspective: 600 }}
             >
               <div
-                className={`flex flex-col items-center justify-between rounded-lg border shadow-lg select-none`}
+                className="flex flex-col items-center justify-between rounded-lg select-none overflow-hidden"
                 style={{
-                  width: 44, height: 64,
-                  background: '#fff',
-                  borderColor: isRed(card.suit) ? '#fca5a5' : '#94a3b8',
-                  padding: '3px 4px',
+                  width: 48, height: 70,
+                  background: '#ffffff',
+                  border: isRed(card.suit)
+                    ? '1.5px solid #ffb3b3'
+                    : '1.5px solid #c0c8d8',
                   boxShadow: idx === visible.length - 1
-                    ? '0 0 12px rgba(250,204,21,0.5), 0 4px 12px rgba(0,0,0,0.4)'
-                    : '0 3px 8px rgba(0,0,0,0.35)',
-                  outline: idx === visible.length - 1 ? '2px solid rgba(250,204,21,0.6)' : 'none',
+                    ? '0 0 14px rgba(212,160,23,0.6), 0 4px 16px rgba(0,0,0,0.5)'
+                    : '0 3px 10px rgba(0,0,0,0.4)',
+                  padding: '3px 4px',
                 }}
               >
-                <span style={{ fontSize: 11, fontWeight: 800, lineHeight: 1, color: isRed(card.suit) ? '#dc2626' : '#1e293b' }}>
-                  {RANK_DISPLAY[card.rank] ?? card.rank}
-                </span>
-                <span style={{ fontSize: 18, lineHeight: 1, color: isRed(card.suit) ? '#dc2626' : '#1e293b' }}>
+                {/* Top-left */}
+                <div style={{ alignSelf: 'flex-start', lineHeight: 1.1 }}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 800,
+                    color: isRed(card.suit) ? '#c0152a' : '#1a1a2e',
+                    lineHeight: 1
+                  }}>
+                    {RANK_DISPLAY[card.rank] ?? card.rank}
+                  </div>
+                  <div style={{
+                    fontSize: 10,
+                    color: isRed(card.suit) ? '#c0152a' : '#1a1a2e',
+                    lineHeight: 1
+                  }}>
+                    {SUIT_SYM[card.suit]}
+                  </div>
+                </div>
+                {/* Center */}
+                <div style={{
+                  fontSize: 18, lineHeight: 1,
+                  color: isRed(card.suit) ? '#c0152a' : '#1a1a2e'
+                }}>
                   {SUIT_SYM[card.suit]}
-                </span>
-                <span style={{ fontSize: 11, fontWeight: 800, lineHeight: 1, transform: 'rotate(180deg)', color: isRed(card.suit) ? '#dc2626' : '#1e293b' }}>
-                  {RANK_DISPLAY[card.rank] ?? card.rank}
-                </span>
+                </div>
+                {/* Bottom-right rotated */}
+                <div style={{
+                  alignSelf: 'flex-end', lineHeight: 1.1,
+                  transform: 'rotate(180deg)'
+                }}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 800,
+                    color: isRed(card.suit) ? '#c0152a' : '#1a1a2e',
+                    lineHeight: 1
+                  }}>
+                    {RANK_DISPLAY[card.rank] ?? card.rank}
+                  </div>
+                  <div style={{
+                    fontSize: 10,
+                    color: isRed(card.suit) ? '#c0152a' : '#1a1a2e',
+                    lineHeight: 1
+                  }}>
+                    {SUIT_SYM[card.suit]}
+                  </div>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -828,26 +864,27 @@ export default function GameTable({
           })}
         </motion.div>
 
-        {/* Bid panel */}
-        {showBidPanel && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 w-full max-w-xs px-2">
-            <BidPanel
-              bidState={bidState!}
-              players={players}
-              myPlayerId={myPlayerId}
-              isMyTurn={bidState?.currentBidderId === myPlayerId}
-              onBid={onBid ?? (() => {})}
-              onPass={onPass ?? (() => {})}
-              maxBid={maxBid}
-            />
-          </div>
-        )}
       </div>
+
+      {/* ── Bid panel — between table and cards so cards stay fully visible ── */}
+      {showBidPanel && (
+        <div className="shrink-0 z-30 px-3 py-1">
+          <BidPanel
+            bidState={bidState!}
+            players={players}
+            myPlayerId={myPlayerId}
+            isMyTurn={bidState?.currentBidderId === myPlayerId}
+            onBid={onBid ?? (() => {})}
+            onPass={onPass ?? (() => {})}
+            maxBid={maxBid}
+          />
+        </div>
+      )}
 
       {/* ── Card hand ─────────────────────────────────────────────────────── */}
       <div
-        className="shrink-0 z-10 pt-2 pb-3"
-        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)', minHeight: phase === 'bidding' ? '140px' : undefined }}
+        className="shrink-0 z-10 pt-1 pb-3"
+        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)' }}
       >
         {/* During deal animation — show cards arriving one by one */}
         {showDealAnim && (
@@ -917,6 +954,7 @@ export default function GameTable({
             isMyTurn={isMyTurn && phase === 'playing'}
             leadSuit={currentTrick?.leadSuit}
             trumpSuit={trumpSuit}
+            expandedView={phase === 'bidding'}
           />
             )}
           </>

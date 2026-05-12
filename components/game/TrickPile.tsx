@@ -110,33 +110,67 @@ export default function TrickPile({
                   </motion.span>
                 )}
                 <div
-                  className={clsx(
-                    'flex flex-col items-center justify-between p-0.5 bg-white rounded-lg border-2 select-none relative',
-                    'w-11 h-16',
-                    is3Spades
-                      ? 'border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.9)]'
-                      : isWinner
-                        ? 'border-yellow-400 shadow-[0_0_16px_rgba(250,204,21,0.8)] ring-2 ring-yellow-300'
-                        : isTrump
-                          ? 'border-orange-400/80 shadow-[0_0_8px_rgba(251,146,60,0.4)]'
-                          : 'border-slate-200 shadow-md'
-                  )}
+                  style={{
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'space-between',
+                    borderRadius: 8,
+                    width: 44, height: 64,
+                    background: '#ffffff',
+                    border: isWinner
+                      ? '2px solid #fde68a'
+                      : is3Spades
+                      ? '2px solid #d4a017'
+                      : isTrump
+                      ? '1.5px solid rgba(253,186,116,0.7)'
+                      : '1.5px solid #d0d0d0',
+                    boxShadow: isWinner
+                      ? '0 0 0 1px rgba(253,224,71,0.5), 0 0 18px rgba(253,224,71,0.7), 0 6px 16px rgba(0,0,0,0.6)'
+                      : is3Spades
+                      ? '0 0 14px rgba(212,160,23,0.6), 0 4px 12px rgba(0,0,0,0.5)'
+                      : isTrump
+                      ? '0 0 8px rgba(253,186,116,0.4), 0 4px 10px rgba(0,0,0,0.5)'
+                      : '0 4px 10px rgba(0,0,0,0.5)',
+                    padding: '3px 4px',
+                    overflow: 'hidden',
+                    position: 'relative',
+                  }}
                 >
                   {is3Spades && (
                     <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
                     </div>
                   )}
-                  <div className={clsx('self-start leading-none font-black text-[9px]', isRed ? 'text-red-500' : 'text-slate-800')}>
-                    <div>{tc.card.rank}</div>
-                    <div>{SUIT_SYMBOLS[tc.card.suit]}</div>
+                  {/* Top-left rank+suit */}
+                  <div style={{ alignSelf: 'flex-start', lineHeight: 1 }}>
+                    <div style={{
+                      fontSize: 10, fontWeight: 800, lineHeight: 1,
+                      color: isRed ? '#c0152a' : '#1a1a2e',
+                    }}>{tc.card.rank}</div>
+                    <div style={{
+                      fontSize: 9, lineHeight: 1,
+                      color: isRed ? '#c0152a' : '#1a1a2e',
+                    }}>{SUIT_SYMBOLS[tc.card.suit]}</div>
                   </div>
-                  <div className={clsx('text-xl leading-none font-bold', isRed ? 'text-red-500' : 'text-slate-800')}>
+                  {/* Center suit */}
+                  <div style={{
+                    fontSize: 18, lineHeight: 1, fontWeight: 700,
+                    color: isRed ? '#c0152a' : '#1a1a2e',
+                  }}>
                     {SUIT_SYMBOLS[tc.card.suit]}
                   </div>
-                  <div className={clsx('self-end leading-none font-black text-[9px] rotate-180', isRed ? 'text-red-500' : 'text-slate-800')}>
-                    <div>{tc.card.rank}</div>
-                    <div>{SUIT_SYMBOLS[tc.card.suit]}</div>
+                  {/* Bottom-right rotated */}
+                  <div style={{
+                    alignSelf: 'flex-end', lineHeight: 1,
+                    transform: 'rotate(180deg)',
+                  }}>
+                    <div style={{
+                      fontSize: 10, fontWeight: 800, lineHeight: 1,
+                      color: isRed ? '#c0152a' : '#1a1a2e',
+                    }}>{tc.card.rank}</div>
+                    <div style={{
+                      fontSize: 9, lineHeight: 1,
+                      color: isRed ? '#c0152a' : '#1a1a2e',
+                    }}>{SUIT_SYMBOLS[tc.card.suit]}</div>
                   </div>
                 </div>
                 <span className={clsx('text-xs font-medium truncate max-w-[44px] text-center',
