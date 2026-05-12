@@ -54,23 +54,25 @@ export default function TrickPile({
   if (cards.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2">
-        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border-2 border-dashed border-green-700/30 flex items-center justify-center">
+        <div className="w-20 h-20 rounded-full border-2 border-dashed border-green-700/30 flex items-center justify-center">
           <div className="text-center">
             {completedTricksCount > 0 ? (
               <>
-                <div className="text-green-500 text-2xl font-bold">{completedTricksCount}</div>
-                <div className="text-green-700/60 text-xs">/{totalTricks}</div>
+                <div className="text-green-400 text-2xl font-bold">{completedTricksCount}</div>
+                <div className="text-slate-500 text-xs">/{totalTricks}</div>
               </>
             ) : (
-              <span className="text-green-800/40 text-3xl font-bold">♠</span>
+              <span className="text-amber-600/30 text-3xl">♠</span>
             )}
           </div>
         </div>
         {completedTricksCount > 0 && (
           <div className="flex items-center gap-1">
             {Array.from({ length: totalTricks }).map((_, i) => (
-              <div key={i} className={clsx('w-1.5 h-1.5 rounded-full transition-colors',
-                i < completedTricksCount ? 'bg-green-500' : 'bg-slate-700')} />
+              <div key={i} className={clsx('w-2 h-2 rounded-full transition-colors',
+                i < completedTricksCount
+                  ? 'bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.6)]'
+                  : 'bg-slate-700')} />
             ))}
           </div>
         )}
@@ -92,29 +94,39 @@ export default function TrickPile({
               <motion.div
                 key={tc.playerId}
                 initial={{ scale: 0.4, opacity: 0, y: -20 }}
-                animate={{ scale: 1, opacity: 1, y: isWinner ? -6 : 0 }}
+                animate={{ scale: 1, opacity: 1, y: isWinner ? -8 : 0 }}
                 exit={{ scale: 0.3, opacity: 0, transition: { duration: 0.15 } }}
                 transition={{ delay: i * 0.07, type: 'spring', stiffness: 400, damping: 24 }}
                 className="flex flex-col items-center gap-0.5"
               >
                 {isWinner && cards.length > 1 && (
-                  <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-xs leading-none">
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                    className="text-sm leading-none"
+                  >
                     👑
                   </motion.span>
                 )}
                 <div
                   className={clsx(
-                    'flex flex-col items-center justify-between p-0.5 bg-white rounded-lg border-2 select-none',
+                    'flex flex-col items-center justify-between p-0.5 bg-white rounded-lg border-2 select-none relative',
                     'w-10 h-14 md:w-11 md:h-16',
                     is3Spades
-                      ? 'border-yellow-400 shadow-[0_0_12px_rgba(250,204,21,0.8)]'
+                      ? 'border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.9)]'
                       : isWinner
-                        ? 'border-yellow-300 shadow-[0_0_12px_rgba(253,224,71,0.7)] ring-1 ring-yellow-200'
+                        ? 'border-yellow-400 shadow-[0_0_16px_rgba(250,204,21,0.8)] ring-2 ring-yellow-300'
                         : isTrump
-                          ? 'border-orange-300 shadow-[0_0_6px_rgba(253,186,116,0.4)]'
+                          ? 'border-orange-400/80 shadow-[0_0_8px_rgba(251,146,60,0.4)]'
                           : 'border-slate-200 shadow-md'
                   )}
                 >
+                  {is3Spades && (
+                    <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                    </div>
+                  )}
                   <div className={clsx('self-start leading-none font-black text-[9px]', isRed ? 'text-red-500' : 'text-slate-800')}>
                     <div>{tc.card.rank}</div>
                     <div>{SUIT_SYMBOLS[tc.card.suit]}</div>
@@ -128,7 +140,7 @@ export default function TrickPile({
                   </div>
                 </div>
                 <span className={clsx('text-[9px] font-medium truncate max-w-[44px] text-center',
-                  isWinner ? 'text-yellow-400' : 'text-slate-400')}>
+                  isWinner ? 'text-yellow-400 font-bold' : 'text-slate-400')}>
                   {getPlayerName(tc.playerId)}
                 </span>
               </motion.div>
@@ -140,8 +152,10 @@ export default function TrickPile({
       {completedTricksCount > 0 && (
         <div className="flex items-center gap-1">
           {Array.from({ length: totalTricks }).map((_, i) => (
-            <div key={i} className={clsx('w-1.5 h-1.5 rounded-full transition-colors',
-              i < completedTricksCount ? 'bg-green-500' : 'bg-slate-700')} />
+            <div key={i} className={clsx('w-2 h-2 rounded-full transition-colors',
+              i < completedTricksCount
+                ? 'bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.6)]'
+                : 'bg-slate-700')} />
           ))}
         </div>
       )}

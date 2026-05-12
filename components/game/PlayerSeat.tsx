@@ -63,7 +63,7 @@ function TimerRing({
   const circumference = 2 * Math.PI * radius;
   const progress = Math.min(remaining / totalSeconds, 1);
   const dashOffset = circumference * (1 - progress);
-  const color = remaining < 5 ? '#ef4444' : remaining < 10 ? '#f59e0b' : '#22c55e';
+  const color = remaining < 5 ? '#ef4444' : remaining < 20 ? '#f59e0b' : '#22c55e';
 
   return (
     <svg
@@ -150,6 +150,7 @@ export default function PlayerSeat({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.5, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 350, damping: 25 }}
+              className="drop-shadow-lg"
             >
               <Card card={trickCard} small playable={false} />
             </motion.div>
@@ -158,7 +159,7 @@ export default function PlayerSeat({
       )}
 
       {/* Avatar with turn indicator and timer ring */}
-      <div className="relative mt-1" style={{ width: 40, height: 40 }}>
+      <div className="relative mt-1" style={{ width: 44, height: 44 }}>
         {/* Turn glow */}
         {isCurrentTurn && (
           <>
@@ -189,13 +190,21 @@ export default function PlayerSeat({
         )}
 
         {/* Avatar circle */}
-        <div
+        <motion.div
           className={clsx(
-            'w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-sm uppercase shadow-md text-white relative overflow-hidden',
+            'w-11 h-11 rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-sm uppercase shadow-md text-white relative overflow-hidden',
             gradient,
             isCurrentTurn && 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900',
             isPartner && isRevealed && !isCurrentTurn && 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-900'
           )}
+          animate={
+            isCurrentTurn
+              ? { boxShadow: ['0 0 4px rgba(74,222,128,0.3)', '0 0 16px rgba(74,222,128,0.8)', '0 0 4px rgba(74,222,128,0.3)'] }
+              : isPartner && isRevealed
+                ? { boxShadow: '0 0 8px rgba(52,211,153,0.5)' }
+                : {}
+          }
+          transition={isCurrentTurn ? { duration: 1.3, repeat: Infinity } : {}}
         >
           {player.avatarUrl ? (
             <img src={player.avatarUrl} alt={player.name} className="absolute inset-0 w-full h-full object-cover rounded-full" />
@@ -207,7 +216,7 @@ export default function PlayerSeat({
               🤖
             </span>
           )}
-        </div>
+        </motion.div>
 
         {player.isHost && (
           <span className="absolute -top-1 -right-1 text-xs leading-none">👑</span>
@@ -215,7 +224,7 @@ export default function PlayerSeat({
 
         {/* Card count badge in compact mode */}
         {compact && !isLocalPlayer && cardCount > 0 && (
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-slate-700 text-slate-200 text-[9px] font-bold px-1 rounded-full leading-tight border border-slate-600">
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-slate-900/90 text-slate-300 text-[10px] font-bold px-1 rounded-full leading-tight border border-slate-700">
             {cardCount}
           </span>
         )}
@@ -226,8 +235,8 @@ export default function PlayerSeat({
         <div className="flex items-center gap-1 flex-wrap justify-center">
           <span
             className={clsx(
-              'text-xs font-medium max-w-[64px] truncate',
-              isLocalPlayer ? 'text-sky-200' : 'text-slate-300',
+              'rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-100 text-xs px-2 py-0.5 font-semibold max-w-[72px] truncate',
+              isLocalPlayer ? 'text-sky-200' : 'text-slate-100',
               isDisconnected && 'line-through text-slate-500'
             )}
             title={player.name}
@@ -261,9 +270,13 @@ export default function PlayerSeat({
           <span className="text-[9px] text-yellow-500 font-medium">⚡ DC</span>
         )}
 
+        {isLocalPlayer && !isDisconnected && (
+          <span className="text-[9px] text-slate-500 font-medium">You</span>
+        )}
+
         {/* Card count badge in normal mode */}
         {!compact && !isLocalPlayer && cardCount > 0 && (
-          <span className="bg-slate-800 text-slate-300 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-slate-700">
+          <span className="bg-slate-900/90 text-slate-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-slate-700">
             {cardCount}
           </span>
         )}
