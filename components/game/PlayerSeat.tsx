@@ -13,6 +13,7 @@ interface PlayerSeatProps {
   isLocalPlayer: boolean;
   isPartner: boolean;
   isRevealed: boolean;
+  isBidWinner?: boolean;
   trickCard?: CardType | null;
   position: 'bottom' | 'top' | 'left' | 'right' | 'top-left' | 'top-right';
   compact?: boolean;
@@ -102,6 +103,7 @@ export default function PlayerSeat({
   isLocalPlayer,
   isPartner,
   isRevealed,
+  isBidWinner = false,
   trickCard,
   position,
   compact = false,
@@ -116,7 +118,8 @@ export default function PlayerSeat({
     ? 'from-sky-500 to-blue-600'
     : AVATAR_GRADIENTS[nameHash(player.name) % AVATAR_GRADIENTS.length];
 
-  const scoreColor = teamId === 'A' ? 'text-sky-400' : teamId === 'B' ? 'text-orange-400' : 'text-slate-400';
+  const isTeamA = isBidWinner || (isRevealed && isPartner);
+  const scoreColor = isTeamA ? 'text-sky-400' : showCombinedLabel ? 'text-orange-400' : 'text-slate-400';
 
   // Flat horizontal card backs — no tilt, just a compact row
   const maxVisible = compact ? Math.min(cardCount, 4) : Math.min(cardCount, 8);
@@ -267,7 +270,17 @@ export default function PlayerSeat({
           >
             {player.name}
           </span>
-          {isPartner && isRevealed && (
+          {isBidWinner && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="text-xs font-bold bg-amber-600 text-white px-1 rounded"
+              title="Bid winner – Team A lead"
+            >
+              👑 Lead
+            </motion.span>
+          )}
+          {isPartner && isRevealed && !isBidWinner && (
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -276,7 +289,17 @@ export default function PlayerSeat({
           >
             🤝 Partner
           </motion.span>
-        )}
+          )}
+          {showCombinedLabel && !isLocalPlayer && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="text-xs font-bold bg-orange-700 text-white px-1 rounded"
+              title="Team B ally"
+            >
+              🤝 Ally
+            </motion.span>
+          )}
         </div>
 
         {/* Score (individual until partners revealed; combined for Team A after reveal) */}
@@ -286,8 +309,8 @@ export default function PlayerSeat({
             displayPoints < 0 ? 'text-red-400' : scoreColor
           )}>
             {displayPoints < 0 ? `−${Math.abs(displayPoints)}` : displayPoints} pts
-            {(isRevealed && isPartner) && <span className="text-[9px] ml-0.5 opacity-70">(team A)</span>}
-            {showCombinedLabel && !isPartner && <span className="text-[9px] ml-0.5 opacity-70">(team B)</span>}
+            {isTeamA && <span className="text-[9px] ml-0.5 opacity-70">(team A)</span>}
+            {showCombinedLabel && !isTeamA && <span className="text-[9px] ml-0.5 opacity-70">(team B)</span>}
           </span>
         )}
 

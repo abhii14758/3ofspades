@@ -69,8 +69,8 @@ function getPlayerPositions(
   myPlayerId: string,
 ): Array<{ player: Player; x: number; y: number; angle: number }> {
   const N = players.length;
-  const rx = 41;
-  const ry = 38;
+  const rx = 37;
+  const ry = 32;
   const cx = 50;
   const cy = 50;
   const myIndex = players.findIndex((p) => p.id === myPlayerId);
@@ -418,8 +418,11 @@ export default function GameTable({
   useEffect(() => {
     const check = () => {
       const w = window.innerWidth;
-      setIsMobile(w < 640);
-      setIsTablet(w >= 640 && w < 1024);
+      const h = window.innerHeight;
+      // Treat landscape phones (e.g. iPhone SE 667×375) as mobile
+      const mobile = w < 640 || (w < 900 && h < 480);
+      setIsMobile(mobile);
+      setIsTablet(!mobile && w >= 640 && w < 1024);
     };
     check();
     window.addEventListener('resize', check);
@@ -448,6 +451,17 @@ export default function GameTable({
       return () => clearTimeout(t);
     }
   }, [dealRevealedCount, myHand.length]);
+
+  // Fallback: end deal animation as soon as actual hand is fully dealt by server
+  useEffect(() => {
+    const expectedCards = myHand.length > 0
+      ? myHand.length
+      : (gameState.hands ? (Object.values(gameState.hands)[0]?.length ?? 0) : 0);
+    if (gameState.phase === 'dealing' && !dealAnimDone && expectedCards > 0 && myHand.length >= expectedCards) {
+      const t = setTimeout(() => setDealAnimDone(true), 600);
+      return () => clearTimeout(t);
+    }
+  }, [myHand.length, gameState.hands, gameState.phase, dealAnimDone]);
 
   const {
     players,
@@ -494,15 +508,21 @@ export default function GameTable({
   );
 
   const teamBIds = useMemo(() => {
-    if (!teams) return [];
-    return teams.B.playerIds;
-  }, [teams]);
+    if (teams?.B.playerIds && teams.B.playerIds.length > 0) return teams.B.playerIds;
+    // Derive team B once all partners are revealed (teams may be null during play)
+    if (bidWinnerId && revealedPartnerIds.length >= partnerCount) {
+      const teamASet = new Set([bidWinnerId, ...revealedPartnerIds]);
+      return players.map((p) => p.id).filter((id) => !teamASet.has(id));
+    }
+    return [];
+  }, [teams, bidWinnerId, revealedPartnerIds, partnerCount, players]);
 
   const teamBCombinedPoints = teamBIds.reduce(
     (sum, id) => sum + (playerIndividualPoints[id] ?? 0), 0
   );
 
-  const allPartnersRevealed = revealedTeamAIds.length >= (gameState.partnerIds?.length ?? 0) + 1;
+  // All partners revealed when the expected count from config is reached
+  const allPartnersRevealed = revealedPartnerIds.length >= partnerCount;
 
   function getDisplayPoints(playerId: string): number {
     if (revealedTeamAIds.includes(playerId)) return teamACombinedPoints;
@@ -511,9 +531,9 @@ export default function GameTable({
   }
 
   function getPlayerTeamId(playerId: string): 'A' | 'B' | null {
-    if (!teams) return null;
     if (revealedTeamAIds.includes(playerId)) return 'A';
-    return 'B';
+    if (allPartnersRevealed && teamBIds.includes(playerId)) return 'B';
+    return null;
   }
 
   const myPlayer = players.find((p) => p.id === myPlayerId);
@@ -903,6 +923,7 @@ export default function GameTable({
                   isLocalPlayer={isLocalPlayer}
                   isPartner={isPartner}
                   isRevealed={isPartner}
+                  isBidWinner={player.id === bidWinnerId && !!bidWinnerId}
                   trickCard={trickCard}
                   position="bottom"
                   compact={isMobile}
@@ -1010,13 +1031,6 @@ export default function GameTable({
                     </span>
                   );
                 })}
-              </div>
-            )}
-            {phase === 'bidding' && (
-              <div className="text-center pb-1">
-                <span className="text-[11px] text-amber-400/80 font-medium tracking-wide">
-                  🃏 View your cards to bid wisely
-                </span>
               </div>
             )}
             {/* CardHand is ALWAYS mounted to preserve sort order; placeholder overlays when hidden */}
