@@ -168,33 +168,45 @@ function DealAnimation({
 
   return (
     <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden rounded-[50%]">
-      {/* Deck stack at center */}
+      {/* Circular glow backdrop + deck stack at center */}
       <motion.div
-        style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2 }}
-        animate={{ y: [0, -1, 0] }}
-        transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
+        style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        animate={{ y: [0, -2, 0] }}
+        transition={{ repeat: Infinity, duration: 1.6, ease: 'easeInOut' }}
       >
-        {[6, 5, 4, 3, 2, 1, 0].map((i) => (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              width: 40, height: 58,
-              borderRadius: 6,
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 55%, #2563eb 100%)',
-              border: '1px solid rgba(96,165,250,0.5)',
-              boxShadow: i === 0 ? '0 4px 14px rgba(0,0,0,0.65), 0 0 8px rgba(59,130,246,0.25)' : 'none',
-              top: -(i * 0.8),
-              left: i * 0.4,
-            }}
-          >
-            <div style={{
-              position: 'absolute', inset: 3, borderRadius: 3,
-              border: '1px solid rgba(96,165,250,0.22)',
-              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.035) 3px, rgba(255,255,255,0.035) 6px)',
-            }} />
-          </div>
-        ))}
+        {/* Circular glowing disc behind deck */}
+        <div style={{
+          position: 'absolute',
+          width: 80, height: 80,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(59,130,246,0.18) 0%, rgba(30,58,138,0.08) 70%, transparent 100%)',
+          boxShadow: '0 0 28px rgba(59,130,246,0.35), 0 0 60px rgba(59,130,246,0.12)',
+          border: '1.5px solid rgba(96,165,250,0.22)',
+        }} />
+        {/* Card stack */}
+        <div style={{ position: 'relative', width: 42, height: 60 }}>
+          {[6, 5, 4, 3, 2, 1, 0].map((i) => (
+            <div
+              key={i}
+              style={{
+                position: 'absolute',
+                width: 42, height: 60,
+                borderRadius: 7,
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 55%, #2563eb 100%)',
+                border: '1px solid rgba(96,165,250,0.5)',
+                boxShadow: i === 0 ? '0 6px 18px rgba(0,0,0,0.7), 0 0 10px rgba(59,130,246,0.3)' : 'none',
+                top: -(i * 0.9),
+                left: i * 0.35,
+              }}
+            >
+              <div style={{
+                position: 'absolute', inset: 3, borderRadius: 4,
+                border: '1px solid rgba(96,165,250,0.22)',
+                backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 6px)',
+              }} />
+            </div>
+          ))}
+        </div>
       </motion.div>
 
       {/* Flying cards — one at a time, round-robin */}
@@ -387,6 +399,14 @@ export default function GameTable({
     setDealRevealedCount(myHand.length);
     socketEmit.skipDeal(gameState.roomId);
   }, [myHand.length, gameState.roomId]);
+
+  // Auto-end deal animation 1 second after the local player receives their last card
+  useEffect(() => {
+    if (dealRevealedCount > 0 && myHand.length > 0 && dealRevealedCount >= myHand.length) {
+      const t = setTimeout(() => setDealAnimDone(true), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [dealRevealedCount, myHand.length]);
 
   const {
     players,
