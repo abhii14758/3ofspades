@@ -1,8 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ['192.168.3.112'],
-  turbopack: {},
+  // Allow all origins for dev HMR (LAN play, any device on the network)
+  allowedDevOrigins: ['*'],
   // Required for socket.io with custom server
   webpack: (config) => {
     config.externals.push({
