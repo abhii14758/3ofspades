@@ -928,9 +928,26 @@ export default function GameTable({
                 </span>
               </div>
             )}
-            {handHidden && !(isMyTurn && phase === 'playing') ? (
-              <div className="flex items-center justify-center gap-1 py-3 px-4">
-                <div className="flex items-center gap-1 flex-wrap justify-center">
+            {/* CardHand is ALWAYS mounted to preserve sort order; placeholder overlays when hidden */}
+            <div className="relative">
+              <CardHand
+                cards={myHand}
+                playableCardIds={playableCardIds}
+                selectedCardId={selectedCardId}
+                onCardSelect={(card) => setSelectedCardId(card.id)}
+                onCardPlay={(card) => {
+                  setSelectedCardId(null);
+                  onPlayCard(card);
+                }}
+                isMyTurn={isMyTurn && phase === 'playing'}
+                leadSuit={currentTrick?.leadSuit}
+                trumpSuit={trumpSuit}
+                expandedView={phase === 'bidding'}
+              />
+              {/* Hidden overlay — sits on top without unmounting CardHand */}
+              {handHidden && !(isMyTurn && phase === 'playing') && (
+                <div className="absolute inset-0 flex items-center justify-center gap-2 flex-wrap px-4 py-3"
+                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.85) 100%)' }}>
                   {myHand.map((_, i) => (
                     <div key={i} style={{
                       width: 44, height: 64, borderRadius: 8,
@@ -938,25 +955,10 @@ export default function GameTable({
                       border: '1px solid rgba(100,140,255,0.5)',
                     }} />
                   ))}
+                  <p className="w-full text-center text-[11px] text-slate-500 mt-1">Cards hidden — tap 👁️ to reveal</p>
                 </div>
-                <p className="text-[11px] text-slate-500 ml-2">Cards hidden — tap 👁️ to reveal</p>
-              </div>
-            ) : (
-              <CardHand
-                cards={myHand}
-                playableCardIds={playableCardIds}
-                selectedCardId={selectedCardId}
-            onCardSelect={(card) => setSelectedCardId(card.id)}
-            onCardPlay={(card) => {
-              setSelectedCardId(null);
-              onPlayCard(card);
-            }}
-            isMyTurn={isMyTurn && phase === 'playing'}
-            leadSuit={currentTrick?.leadSuit}
-            trumpSuit={trumpSuit}
-            expandedView={phase === 'bidding'}
-          />
-            )}
+              )}
+            </div>
           </>
         )}
       </div>
