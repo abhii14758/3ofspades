@@ -11,7 +11,6 @@ import TrumpSelector from './TrumpSelector';
 import PartnerSelector from './PartnerSelector';
 import Scoreboard from './Scoreboard';
 import ChatPanel from './ChatPanel';
-import DealerFigure from './DealerFigure';
 import { useGameStore } from '@/store/gameStore';
 import CardHand from '@/components/cards/CardHand';
 import AvatarUpload from './AvatarUpload';
@@ -88,63 +87,129 @@ function getPlayerPositions(
 function DealAnimation({
   players,
   myPlayerId,
+  cardsPerPlayer,
+  tableW,
+  tableH,
   onComplete,
 }: {
   players: Player[];
   myPlayerId: string;
+  cardsPerPlayer: number;
+  tableW: number;
+  tableH: number;
   onComplete: () => void;
 }) {
-  const [visible, setVisible] = useState(true);
   const N = players.length;
+  const CARD_INTERVAL = 0.18; // seconds between each card
+  const ROUNDS = Math.min(cardsPerPlayer, 8); // number of rounds to show
+  const totalCards = N * ROUNDS;
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisible(false);
-      onComplete();
-    }, Math.min(2200, N * 320));
-    return () => clearTimeout(timer);
-  }, [N, onComplete]);
+    const t = setTimeout(onComplete, totalCards * CARD_INTERVAL * 1000 + 900);
+    return () => clearTimeout(t);
+  }, [totalCards, onComplete]);
 
-  if (!visible) return null;
+  // Calculate player positions as pixel offsets from table center
+  const positions = useMemo(() => {
+    const myIdx = players.findIndex((p) => p.id === myPlayerId);
+    const rx = 0.46;
+    const ry = 0.42;
+    return players.map((p, i) => {
+      const relIdx = (i - myIdx + N) % N;
+      const angleDeg = 90 + (360 * relIdx) / N;
+      const angleRad = (angleDeg * Math.PI) / 180;
+      const dx = rx * Math.cos(angleRad) * tableW; // px from center
+      const dy = ry * Math.sin(angleRad) * tableH;
+      return { dx, dy };
+    });
+  }, [players, myPlayerId, N, tableW, tableH]);
+
+  // Round-robin deal sequence
+  const cards = useMemo(() => {
+    const result: { key: number; delay: number; playerIdx: number; rotation: number }[] = [];
+    for (let round = 0; round < ROUNDS; round++) {
+      for (let pi = 0; pi < N; pi++) {
+        result.push({
+          key: round * N + pi,
+          delay: (round * N + pi) * CARD_INTERVAL,
+          playerIdx: pi,
+          rotation: (Math.random() - 0.5) * 24,
+        });
+      }
+    }
+    return result;
+  }, [N, ROUNDS]);
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-20 rounded-[50%] overflow-hidden">
-      {players.map((player) => {
-        const myIdx = players.findIndex((p) => p.id === myPlayerId);
-        const pIdx = players.findIndex((p) => p.id === player.id);
-        const relIndex = (pIdx - myIdx + N) % N;
-        const angleDeg = 90 + (360 * relIndex) / N;
-        const angleRad = (angleDeg * Math.PI) / 180;
-        const rx = 46;
-        const ry = 43;
-        const targetX = 50 + rx * Math.cos(angleRad);
-        const targetY = 50 + ry * Math.sin(angleRad);
-
-        return [0, 1, 2].map((j) => (
-          <motion.div
-            key={`${player.id}-${j}`}
-            className="absolute w-7 h-10 rounded-sm shadow-xl"
+    <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden rounded-[50%]">
+      {/* Deck stack at center — face-down blue backs */}
+      <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', zIndex: 2 }}>
+        {[4, 3, 2, 1, 0].map((i) => (
+          <div
+            key={i}
             style={{
+              position: 'absolute',
+              width: 36, height: 52,
+              borderRadius: 5,
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 60%, #1d4ed8 100%)',
+              border: '1px solid rgba(96,165,250,0.45)',
+              boxShadow: '0 3px 10px rgba(0,0,0,0.55)',
+              top: -(i * 0.7),
+              left: i * 0.3,
+            }}
+          >
+            {/* Card back pattern */}
+            <div style={{
+              position: 'absolute', inset: 3, borderRadius: 3,
+              border: '1px solid rgba(96,165,250,0.25)',
+              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.03) 3px, rgba(255,255,255,0.03) 6px)',
+            }} />
+          </div>
+        ))}
+      </div>
+
+      {/* Flying cards — one at a time, round-robin */}
+      {cards.map(({ key, delay, playerIdx, rotation }) => {
+        const { dx, dy } = positions[playerIdx];
+        return (
+          <motion.div
+            key={key}
+            style={{
+              position: 'absolute',
               left: '50%',
               top: '50%',
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #1d4ed8 100%)',
-              border: '1px solid rgba(96,165,250,0.4)',
+              width: 34,
+              height: 50,
+              borderRadius: 5,
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 60%, #1d4ed8 100%)',
+              border: '1px solid rgba(96,165,250,0.45)',
+              boxShadow: '0 6px 18px rgba(0,0,0,0.6)',
+              zIndex: 10 + key,
             }}
-            initial={{ x: '-50%', y: '-50%', opacity: 1, scale: 0.7, rotate: 0 }}
+            initial={{ x: '-50%', y: '-50%', opacity: 0, scale: 0.75, rotate: 0 }}
             animate={{
-              x: `calc(${targetX - 50}% * 2 - 50%)`,
-              y: `calc(${targetY - 50}% * 2 - 50%)`,
-              opacity: [1, 1, 0],
-              rotate: [(Math.random() - 0.5) * 20],
-              scale: [0.7, 1, 0.6],
+              x: `calc(-50% + ${dx}px)`,
+              y: `calc(-50% + ${dy}px)`,
+              opacity: [0, 1, 1, 1, 0],
+              scale: [0.75, 1.1, 0.9],
+              rotate: rotation,
             }}
             transition={{
-              delay: relIndex * 0.14 + j * 0.06,
-              duration: 0.42,
-              ease: 'easeOut',
+              delay,
+              duration: 0.55,
+              ease: [0.16, 1, 0.3, 1],
+              opacity: { times: [0, 0.08, 0.6, 0.85, 1], duration: 0.6, delay },
+              scale: { times: [0, 0.25, 1], duration: 0.55, delay },
             }}
-          />
-        ));
+          >
+            {/* Card back inner pattern */}
+            <div style={{
+              position: 'absolute', inset: 3, borderRadius: 3,
+              border: '1px solid rgba(96,165,250,0.25)',
+              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 6px)',
+            }} />
+          </motion.div>
+        );
       })}
     </div>
   );
@@ -193,6 +258,17 @@ export default function GameTable({
   const [isMobile, setIsMobile] = useState(false);
   const myCalledCards = useGameStore((s) => s.myCalledCards);
   const tableRef = useRef<HTMLDivElement>(null);
+
+  const [tableDims, setTableDims] = useState({ w: 860, h: 540 });
+  useEffect(() => {
+    if (!tableRef.current) return;
+    const el = tableRef.current;
+    const update = () => setTableDims({ w: el.offsetWidth, h: el.offsetHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640);
@@ -277,6 +353,7 @@ export default function GameTable({
   const showTrumpSelector = phase === 'trump_selection' && bidWinnerId === myPlayerId && onSelectTrump;
   const showPartnerSelector = phase === 'partner_selection' && bidWinnerId === myPlayerId && onSelectPartners;
   const showDealAnim = phase === 'dealing' && !dealAnimDone && players.length > 1;
+  const cardsPerPlayer = myHand.length > 0 ? myHand.length : Math.ceil((gameState.hands ? Object.values(gameState.hands)[0]?.length ?? 8 : 8));
 
   const playerPositions = useMemo(
     () => getPlayerPositions(players, myPlayerId),
@@ -361,66 +438,65 @@ export default function GameTable({
         {/* ── Casino Table ── */}
         <motion.div
           ref={tableRef}
-          initial={{ scale: 0.88, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          initial={{ scale: 0.88, opacity: 0, rotateX: 0 }}
+          animate={{ scale: 1, opacity: 1, rotateX: 14 }}
           transition={{ type: 'spring', stiffness: 160, damping: 26, delay: 0.04 }}
           className="relative"
           style={{
             width: 'min(92vw, 860px)',
             height: 'min(58vh, 540px)',
             minHeight: '280px',
+            perspective: '1000px',
+            transformStyle: 'preserve-3d',
           }}
         >
-          {/* Wood rim */}
+          {/* ── Table layers (bottom to top) ── */}
+          {/* Outer wood shadow — creates the table "body" depth */}
           <div className="absolute inset-0 rounded-[50%]" style={{
-            background: 'linear-gradient(160deg, #5a2d0c 0%, #2a1005 35%, #4a2208 65%, #1a0800 100%)',
-            boxShadow: '0 0 100px rgba(0,0,0,0.98), 0 32px 64px rgba(0,0,0,0.9)',
+            background: 'linear-gradient(180deg, #6b3010 0%, #3d1808 40%, #200c04 75%, #0a0301 100%)',
+            boxShadow: '0 40px 80px rgba(0,0,0,0.95), 0 12px 32px rgba(0,0,0,0.85), 0 0 120px rgba(0,0,0,0.9), inset 0 -8px 20px rgba(0,0,0,0.5)',
           }} />
-          {/* Gold bead rim — thicker and brighter */}
-          <div className="absolute inset-[4px] rounded-[50%]" style={{
-            boxShadow: '0 0 0 4px rgba(212,160,23,0.85), 0 0 24px rgba(212,160,23,0.45), 0 0 48px rgba(212,160,23,0.18), inset 0 0 0 3px rgba(212,160,23,0.4)',
+          {/* Outer gold rail — wide, bright */}
+          <div className="absolute inset-[3px] rounded-[50%]" style={{
+            background: 'transparent',
+            boxShadow: '0 0 0 8px rgba(184,134,11,0.9), 0 0 0 9px rgba(212,160,23,0.5), 0 0 30px rgba(212,160,23,0.5), 0 0 60px rgba(212,160,23,0.15), inset 0 0 0 6px rgba(212,160,23,0.35)',
           }} />
-          {/* Felt — brighter kelly green */}
-          <div className="absolute inset-[14px] rounded-[50%]" style={{
-            background: 'radial-gradient(ellipse at 50% 38%, #20883e 0%, #186830 35%, #104c22 65%, #082e14 100%)',
-            boxShadow: 'inset 0 20px 60px rgba(0,0,0,0.4), inset 0 -12px 30px rgba(0,0,0,0.3)',
+          {/* Inner wood ring between rail and felt */}
+          <div className="absolute inset-[16px] rounded-[50%]" style={{
+            background: 'linear-gradient(160deg, #5c2a0a 0%, #2d1206 50%, #1a0803 100%)',
           }} />
-          {/* Felt weave texture */}
-          <div className="absolute inset-[14px] rounded-[50%] pointer-events-none" style={{
-            opacity: 0.03,
-            backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 6px,rgba(255,255,255,1) 6px,rgba(255,255,255,1) 7px),repeating-linear-gradient(90deg,transparent,transparent 6px,rgba(255,255,255,1) 6px,rgba(255,255,255,1) 7px)',
+          {/* Felt surface — vibrant casino green */}
+          <div className="absolute inset-[20px] rounded-[50%]" style={{
+            background: 'radial-gradient(ellipse at 48% 36%, #27a34a 0%, #1d8038 25%, #156630 55%, #0d4820 80%, #072e14 100%)',
+            boxShadow: 'inset 0 24px 70px rgba(0,0,0,0.45), inset 0 -16px 40px rgba(0,0,0,0.35), inset 0 0 80px rgba(0,0,0,0.2)',
           }} />
-          {/* Center glow */}
-          <div
-            className="absolute inset-0 rounded-[50%] pointer-events-none"
-            style={{
-              background:
-                'radial-gradient(ellipse 42% 30% at 50% 50%, rgba(34,197,94,0.07) 0%, transparent 100%)',
-            }}
-          />
-
-          {/* Dealer figure */}
-          {players.length > 1 && (
-            <div
-              className="absolute z-10"
-              style={{ left: '50%', top: '4%', transform: 'translate(-50%, 0)' }}
-            >
-              <DealerFigure isDealing={phase === 'dealing'} />
-            </div>
-          )}
+          {/* Felt cloth texture */}
+          <div className="absolute inset-[20px] rounded-[50%] pointer-events-none" style={{
+            opacity: 0.04,
+            backgroundImage: 'repeating-linear-gradient(0deg,transparent,transparent 5px,rgba(255,255,255,1) 5px,rgba(255,255,255,1) 6px),repeating-linear-gradient(90deg,transparent,transparent 5px,rgba(255,255,255,1) 5px,rgba(255,255,255,1) 6px)',
+          }} />
+          {/* Felt top highlight — simulates overhead light */}
+          <div className="absolute inset-[20px] rounded-[50%] pointer-events-none" style={{
+            background: 'radial-gradient(ellipse 60% 35% at 50% 28%, rgba(255,255,255,0.06) 0%, transparent 100%)',
+          }} />
+          {/* Gold inner ring on felt edge */}
+          <div className="absolute inset-[20px] rounded-[50%] pointer-events-none" style={{
+            boxShadow: 'inset 0 0 0 2px rgba(212,160,23,0.18)',
+          }} />
 
           {/* Trump badge + trick counter — center of table */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            {/* Center emblem */}
+            {/* Center emblem — gold pot circle like reference image */}
             <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 0 }}>
               <div style={{
-                width: 76, height: 76, borderRadius: '50%',
-                border: '2px solid rgba(212,160,23,0.4)',
-                background: 'radial-gradient(circle, rgba(212,160,23,0.07) 0%, transparent 70%)',
-                boxShadow: '0 0 20px rgba(212,160,23,0.12)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 100, height: 100, borderRadius: '50%',
+                border: '3px solid rgba(212,160,23,0.6)',
+                background: 'radial-gradient(circle, rgba(212,160,23,0.12) 0%, rgba(212,160,23,0.04) 60%, transparent 100%)',
+                boxShadow: '0 0 0 1px rgba(212,160,23,0.2), 0 0 30px rgba(212,160,23,0.2), 0 0 60px rgba(212,160,23,0.08)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
               }}>
-                <span style={{ fontSize: 28, opacity: 0.22, color: '#d4a017' }}>♠</span>
+                <span style={{ fontSize: 20, opacity: 0.55, color: '#d4a017', lineHeight: 1 }}>♠</span>
+                <span style={{ fontSize: 9, opacity: 0.5, color: '#d4a017', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase' }}>3 of Spades</span>
               </div>
             </div>
             <div className="flex flex-col items-center gap-2" style={{ position: 'relative', zIndex: 1 }}>
@@ -470,6 +546,9 @@ export default function GameTable({
             <DealAnimation
               players={players}
               myPlayerId={myPlayerId}
+              cardsPerPlayer={cardsPerPlayer}
+              tableW={tableDims.w}
+              tableH={tableDims.h}
               onComplete={handleDealComplete}
             />
           )}
@@ -603,33 +682,33 @@ export default function GameTable({
       )}
       </div>{/* end flex-1 game section */}
 
-      {/* ── Desktop chat panel ── */}
-      <AnimatePresence>
-        {chatOpen && !isMobile && (
-          <motion.div
-            key="chat-desktop"
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 280, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-            className="shrink-0 flex flex-col border-l border-slate-700/60 overflow-hidden"
+      {/* ── Desktop chat panel — always mounted, CSS width transition ── */}
+      {!isMobile && (
+        <div
+          className="shrink-0 flex flex-col border-l border-slate-700/60 overflow-hidden"
+          style={{
+            width: chatOpen ? 280 : 0,
+            transition: 'width 0.32s cubic-bezier(0.4,0,0.2,1)',
+            minWidth: 0,
+          }}
+        >
+          <div
+            className="flex items-center justify-between px-3 py-2 bg-slate-800/80 border-b border-slate-700 shrink-0"
             style={{ width: 280 }}
           >
-            <div className="flex items-center justify-between px-3 py-2 bg-slate-800/80 border-b border-slate-700 shrink-0">
-              <span className="text-sm font-semibold text-slate-200">💬 Chat</span>
-              <button onClick={() => setChatOpen(false)} className="text-slate-400 hover:text-white text-lg leading-none">&times;</button>
-            </div>
-            <div className="flex-1 min-h-0">
-              <ChatPanel
-                roomId={gameState.roomId}
-                myPlayerId={myPlayerId}
-                myPlayerName={myPlayer?.name ?? ''}
-                onUnreadChange={handleUnread}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <span className="text-sm font-semibold text-slate-200">💬 Chat</span>
+            <button onClick={() => setChatOpen(false)} className="text-slate-400 hover:text-white text-lg leading-none">&times;</button>
+          </div>
+          <div className="flex-1 min-h-0" style={{ width: 280 }}>
+            <ChatPanel
+              roomId={gameState.roomId}
+              myPlayerId={myPlayerId}
+              myPlayerName={myPlayer?.name ?? ''}
+              onUnreadChange={handleUnread}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Mobile bottom drawer ── */}
       <AnimatePresence>
@@ -643,7 +722,7 @@ export default function GameTable({
             />
             <motion.div
               key="chat-mobile"
-              className="fixed bottom-0 inset-x-0 z-50 rounded-t-2xl overflow-hidden border-t border-slate-700 flex flex-col"
+              className="fixed bottom-0 inset-x-0 z-50 rounded-t-2xl border-t border-slate-700 flex flex-col"
               style={{ height: '55vh' }}
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32 }}
