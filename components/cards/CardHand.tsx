@@ -4,8 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Card as CardType, Suit } from '@/types';
 import Card from './Card';
 
-const CARD_W = 64;
-const CARD_H = 96;
+const CARD_W_DESKTOP = 64;
+const CARD_H_DESKTOP = 96;
+const CARD_W_MOBILE = 48;
+const CARD_H_MOBILE = 72;
 
 const SUIT_ORDER: Record<Suit, number> = { spades: 0, clubs: 1, hearts: 2, diamonds: 3 };
 const RANK_ORDER: Record<string, number> = {
@@ -22,6 +24,7 @@ interface CardHandProps {
   leadSuit?: Suit | null;
   trumpSuit?: Suit | null;
   expandedView?: boolean;
+  compact?: boolean;
 }
 
 function getHighlightSuit(cards: CardType[], leadSuit?: Suit | null, trumpSuit?: Suit | null): Suit | null {
@@ -41,7 +44,10 @@ export default function CardHand({
   leadSuit,
   trumpSuit,
   expandedView = false,
+  compact = false,
 }: CardHandProps) {
+  const CARD_W = compact ? CARD_W_MOBILE : CARD_W_DESKTOP;
+  const CARD_H = compact ? CARD_H_MOBILE : CARD_H_DESKTOP;
   const [containerWidth, setContainerWidth] = useState(360);
   const containerRef = useRef<HTMLDivElement>(null);
   const [cardOrder, setCardOrder] = useState<string[]>([]);

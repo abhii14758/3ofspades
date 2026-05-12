@@ -114,7 +114,7 @@ export default function TrickPile({
                     display: 'flex', flexDirection: 'column',
                     alignItems: 'center', justifyContent: 'space-between',
                     borderRadius: 8,
-                    width: 44, height: 64,
+                    width: 48, height: 68,
                     background: '#ffffff',
                     border: isWinner
                       ? '2px solid #fde68a'
@@ -124,15 +124,17 @@ export default function TrickPile({
                       ? '1.5px solid rgba(253,186,116,0.7)'
                       : '1.5px solid #d0d0d0',
                     boxShadow: isWinner
-                      ? '0 0 0 1px rgba(253,224,71,0.5), 0 0 18px rgba(253,224,71,0.7), 0 6px 16px rgba(0,0,0,0.6)'
+                      ? '0 0 0 2px rgba(253,224,71,0.6), 0 0 24px rgba(253,224,71,0.8), 0 8px 20px rgba(0,0,0,0.7)'
                       : is3Spades
-                      ? '0 0 14px rgba(212,160,23,0.6), 0 4px 12px rgba(0,0,0,0.5)'
+                      ? '0 0 18px rgba(212,160,23,0.7), 0 4px 14px rgba(0,0,0,0.6)'
                       : isTrump
-                      ? '0 0 8px rgba(253,186,116,0.4), 0 4px 10px rgba(0,0,0,0.5)'
-                      : '0 4px 10px rgba(0,0,0,0.5)',
+                      ? '0 0 10px rgba(253,186,116,0.5), 0 4px 12px rgba(0,0,0,0.5)'
+                      : '0 4px 12px rgba(0,0,0,0.5)',
                     padding: '3px 4px',
                     overflow: 'hidden',
                     position: 'relative',
+                    transform: isWinner ? 'translateY(-6px) scale(1.05)' : 'none',
+                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                   }}
                 >
                   {is3Spades && (

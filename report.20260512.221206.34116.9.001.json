@@ -1,0 +1,648 @@
+
+{
+  "header": {
+    "reportVersion": 5,
+    "event": "Allocation failed - JavaScript heap out of memory",
+    "trigger": "OOMError",
+    "filename": "report.20260512.221206.34116.9.001.json",
+    "dumpEventTime": "2026-05-12T22:12:06Z",
+    "dumpEventTimeStamp": "1778604126985",
+    "processId": 34116,
+    "threadId": 9,
+    "cwd": "E:\\3ofspades",
+    "commandLine": [
+      "C:\\Users\\HP\\AppData\\Roaming\\npm\\node_modules\\@github\\copilot\\node_modules\\@github\\copilot-win32-x64\\copilot.exe",
+      "--no-warnings",
+      "--report-on-fatalerror",
+      "--optimize-for-size",
+      "--expose-gc",
+      "--no-maglev",
+      "--no-sparkplug",
+      "C:\\Users\\HP\\AppData\\Roaming\\npm\\node_modules\\@github\\copilot\\node_modules\\@github\\copilot-win32-x64\\copilot.exe",
+      "--resume=0de130bc-26dc-4b12-bcfd-3ecfc753b8a8"
+    ],
+    "nodejsVersion": "v24.15.0",
+    "wordSize": 64,
+    "arch": "x64",
+    "platform": "win32",
+    "componentVersions": {
+      "acorn": "8.16.0",
+      "ada": "3.4.4",
+      "amaro": "1.1.8",
+      "ares": "1.34.6",
+      "brotli": "1.2.0",
+      "cldr": "48.0",
+      "icu": "78.2",
+      "llhttp": "9.3.1",
+      "merve": "1.2.2",
+      "modules": "137",
+      "napi": "10",
+      "nbytes": "0.1.3",
+      "ncrypto": "0.0.1",
+      "nghttp2": "1.68.0",
+      "node": "24.15.0",
+      "openssl": "3.5.5",
+      "simdjson": "4.5.0",
+      "simdutf": "6.4.0",
+      "sqlite": "3.51.3",
+      "tz": "2026a",
+      "undici": "7.24.4",
+      "unicode": "17.0",
+      "uv": "1.51.0",
+      "uvwasi": "0.0.23",
+      "v8": "13.6.233.17-node.48",
+      "zlib": "1.3.1-e00f703",
+      "zstd": "1.5.7"
+    },
+    "release": {
+      "name": "node",
+      "lts": "Krypton",
+      "headersUrl": "https://nodejs.org/download/release/v24.15.0/node-v24.15.0-headers.tar.gz",
+      "sourceUrl": "https://nodejs.org/download/release/v24.15.0/node-v24.15.0.tar.gz",
+      "libUrl": "https://nodejs.org/download/release/v24.15.0/win-x64/node.lib"
+    },
+    "osName": "Windows_NT",
+    "osRelease": "10.0.26220",
+    "osVersion": "Windows 11 Home Single Language",
+    "osMachine": "x86_64",
+    "cpus": [
+      {
+        "model": "Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz",
+        "speed": 1992,
+        "user": 2071750,
+        "nice": 0,
+        "sys": 2811515,
+        "idle": 5509750,
+        "irq": 280750
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz",
+        "speed": 1992,
+        "user": 1920703,
+        "nice": 0,
+        "sys": 2264734,
+        "idle": 6207484,
+        "irq": 144046
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz",
+        "speed": 1992,
+        "user": 2521015,
+        "nice": 0,
+        "sys": 2500375,
+        "idle": 5371531,
+        "irq": 119890
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz",
+        "speed": 1992,
+        "user": 2454343,
+        "nice": 0,
+        "sys": 2215234,
+        "idle": 5723359,
+        "irq": 97937
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz",
+        "speed": 1992,
+        "user": 2422109,
+        "nice": 0,
+        "sys": 2613156,
+        "idle": 5357671,
+        "irq": 122671
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz",
+        "speed": 1992,
+        "user": 2325843,
+        "nice": 0,
+        "sys": 2290750,
+        "idle": 5776343,
+        "irq": 105171
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz",
+        "speed": 1992,
+        "user": 2634437,
+        "nice": 0,
+        "sys": 2511484,
+        "idle": 5247015,
+        "irq": 113609
+      },
+      {
+        "model": "Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz",
+        "speed": 1992,
+        "user": 2584453,
+        "nice": 0,
+        "sys": 2251593,
+        "idle": 5556890,
+        "irq": 100812
+      }
+    ],
+    "host": "MacTavish"
+  },
+  "javascriptStack": {
+    "message": "No stack.",
+    "stack": [
+      "Unavailable."
+    ],
+    "errorProperties": {
+    }
+  },
+  "javascriptHeap": {
+    "totalMemory": 8060928,
+    "executableMemory": 262144,
+    "totalCommittedMemory": 8060928,
+    "availableMemory": 2145290656,
+    "totalGlobalHandlesMemory": 12360,
+    "usedGlobalHandlesMemory": 2976,
+    "usedMemory": 6006472,
+    "memoryLimit": 2150629376,
+    "mallocedMemory": 311344,
+    "externalMemory": 3562786,
+    "peakMallocedMemory": 2517160768,
+    "nativeContextCount": 2,
+    "detachedContextCount": 0,
+    "doesZapGarbage": 0,
+    "heapSpaces": {
+      "read_only_space": {
+        "memorySize": 0,
+        "committedMemory": 0,
+        "capacity": 0,
+        "used": 0,
+        "available": 0
+      },
+      "new_space": {
+        "memorySize": 1048576,
+        "committedMemory": 1048576,
+        "capacity": 1048512,
+        "used": 153016,
+        "available": 895496
+      },
+      "old_space": {
+        "memorySize": 4825088,
+        "committedMemory": 4825088,
+        "capacity": 4448552,
+        "used": 4150200,
+        "available": 298352
+      },
+      "code_space": {
+        "memorySize": 262144,
+        "committedMemory": 262144,
+        "capacity": 262112,
+        "used": 3840,
+        "available": 258272
+      },
+      "shared_space": {
+        "memorySize": 0,
+        "committedMemory": 0,
+        "capacity": 0,
+        "used": 0,
+        "available": 0
+      },
+      "trusted_space": {
+        "memorySize": 1658880,
+        "committedMemory": 1658880,
+        "capacity": 1658768,
+        "used": 1437256,
+        "available": 221512
+      },
+      "shared_trusted_space": {
+        "memorySize": 0,
+        "committedMemory": 0,
+        "capacity": 0,
+        "used": 0,
+        "available": 0
+      },
+      "new_large_object_space": {
+        "memorySize": 0,
+        "committedMemory": 0,
+        "capacity": 1048576,
+        "used": 0,
+        "available": 1048576
+      },
+      "large_object_space": {
+        "memorySize": 266240,
+        "committedMemory": 266240,
+        "capacity": 262160,
+        "used": 262160,
+        "available": 0
+      },
+      "code_large_object_space": {
+        "memorySize": 0,
+        "committedMemory": 0,
+        "capacity": 0,
+        "used": 0,
+        "available": 0
+      },
+      "shared_large_object_space": {
+        "memorySize": 0,
+        "committedMemory": 0,
+        "capacity": 0,
+        "used": 0,
+        "available": 0
+      },
+      "shared_trusted_large_object_space": {
+        "memorySize": 0,
+        "committedMemory": 0,
+        "capacity": 0,
+        "used": 0,
+        "available": 0
+      },
+      "trusted_large_object_space": {
+        "memorySize": 0,
+        "committedMemory": 0,
+        "capacity": 0,
+        "used": 0,
+        "available": 0
+      }
+    }
+  },
+  "nativeStack": [
+    {
+      "pc": "0x00007ff6f4e3a9f7",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f4e37c6c",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f4e3c998",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f4f03f77",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f5b4faa7",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f59504d7",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f58e8efb",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f591126a",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f59528b6",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f5951f06",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f5962e52",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f596297b",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f6dea2ad",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f594dfa0",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f5947104",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f4e5514a",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f4e53930",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f5bb70ab",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f5bb6c1f",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f5018a6f",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f4d64bd1",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f4d6dfc0",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f5ba4a36",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007ff6f6e05a73",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007fff8f53e8d7",
+      "symbol": ""
+    },
+    {
+      "pc": "0x00007fff914ac48c",
+      "symbol": "RtlUserThreadStart+44"
+    }
+  ],
+  "resourceUsage": {
+    "free_memory": 387153920,
+    "total_memory": 12703596544,
+    "rss": 248557568,
+    "available_memory": 387166208,
+    "userCpuSeconds": 1235.34,
+    "kernelCpuSeconds": 151.453,
+    "cpuConsumptionPercent": 28.9338,
+    "userCpuConsumptionPercent": 25.7739,
+    "kernelCpuConsumptionPercent": 3.15988,
+    "maxRss": 2326892544,
+    "pageFaults": {
+      "IORequired": 3801902,
+      "IONotRequired": 0
+    },
+    "fsActivity": {
+      "reads": 3441,
+      "writes": 1402
+    }
+  },
+  "uvthreadResourceUsage": {
+    "userCpuSeconds": 0.281,
+    "kernelCpuSeconds": 0.109,
+    "cpuConsumptionPercent": 0.00813687,
+    "userCpuConsumptionPercent": 0.00586272,
+    "kernelCpuConsumptionPercent": 0.00227415,
+    "fsActivity": {
+      "reads": 0,
+      "writes": 0
+    }
+  },
+  "libuv": [
+    {
+      "type": "async",
+      "is_active": true,
+      "is_referenced": false,
+      "address": "0x000001b76e9c4990"
+    },
+    {
+      "type": "async",
+      "is_active": true,
+      "is_referenced": false,
+      "address": "0x000001b767eae388"
+    },
+    {
+      "type": "timer",
+      "is_active": false,
+      "is_referenced": false,
+      "address": "0x000001b76b6542d0",
+      "repeat": 0,
+      "firesInMsFromNow": -604621432,
+      "expired": true
+    },
+    {
+      "type": "check",
+      "is_active": true,
+      "is_referenced": false,
+      "address": "0x000001b76b654370"
+    },
+    {
+      "type": "idle",
+      "is_active": false,
+      "is_referenced": true,
+      "address": "0x000001b76b6543e8"
+    },
+    {
+      "type": "prepare",
+      "is_active": true,
+      "is_referenced": false,
+      "address": "0x000001b76b654460"
+    },
+    {
+      "type": "check",
+      "is_active": true,
+      "is_referenced": false,
+      "address": "0x000001b76b6544d8"
+    },
+    {
+      "type": "async",
+      "is_active": true,
+      "is_referenced": false,
+      "address": "0x000001b76b654550"
+    },
+    {
+      "type": "async",
+      "is_active": true,
+      "is_referenced": false,
+      "address": "0x000001b767eacf68"
+    },
+    {
+      "type": "async",
+      "is_active": true,
+      "is_referenced": false,
+      "address": "0x000001b76b24e838"
+    },
+    {
+      "type": "pipe",
+      "is_active": true,
+      "is_referenced": true,
+      "address": "0x000001b76ad95ec8",
+      "localEndpoint": null,
+      "remoteEndpoint": "\\\\.\\pipe\\conpty-2967475.185661592-out",
+      "writeQueueSize": 0,
+      "readable": true,
+      "writable": true
+    },
+    {
+      "type": "pipe",
+      "is_active": true,
+      "is_referenced": true,
+      "address": "0x000001b76ad952c8",
+      "localEndpoint": "\\\\.\\pipe\\conpty-2967475.185661592-out-worker",
+      "remoteEndpoint": null,
+      "writeQueueSize": 0,
+      "readable": false,
+      "writable": false
+    },
+    {
+      "type": "pipe",
+      "is_active": true,
+      "is_referenced": true,
+      "address": "0x000001b76e998718",
+      "localEndpoint": null,
+      "remoteEndpoint": "\\\\?\\pipe\\conpty-2967475.185661592-out-worker",
+      "writeQueueSize": 0,
+      "readable": true,
+      "writable": true
+    },
+    {
+      "type": "loop",
+      "is_active": true,
+      "address": "0x000000491efff7c8",
+      "loopIdleTimeSeconds": 8.55632
+    }
+  ],
+  "workers": [
+  ],
+  "environmentVariables": {
+    "ALLUSERSPROFILE": "C:\\ProgramData",
+    "APPDATA": "C:\\Users\\HP\\AppData\\Roaming",
+    "ChocolateyInstall": "C:\\ProgramData\\chocolatey",
+    "ChocolateyLastPathUpdate": "133417356417403898",
+    "ChocolateyToolsLocation": "C:\\tools",
+    "CLAUDE_CODE_GIT_BASH_PATH": "C:\\Program Files\\Git\\bin\\bash.exe",
+    "CommonProgramFiles": "C:\\Program Files\\Common Files",
+    "CommonProgramFiles(x86)": "C:\\Program Files (x86)\\Common Files",
+    "CommonProgramW6432": "C:\\Program Files\\Common Files",
+    "COMPUTERNAME": "MACTAVISH",
+    "ComSpec": "C:\\WINDOWS\\system32\\cmd.exe",
+    "CONDA_DEFAULT_ENV": "base",
+    "CONDA_EXE": "C:\\Users\\HP\\miniconda3\\Scripts\\conda.exe",
+    "CONDA_PREFIX": "C:\\Users\\HP\\miniconda3",
+    "CONDA_PROMPT_MODIFIER": "(base) ",
+    "CONDA_PYTHON_EXE": "C:\\Users\\HP\\miniconda3\\python.exe",
+    "CONDA_SHLVL": "1",
+    "COPILOT_CLI_BINARY_VERSION": "1.0.42",
+    "COPILOT_LOADER_PID": "31056",
+    "COPILOT_RUN_APP": "1",
+    "DriverData": "C:\\Windows\\System32\\Drivers\\DriverData",
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "safe.bareRepository",
+    "GIT_CONFIG_VALUE_0": "explicit",
+    "HADOOP_HOME": "C:\\spark-3.5.3-bin-hadoop3\\",
+    "HOMEDRIVE": "C:",
+    "HOMEPATH": "\\Users\\HP",
+    "IntelliJ IDEA Community Edition": "C:\\Program Files\\JetBrains\\IntelliJ IDEA Community Edition 2022.1.3\\bin;",
+    "LOCALAPPDATA": "C:\\Users\\HP\\AppData\\Local",
+    "LOGONSERVER": "\\\\MACTAVISH",
+    "NODE_ENV": "production",
+    "NUMBER_OF_PROCESSORS": "8",
+    "OneDrive": "C:\\Users\\HP\\OneDrive",
+    "OnlineServices": "Online Services",
+    "OS": "Windows_NT",
+    "Path": "C:\\Users\\HP\\miniconda3;C:\\Users\\HP\\miniconda3\\Library\\mingw-w64\\bin;C:\\Users\\HP\\miniconda3\\Library\\usr\\bin;C:\\Users\\HP\\miniconda3\\Library\\bin;C:\\Users\\HP\\miniconda3\\Scripts;C:\\Users\\HP\\miniconda3\\bin;C:\\Users\\HP\\miniconda3\\condabin;C:\\Python314\\Scripts;C:\\Python314;C:\\Program Files\\Microsoft\\jdk-11.0.16.101-hotspot\\bin;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\ProgramData\\Oracle\\Java\\javapath;C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\iCLS;C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\iCLS;C:\\windows\\system32;C:\\windows;C:\\windows\\System32\\Wbem;C:\\windows\\System32\\WindowsPowerShell\\v1.0;C:\\windows\\System32\\OpenSSH;C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\DAL;C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\DAL;C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\IPT;C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\IPT;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;F:\\CodeBlocks\\MinGW\\bin;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files\\NVIDIA Corporation\\NVIDIA NvDLISR;C:\\ProgramData\\chocolatey\\bin;C:\\php-8.1.10;C:\\Program Files\\Java\\jdk-18.0.1.1\\bin;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit;C:\\spark-3.5.3-bin-hadoop3\\bin;C:\\Program Files (x86)\\GnuWin32\\bin;C:\\Program Files\\wkhtmltopdf\\bin;C:\\poppler-24.08.0\\Library\\bin;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Git\\bin\\bash.exe;C:\\Users\\HP\\.local\\bin\\claude.exe;C:\\Program Files\\nodejs;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files (x86)\\cloudflared;F:\\Github-cli;C:\\Users\\HP\\AppData\\Local\\Programs\\Python\\Python311\\Scripts;C:\\Users\\HP\\AppData\\Local\\Programs\\Python\\Python311;C:\\Users\\HP\\scoop\\shims;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\ProgramData\\Oracle\\Java\\javapath;C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\iCLS;C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\iCLS;C:\\windows\\system32;C:\\windows;C:\\windows\\System32\\Wbem;C:\\windows\\System32\\WindowsPowerShell\\v1.0;C:\\windows\\System32\\OpenSSH;C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\DAL;C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\DAL;C:\\Program Files (x86)\\Intel\\Intel(R) Management Engine Components\\IPT;C:\\Program Files\\Intel\\Intel(R) Management Engine Components\\IPT;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\CodeBlocks\\MinGW\\bin;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0;C:\\WINDOWS\\System32\\OpenSSH;C:\\Program Files;C:\\Users\\HP\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\Users\\HP\\AppData\\Local\\Microsoft\\WindowsApps;C:\\xampp\\php;C:\\Users\\HP\\composer;C:\\Users\\HP\\AppData\\Roaming\\Composer\\vendor\\bin;C:\\Users\\HP\\AppData\\Local\\Programs\\Hyper\\resources\\bin;C:\\src\\flutter\\bin;C:\\Users\\HP\\AppData\\Local\\Pub\\Cache\\bin;C:\\Users\\HP\\WorkStation\\PythonEnvironments\\Env1_22July2023\\env1-22july2023\\Lib\\site-packages\\Graphviz\\bin;C:\\tools\\dart-sdk\\bin;C:\\Program Files\\PostgreSQL\\17\\bin;C:\\Program Files (x86)\\GnuWin32\\bin;C:\\Program Files\\CodeBlocks\\MinGW\\bin\\gcc.exe;C:\\Users\\HP\\AppData\\Local\\ComposerSetup\\bin;C:\\Program Files\\Git\\bin\\bash.exe;C:\\Users\\HP\\.local\\bin;C:\\Users\\HP\\AppData\\Roaming\\npm",
+    "PATHEXT": ".COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC;.PY;.PYW;.CPL",
+    "platformcode": "KV",
+    "PROCESSOR_ARCHITECTURE": "AMD64",
+    "PROCESSOR_IDENTIFIER": "Intel64 Family 6 Model 142 Stepping 10, GenuineIntel",
+    "PROCESSOR_LEVEL": "6",
+    "PROCESSOR_REVISION": "8e0a",
+    "ProgramData": "C:\\ProgramData",
+    "ProgramFiles": "C:\\Program Files",
+    "ProgramFiles(x86)": "C:\\Program Files (x86)",
+    "ProgramW6432": "C:\\Program Files",
+    "PSModulePath": "C:\\Users\\HP\\Documents\\WindowsPowerShell\\Modules;C:\\Program Files\\WindowsPowerShell\\Modules;C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\Modules",
+    "PT8HOME": "E:\\Cisco Packet Tracer 8.0",
+    "PUBLIC": "C:\\Users\\Public",
+    "PYSPARK_DRIVER_PYTHON": "C:\\Users\\HP\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
+    "PYSPARK_PYTHON": "C:\\Users\\HP\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
+    "QT_DEVICE_PIXEL_RATIO": "auto",
+    "RegionCode": "APJ",
+    "SESSIONNAME": "Console",
+    "SSL_CERT_FILE": "C:\\Users\\HP\\miniconda3\\Library\\ssl\\cacert.pem",
+    "SystemDrive": "C:",
+    "SystemRoot": "C:\\WINDOWS",
+    "TEMP": "C:\\Users\\HP\\AppData\\Local\\Temp",
+    "TMP": "C:\\Users\\HP\\AppData\\Local\\Temp",
+    "USERDOMAIN": "MACTAVISH",
+    "USERDOMAIN_ROAMINGPROFILE": "MACTAVISH",
+    "USERNAME": "HP",
+    "USERPROFILE": "C:\\Users\\HP",
+    "windir": "C:\\WINDOWS",
+    "WSLENV": "WT_SESSION:WT_PROFILE_ID:",
+    "WT_PROFILE_ID": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+    "WT_SESSION": "b84514bb-291f-4a2a-ac10-35e5cfd3dfe6",
+    "_CONDA_EXE": "C:\\Users\\HP\\miniconda3\\Scripts\\conda.exe",
+    "_CONDA_ROOT": "C:\\Users\\HP\\miniconda3",
+    "__CONDA_OPENSLL_CERT_FILE_SET": "1"
+  },
+  "sharedObjects": [
+    "C:\\Users\\HP\\AppData\\Roaming\\npm\\node_modules\\@github\\copilot\\node_modules\\@github\\copilot-win32-x64\\copilot.exe",
+    "C:\\WINDOWS\\SYSTEM32\\ntdll.dll",
+    "C:\\WINDOWS\\System32\\KERNEL32.DLL",
+    "C:\\WINDOWS\\System32\\KERNELBASE.dll",
+    "C:\\WINDOWS\\System32\\CRYPT32.dll",
+    "C:\\WINDOWS\\System32\\ucrtbase.dll",
+    "C:\\WINDOWS\\System32\\WS2_32.dll",
+    "C:\\WINDOWS\\System32\\RPCRT4.dll",
+    "C:\\WINDOWS\\System32\\USER32.dll",
+    "C:\\WINDOWS\\System32\\win32u.dll",
+    "C:\\WINDOWS\\System32\\GDI32.dll",
+    "C:\\WINDOWS\\System32\\gdi32full.dll",
+    "C:\\WINDOWS\\System32\\msvcp_win.dll",
+    "C:\\WINDOWS\\System32\\ADVAPI32.dll",
+    "C:\\WINDOWS\\System32\\msvcrt.dll",
+    "C:\\WINDOWS\\System32\\sechost.dll",
+    "C:\\WINDOWS\\System32\\SHELL32.dll",
+    "C:\\WINDOWS\\System32\\wintypes.dll",
+    "C:\\WINDOWS\\System32\\combase.dll",
+    "C:\\WINDOWS\\SYSTEM32\\dbghelp.dll",
+    "C:\\WINDOWS\\System32\\ole32.dll",
+    "C:\\WINDOWS\\System32\\OLEAUT32.dll",
+    "C:\\WINDOWS\\SYSTEM32\\USERENV.dll",
+    "C:\\WINDOWS\\SYSTEM32\\IPHLPAPI.DLL",
+    "C:\\WINDOWS\\SYSTEM32\\WINMM.dll",
+    "C:\\WINDOWS\\SYSTEM32\\dbgcore.DLL",
+    "C:\\WINDOWS\\SYSTEM32\\CRYPTBASE.DLL",
+    "C:\\WINDOWS\\System32\\IMM32.DLL",
+    "C:\\WINDOWS\\SYSTEM32\\powrprof.dll",
+    "C:\\WINDOWS\\SYSTEM32\\UMPDC.dll",
+    "C:\\WINDOWS\\system32\\uxtheme.dll",
+    "C:\\WINDOWS\\system32\\mswsock.dll",
+    "C:\\WINDOWS\\SYSTEM32\\CRYPTSP.dll",
+    "C:\\WINDOWS\\system32\\rsaenh.dll",
+    "C:\\WINDOWS\\System32\\bcryptPrimitives.dll",
+    "C:\\WINDOWS\\SYSTEM32\\kernel.appcore.dll",
+    "\\\\?\\C:\\Users\\HP\\.copilot\\pkg\\universal\\1.0.45\\koffi\\build\\koffi\\win32_x64\\koffi.node",
+    "C:\\Users\\HP\\.copilot\\pkg\\universal\\1.0.45\\prebuilds\\win32-x64\\win32_native.dll",
+    "C:\\WINDOWS\\SYSTEM32\\VCRUNTIME140.dll",
+    "C:\\WINDOWS\\System32\\NSI.dll",
+    "C:\\WINDOWS\\SYSTEM32\\dhcpcsvc6.DLL",
+    "C:\\WINDOWS\\SYSTEM32\\dhcpcsvc.DLL",
+    "C:\\WINDOWS\\SYSTEM32\\DNSAPI.dll",
+    "C:\\WINDOWS\\system32\\napinsp.dll",
+    "C:\\WINDOWS\\System32\\winrnr.dll",
+    "C:\\WINDOWS\\system32\\nlansp_c.dll",
+    "C:\\WINDOWS\\system32\\wshbth.dll",
+    "C:\\WINDOWS\\SYSTEM32\\MSASN1.dll",
+    "\\\\?\\C:\\Users\\HP\\.copilot\\pkg\\universal\\1.0.45\\prebuilds\\win32-x64\\keytar.node",
+    "C:\\Windows\\System32\\rasadhlp.dll",
+    "C:\\WINDOWS\\System32\\fwpuclnt.dll",
+    "C:\\WINDOWS\\SYSTEM32\\apisethost.appexecutionalias.dll",
+    "C:\\WINDOWS\\SYSTEM32\\profapi.dll",
+    "C:\\WINDOWS\\SYSTEM32\\daxexec.dll",
+    "C:\\WINDOWS\\SYSTEM32\\bcrypt.dll",
+    "C:\\WINDOWS\\SYSTEM32\\ncrypt.dll",
+    "C:\\WINDOWS\\SYSTEM32\\container.dll",
+    "C:\\WINDOWS\\SYSTEM32\\MPR.dll",
+    "C:\\WINDOWS\\SYSTEM32\\NTASN1.dll",
+    "C:\\WINDOWS\\System32\\clbcatq.dll",
+    "C:\\Windows\\System32\\Windows.StateRepositoryPS.dll",
+    "C:\\WINDOWS\\SYSTEM32\\AppXAllUserStore.dll",
+    "C:\\WINDOWS\\SYSTEM32\\windows.staterepositoryclient.dll",
+    "C:\\WINDOWS\\SYSTEM32\\windows.staterepositorycore.dll",
+    "C:\\WINDOWS\\SYSTEM32\\capauthz.dll",
+    "C:\\WINDOWS\\SYSTEM32\\ntmarta.dll",
+    "C:\\WINDOWS\\system32\\apphelp.dll",
+    "\\\\?\\C:\\Users\\HP\\.copilot\\pkg\\universal\\1.0.45\\prebuilds\\win32-x64\\conpty.node",
+    "C:\\WINDOWS\\System32\\SHLWAPI.dll",
+    "C:\\WINDOWS\\System32\\Windows.Storage.dll"
+  ]
+}

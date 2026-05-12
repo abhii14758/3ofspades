@@ -192,7 +192,18 @@ export default function PlayerSeat({
         )}
 
         {/* Avatar circle */}
-        <div style={{ padding: '3px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.8)' }}>
+        <div style={{
+          padding: '3px',
+          borderRadius: '50%',
+          background: isCurrentTurn
+            ? 'linear-gradient(135deg, rgba(34,197,94,0.25), rgba(0,0,0,0.8))'
+            : 'rgba(0,0,0,0.7)',
+          boxShadow: isCurrentTurn
+            ? '0 0 0 2px rgba(34,197,94,0.7), 0 0 16px rgba(34,197,94,0.4), 0 4px 12px rgba(0,0,0,0.9)'
+            : isPartner && isRevealed
+            ? '0 0 0 2px rgba(52,211,153,0.6), 0 4px 12px rgba(0,0,0,0.8)'
+            : '0 0 0 1px rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.8)',
+        }}>
         <motion.div
           className={clsx(
             'w-12 h-12 rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-sm uppercase shadow-md text-white relative overflow-hidden',
@@ -239,10 +250,19 @@ export default function PlayerSeat({
         <div className="flex items-center gap-1 flex-wrap justify-center">
           <span
             className={clsx(
-              'rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-100 text-sm px-2 py-0.5 font-semibold max-w-[72px] truncate',
-              isLocalPlayer ? 'text-sky-200' : 'text-slate-100',
+              'rounded px-2 py-0.5 font-bold text-xs truncate max-w-[80px]',
+              isLocalPlayer
+                ? 'bg-sky-900/80 border border-sky-600/50 text-sky-200'
+                : isCurrentTurn
+                ? 'bg-green-950/90 border border-green-600/60 text-green-300'
+                : 'text-slate-100',
               isDisconnected && 'line-through text-slate-500'
             )}
+            style={!isLocalPlayer && !isCurrentTurn ? {
+              background: 'linear-gradient(135deg, rgba(30,20,5,0.92), rgba(10,7,2,0.95))',
+              border: '1px solid rgba(212,160,23,0.35)',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
+            } : undefined}
             title={player.name}
           >
             {player.name}

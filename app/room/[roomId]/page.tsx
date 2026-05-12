@@ -73,9 +73,9 @@ export default function RoomPage() {
   const [joinName, setJoinName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
 
-  const LAN_IP = '192.168.3.112';
-  const port = typeof window !== 'undefined' ? window.location.port : '3000';
-  const shareLink = `http://${LAN_IP}:${port || '3000'}/room/${roomId}`;
+  const shareLink = typeof window !== 'undefined'
+    ? `${window.location.origin}/room/${roomId}`
+    : `/room/${roomId}`;
 
   useEffect(() => {
     connectSocket();
@@ -255,7 +255,7 @@ export default function RoomPage() {
               {copied ? '✓ Copied!' : '📋 Copy Code'}
             </button>
             <p className="text-slate-600 text-[11px] mt-3">
-              Share with friends on your network
+              Share this link for others to join directly
             </p>
           </div>
           {/* Pulsing border ring */}
@@ -274,7 +274,7 @@ export default function RoomPage() {
           className="mb-5 bg-slate-900/80 border border-slate-700/50 rounded-2xl p-4"
         >
           <p className="text-slate-500 text-[10px] uppercase tracking-[0.18em] mb-2 text-center">
-            🔗 Share Link (LAN)
+            🔗 Share Link
           </p>
           <div className="flex items-center gap-2 bg-slate-800/70 border border-slate-700/60 rounded-xl px-3 py-2 mb-2">
             <span className="text-slate-300 text-xs font-mono flex-1 truncate select-all" title={shareLink}>
@@ -292,7 +292,7 @@ export default function RoomPage() {
             </button>
           </div>
           <p className="text-slate-600 text-[10px] text-center">
-            Players on the same Wi-Fi can click this link to join directly
+            Share this link for others to join directly
           </p>
         </motion.div>
 

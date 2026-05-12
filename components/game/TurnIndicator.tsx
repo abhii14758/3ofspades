@@ -22,25 +22,36 @@ export default function TurnIndicator({ currentPlayer, isMyTurn }: TurnIndicator
       >
         {isMyTurn ? (
           <motion.div
-            className="px-6 py-2 rounded-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold text-sm tracking-wide shadow-lg"
+            className="px-5 py-1.5 rounded-full text-white font-bold text-sm tracking-wide"
+            style={{
+              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 50%, #166534 100%)',
+              border: '1px solid rgba(74,222,128,0.5)',
+            }}
             initial={{ scale: 0.8 }}
             animate={{
-              scale: [0.8, 1.05, 1],
+              scale: [0.8, 1.04, 1],
               boxShadow: [
-                '0 0 8px rgba(74,222,128,0.4)',
-                '0 0 24px rgba(74,222,128,0.8)',
-                '0 0 8px rgba(74,222,128,0.4)',
+                '0 0 8px rgba(74,222,128,0.4), 0 2px 8px rgba(0,0,0,0.5)',
+                '0 0 28px rgba(74,222,128,0.85), 0 2px 8px rgba(0,0,0,0.5)',
+                '0 0 8px rgba(74,222,128,0.4), 0 2px 8px rgba(0,0,0,0.5)',
               ],
             }}
             transition={{
-              scale: { duration: 0.5, times: [0, 0.6, 1] },
-              boxShadow: { duration: 1.5, repeat: Infinity },
+              scale: { duration: 0.45, times: [0, 0.6, 1] },
+              boxShadow: { duration: 1.4, repeat: Infinity },
             }}
           >
             ✨ Your Turn!
           </motion.div>
         ) : (
-          <div className="px-5 py-2 rounded-full bg-slate-800/90 border border-slate-600/60 shadow-md text-slate-300 text-sm">
+          <div
+            className="px-4 py-1.5 rounded-full text-slate-300 text-sm"
+            style={{
+              background: 'rgba(15,20,15,0.85)',
+              border: '1px solid rgba(100,120,100,0.3)',
+              boxShadow: '0 1px 6px rgba(0,0,0,0.5)',
+            }}
+          >
             🎯 <span className="text-slate-100 font-semibold">{currentPlayer.name}</span>&apos;s Turn
           </div>
         )}

@@ -14,6 +14,7 @@ import ChatPanel from './ChatPanel';
 import { useGameStore } from '@/store/gameStore';
 import CardHand from '@/components/cards/CardHand';
 import AvatarUpload from './AvatarUpload';
+import OpponentStrip from './OpponentStrip';
 import { socketEmit } from '@/lib/socket/socketClient';
 
 const SUIT_SYMBOLS: Record<Suit, string> = {
@@ -106,10 +107,8 @@ function DealAnimation({
   onComplete: () => void;
 }) {
   const N = players.length;
-  // Cap animation at ~13s worth of cards (≈46 cards at 0.28s each)
-  const ROUNDS = Math.min(cardsPerPlayer, Math.floor(13 / (N * DEAL_INTERVAL)));
-  const clampedRounds = Math.max(ROUNDS, cardsPerPlayer); // always do all rounds
-  const totalCards = N * clampedRounds;
+  const ROUNDS = cardsPerPlayer; // always deal all cards — no artificial cap
+  const totalCards = N * ROUNDS;
   const totalDuration = totalCards * DEAL_INTERVAL;
 
   // Fire onComplete
@@ -122,7 +121,7 @@ function DealAnimation({
   useEffect(() => {
     const myIdx = players.findIndex((p) => p.id === myPlayerId);
     const timers: ReturnType<typeof setTimeout>[] = [];
-    for (let round = 0; round < clampedRounds; round++) {
+    for (let round = 0; round < ROUNDS; round++) {
       for (let pi = 0; pi < N; pi++) {
         const player = players[pi];
         const relIdx = (players.findIndex(p => p.id === player.id) - myIdx + N) % N;
@@ -133,7 +132,7 @@ function DealAnimation({
       }
     }
     return () => timers.forEach(clearTimeout);
-  }, [players, myPlayerId, N, clampedRounds, onCardDealtToMe]);
+  }, [players, myPlayerId, N, ROUNDS, onCardDealtToMe]);
 
   // Calculate player positions as pixel offsets from table center
   const positions = useMemo(() => {
@@ -153,7 +152,7 @@ function DealAnimation({
   // Round-robin deal sequence
   const cards = useMemo(() => {
     const result: { key: number; delay: number; playerIdx: number; rotation: number }[] = [];
-    for (let round = 0; round < clampedRounds; round++) {
+    for (let round = 0; round < ROUNDS; round++) {
       for (let pi = 0; pi < N; pi++) {
         result.push({
           key: round * N + pi,
@@ -164,7 +163,7 @@ function DealAnimation({
       }
     }
     return result;
-  }, [N, clampedRounds]);
+  }, [N, ROUNDS]);
 
   return (
     <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden rounded-[50%]">
@@ -401,6 +400,7 @@ export default function GameTable({
   const [dealRevealedCount, setDealRevealedCount] = useState(0);
   const [handHidden, setHandHidden] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
   const myCalledCards = useGameStore((s) => s.myCalledCards);
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -416,7 +416,11 @@ export default function GameTable({
   }, []);
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640);
+    const check = () => {
+      const w = window.innerWidth;
+      setIsMobile(w < 640);
+      setIsTablet(w >= 640 && w < 1024);
+    };
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
@@ -632,6 +636,17 @@ export default function GameTable({
         </button>
       </motion.div>
 
+      {/* ── Opponent strip — mobile portrait only ── */}
+      {isMobile && (
+        <OpponentStrip
+          opponents={players.filter((p) => p.id !== myPlayerId)}
+          currentTurnPlayerId={currentTurnPlayerId}
+          trickCards={currentTrick?.cards ?? []}
+          handCounts={Object.fromEntries(Object.entries(hands).map(([id, cards]) => [id, cards.length]))}
+          revealedPartnerIds={revealedPartnerIds}
+        />
+      )}
+
       {/* ── Table area ────────────────────────────────────────────────────── */}
       <div className="flex-1 relative flex items-center justify-center overflow-hidden min-h-0 p-1"
            style={{ background: 'radial-gradient(ellipse 80% 70% at 50% 40%, #0a0f0a 0%, #050808 60%, #020404 100%)' }}>
@@ -649,14 +664,15 @@ export default function GameTable({
         <motion.div
           ref={tableRef}
           initial={{ scale: 0.88, opacity: 0, rotateX: 0 }}
-          animate={{ scale: 1, opacity: 1, rotateX: 18 }}
+          animate={{ scale: 1, opacity: 1, rotateX: isMobile ? 10 : 18 }}
           transition={{ type: 'spring', stiffness: 160, damping: 26, delay: 0.04 }}
           className="relative"
           style={{
-            width: 'min(94vw, 920px)',
-            height: 'min(52vh, 480px)',
-            minHeight: '260px',
-            perspective: '900px',
+            width: isMobile ? '96vw' : isTablet ? 'min(94vw, 760px)' : 'min(94vw, 920px)',
+            height: isMobile ? 'auto' : isTablet ? 'min(50vh, 380px)' : 'min(52vh, 480px)',
+            aspectRatio: isMobile ? '2/1' : undefined,
+            minHeight: isMobile ? '200px' : '260px',
+            perspective: isMobile ? '600px' : '900px',
             transformStyle: 'preserve-3d',
           }}
         >
@@ -745,6 +761,43 @@ export default function GameTable({
             inset: '26px',
             boxShadow: 'inset 0 0 0 2px rgba(212,160,23,0.15), inset 0 0 20px rgba(0,0,0,0.3)',
           }} />
+
+          {/* Subtle gold zone lines on felt */}
+          <div className="absolute rounded-[50%] pointer-events-none" style={{
+            inset: '52px',
+            border: '1px solid rgba(212,160,23,0.18)',
+            boxShadow: 'inset 0 0 0 1px rgba(212,160,23,0.08)',
+          }} />
+
+          {/* Decorative chip stacks at corners */}
+          {[
+            { left: '12%', top: '22%', colors: ['#c0392b','#e74c3c','#c0392b','#922b21'] },
+            { left: '88%', top: '22%', colors: ['#1a6b2a','#27ae60','#1a6b2a','#117a32'] },
+            { left: '12%', top: '78%', colors: ['#d4a017','#f1c40f','#d4a017','#b8860b'] },
+            { left: '88%', top: '78%', colors: ['#2471a3','#3498db','#2471a3','#1a5276'] },
+          ].map((stack, si) => (
+            <div
+              key={si}
+              className="absolute pointer-events-none"
+              style={{ left: stack.left, top: stack.top, transform: 'translate(-50%,-50%)' }}
+            >
+              {stack.colors.map((color, ci) => (
+                <div
+                  key={ci}
+                  style={{
+                    position: 'absolute',
+                    width: 18, height: 5,
+                    borderRadius: 3,
+                    background: color,
+                    top: ci * -4,
+                    left: 0,
+                    border: '0.5px solid rgba(255,255,255,0.15)',
+                    boxShadow: ci === 0 ? '0 2px 6px rgba(0,0,0,0.5)' : 'none',
+                  }}
+                />
+              ))}
+            </div>
+          ))}
 
           {/* Trump badge + trick counter — center of table */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -864,24 +917,60 @@ export default function GameTable({
           })}
         </motion.div>
 
-      </div>
-
-      {/* ── Bid panel — centered dialog overlay ── */}
-      {showBidPanel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-          <div className="pointer-events-auto w-full max-w-sm mx-4">
-            <BidPanel
-              bidState={bidState!}
-              players={players}
-              myPlayerId={myPlayerId}
-              isMyTurn={bidState?.currentBidderId === myPlayerId}
-              onBid={onBid ?? (() => {})}
-              onPass={onPass ?? (() => {})}
-              maxBid={maxBid}
+        {/* ── Table legs + underside amber glow ── */}
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            left: '50%',
+            transform: 'translateX(-50%)',
+            bottom: 'calc(50% - min(26vh, 240px) - 30px)',
+            width: 'min(80vw, 780px)',
+            zIndex: 0,
+          }}
+        >
+          <div style={{
+            position: 'absolute',
+            left: '10%', right: '10%',
+            top: 8,
+            height: 40,
+            borderRadius: '50%',
+            background: 'radial-gradient(ellipse at 50% 0%, rgba(200,120,10,0.55) 0%, rgba(160,80,5,0.25) 40%, transparent 75%)',
+            filter: 'blur(6px)',
+          }} />
+          {[{ left: '18%' }, { left: '36%' }, { left: '64%' }, { left: '82%' }].map((pos, i) => (
+            <div
+              key={i}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: pos.left,
+                width: 18,
+                height: 48,
+                transform: 'translateX(-50%)',
+                background: 'linear-gradient(180deg, #5a2008 0%, #2a0e04 50%, #0f0501 100%)',
+                borderRadius: '0 0 4px 4px',
+                boxShadow: '2px 0 6px rgba(0,0,0,0.7), -2px 0 6px rgba(0,0,0,0.5), inset 2px 0 4px rgba(255,160,60,0.07)',
+              }}
             />
-          </div>
+          ))}
         </div>
-      )}
+        {showBidPanel && (
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-20 flex justify-center pointer-events-none px-4">
+            <div className="pointer-events-auto w-full max-w-sm">
+              <BidPanel
+                bidState={bidState!}
+                players={players}
+                myPlayerId={myPlayerId}
+                isMyTurn={bidState?.currentBidderId === myPlayerId}
+                onBid={onBid ?? (() => {})}
+                onPass={onPass ?? (() => {})}
+                maxBid={maxBid}
+              />
+            </div>
+          </div>
+        )}
+
+      </div>
 
       {/* ── Card hand ─────────────────────────────────────────────────────── */}
       <div
@@ -945,16 +1034,18 @@ export default function GameTable({
                 leadSuit={currentTrick?.leadSuit}
                 trumpSuit={trumpSuit}
                 expandedView={phase === 'bidding'}
+                compact={isMobile}
               />
               {/* Hidden overlay — sits on top without unmounting CardHand */}
-              {handHidden && !(isMyTurn && phase === 'playing') && (
-                <div className="absolute inset-0 flex items-center justify-center gap-2 flex-wrap px-4 py-3"
+              {handHidden && (
+                <div className="absolute inset-0 flex items-center justify-center gap-1.5 flex-wrap px-4 py-3 z-10"
                   style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.85) 100%)' }}>
                   {myHand.map((_, i) => (
                     <div key={i} style={{
                       width: 44, height: 64, borderRadius: 8,
                       background: 'linear-gradient(145deg, #1a2850 0%, #1e3570 55%, #243f8a 100%)',
                       border: '1px solid rgba(100,140,255,0.5)',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
                     }} />
                   ))}
                   <p className="w-full text-center text-[11px] text-slate-500 mt-1">Cards hidden — tap 👁️ to reveal</p>
