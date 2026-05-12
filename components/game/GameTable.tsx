@@ -14,6 +14,7 @@ import ChatPanel from './ChatPanel';
 import { useGameStore } from '@/store/gameStore';
 import CardHand from '@/components/cards/CardHand';
 import AvatarUpload from './AvatarUpload';
+import { socketEmit } from '@/lib/socket/socketClient';
 
 const SUIT_SYMBOLS: Record<Suit, string> = {
   spades: '♠',
@@ -384,7 +385,8 @@ export default function GameTable({
   const handleSkipDeal = useCallback(() => {
     setDealAnimDone(true);
     setDealRevealedCount(myHand.length);
-  }, [myHand.length]);
+    socketEmit.skipDeal(gameState.roomId);
+  }, [myHand.length, gameState.roomId]);
 
   const {
     players,
