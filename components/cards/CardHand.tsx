@@ -130,7 +130,7 @@ export default function CardHand({
               initial={{ opacity: 0, y: 3 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 3 }}
-              className="text-[11px] text-green-400/90 font-medium flex-1"
+              className="text-xs text-green-400/90 font-medium flex-1"
             >
               ✋ Tap to select · tap again to play
             </motion.p>
@@ -138,7 +138,7 @@ export default function CardHand({
         </AnimatePresence>
         <button
           onClick={handleSort}
-          className="ml-auto shrink-0 text-[10px] text-slate-400 hover:text-slate-200 bg-slate-800/90 border border-slate-600/60 rounded-full px-3 py-1 transition-colors font-medium"
+          className="ml-auto shrink-0 text-xs text-slate-400 hover:text-slate-200 bg-slate-800/90 border border-slate-600/60 rounded-full px-3 py-1 transition-colors font-medium"
           title="Sort cards by suit and rank"
         >
           ↕ Sort

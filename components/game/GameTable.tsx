@@ -269,7 +269,7 @@ function DealHandReveal({ cards, revealedCount }: { cards: CardType[]; revealedC
 
   return (
     <div className="flex flex-col items-center gap-1 py-1">
-      <p className="text-[10px] text-slate-400 font-medium tracking-widest uppercase">
+      <p className="text-xs text-slate-400 font-medium tracking-widest uppercase">
         Dealing your cards…
       </p>
       <div className="flex items-end justify-center gap-1 flex-wrap px-4">
@@ -363,6 +363,7 @@ export default function GameTable({
   useEffect(() => { if (chatOpen) setUnread(0); }, [chatOpen]);
   const [dealAnimDone, setDealAnimDone] = useState(false);
   const [dealRevealedCount, setDealRevealedCount] = useState(0);
+  const [handHidden, setHandHidden] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const myCalledCards = useGameStore((s) => s.myCalledCards);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -452,8 +453,20 @@ export default function GameTable({
     (sum, id) => sum + (playerIndividualPoints[id] ?? 0), 0
   );
 
+  const teamBIds = useMemo(() => {
+    if (!teams) return [];
+    return teams.B.playerIds;
+  }, [teams]);
+
+  const teamBCombinedPoints = teamBIds.reduce(
+    (sum, id) => sum + (playerIndividualPoints[id] ?? 0), 0
+  );
+
+  const allPartnersRevealed = revealedTeamAIds.length >= (gameState.partnerIds?.length ?? 0) + 1;
+
   function getDisplayPoints(playerId: string): number {
     if (revealedTeamAIds.includes(playerId)) return teamACombinedPoints;
+    if (allPartnersRevealed && teamBIds.includes(playerId)) return teamBCombinedPoints;
     return playerIndividualPoints[playerId] ?? 0;
   }
 
@@ -483,6 +496,12 @@ export default function GameTable({
     () => getPlayerPositions(players, myPlayerId),
     [players, myPlayerId]
   );
+
+  useEffect(() => {
+    if (isMyTurn && phase === 'playing') {
+      setHandHidden(false);
+    }
+  }, [isMyTurn, phase]);
 
   return (
     <div
@@ -564,6 +583,17 @@ export default function GameTable({
         </div>
 
         <AvatarUpload roomId={gameState.roomId} className="shrink-0" />
+        <button
+          onClick={() => setHandHidden(v => !v)}
+          className={`shrink-0 text-xs px-2 py-1 rounded border transition-colors ${
+            handHidden
+              ? 'bg-amber-900/60 border-amber-700/60 text-amber-300'
+              : 'bg-slate-800/80 border-slate-700/50 text-slate-400 hover:text-slate-300'
+          }`}
+          title={handHidden ? 'Show cards' : 'Hide cards'}
+        >
+          {handHidden ? '👁️' : '🙈'}
+        </button>
       </motion.div>
 
       {/* ── Table area ────────────────────────────────────────────────────── */}
@@ -712,14 +742,14 @@ export default function GameTable({
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.7, opacity: 0 }}
                     className={clsx(
-                      'flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold border backdrop-blur-sm',
+                      'flex items-center gap-1.5 px-3 py-1 rounded-full text-base font-bold border backdrop-blur-sm',
                       trumpSuit === 'hearts' || trumpSuit === 'diamonds'
                         ? 'text-red-300 border-red-700/50 bg-red-950/70'
                         : 'text-slate-200 border-slate-500/40 bg-slate-900/70'
                     )}
                     style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}
                   >
-                    <span className="text-base">{SUIT_SYMBOLS[trumpSuit]}</span>
+                    <span className="text-xl">{SUIT_SYMBOLS[trumpSuit]}</span>
                     <span className="text-xs uppercase tracking-widest opacity-80">Trump</span>
                   </motion.div>
                 )}
@@ -737,7 +767,7 @@ export default function GameTable({
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-[11px] text-green-500/70 font-medium tracking-wide"
+                  className="text-sm text-green-500/70 font-medium tracking-wide"
                 >
                   Trick {completedTricks.length + (currentTrick ? 1 : 0)}/{totalTricks}
                 </motion.p>
@@ -791,6 +821,7 @@ export default function GameTable({
                   teamId={getPlayerTeamId(player.id)}
                   turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null}
                   turnTimerTotalSeconds={turnTimerTotalSeconds}
+                  showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)}
                 />
               </div>
             );
@@ -816,7 +847,7 @@ export default function GameTable({
       {/* ── Card hand ─────────────────────────────────────────────────────── */}
       <div
         className="shrink-0 z-10 pt-2 pb-3"
-        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)' }}
+        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)', minHeight: phase === 'bidding' ? '140px' : undefined }}
       >
         {/* During deal animation — show cards arriving one by one */}
         {showDealAnim && (
@@ -828,7 +859,7 @@ export default function GameTable({
           <>
             {calledCards.length > 0 && phase === 'playing' && (
               <div className="flex items-center justify-center gap-2 mb-2 px-4 flex-wrap">
-                <span className="text-[10px] text-slate-400 shrink-0 font-medium">
+                <span className="text-xs text-slate-400 shrink-0 font-medium">
                   {bidWinnerId === myPlayerId ? '🤝 Your partner cards:' : '🤝 Partner cards:'}
                 </span>
                 {calledCards.map((card) => {
@@ -838,7 +869,7 @@ export default function GameTable({
                   return (
                     <span
                       key={card.id}
-                      className={`text-xs font-bold px-1.5 py-0.5 rounded border ${
+                      className={`text-sm font-bold px-1.5 py-0.5 rounded border ${
                         isMyCard
                           ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40'
                           : isRed
@@ -853,19 +884,41 @@ export default function GameTable({
                 })}
               </div>
             )}
-            <CardHand
-              cards={myHand}
-              playableCardIds={playableCardIds}
-              selectedCardId={selectedCardId}
-          onCardSelect={(card) => setSelectedCardId(card.id)}
-          onCardPlay={(card) => {
-            setSelectedCardId(null);
-            onPlayCard(card);
-          }}
-          isMyTurn={isMyTurn && phase === 'playing'}
-          leadSuit={currentTrick?.leadSuit}
-          trumpSuit={trumpSuit}
-        />
+            {phase === 'bidding' && (
+              <div className="text-center pb-1">
+                <span className="text-[11px] text-amber-400/80 font-medium tracking-wide">
+                  🃏 View your cards to bid wisely
+                </span>
+              </div>
+            )}
+            {handHidden && phase === 'playing' && !isMyTurn ? (
+              <div className="flex items-center justify-center gap-1 py-3 px-4">
+                <div className="flex items-center gap-1 flex-wrap justify-center">
+                  {myHand.map((_, i) => (
+                    <div key={i} style={{
+                      width: 44, height: 64, borderRadius: 8,
+                      background: 'linear-gradient(145deg, #1a2850 0%, #1e3570 55%, #243f8a 100%)',
+                      border: '1px solid rgba(100,140,255,0.5)',
+                    }} />
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500 ml-2">Cards hidden</p>
+              </div>
+            ) : (
+              <CardHand
+                cards={myHand}
+                playableCardIds={playableCardIds}
+                selectedCardId={selectedCardId}
+            onCardSelect={(card) => setSelectedCardId(card.id)}
+            onCardPlay={(card) => {
+              setSelectedCardId(null);
+              onPlayCard(card);
+            }}
+            isMyTurn={isMyTurn && phase === 'playing'}
+            leadSuit={currentTrick?.leadSuit}
+            trumpSuit={trumpSuit}
+          />
+            )}
           </>
         )}
       </div>

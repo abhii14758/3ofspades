@@ -20,6 +20,7 @@ interface PlayerSeatProps {
   teamId?: 'A' | 'B' | null;
   turnTimerEndsAt?: number | null;
   turnTimerTotalSeconds?: number;
+  showCombinedLabel?: boolean;
 }
 
 const AVATAR_GRADIENTS = [
@@ -108,6 +109,7 @@ export default function PlayerSeat({
   teamId = null,
   turnTimerEndsAt,
   turnTimerTotalSeconds = 30,
+  showCombinedLabel = false,
 }: PlayerSeatProps) {
   const isDisconnected = player.status === 'disconnected';
   const gradient = isLocalPlayer
@@ -213,7 +215,7 @@ export default function PlayerSeat({
             <span className="relative z-10">{player.name.charAt(0)}</span>
           )}
           {player.type === 'bot' && (
-            <span className="absolute -bottom-0.5 -right-0.5 text-[10px] leading-none bg-slate-800 rounded-full px-0.5 z-20">
+            <span className="absolute -bottom-0.5 -right-0.5 text-xs leading-none bg-slate-800 rounded-full px-0.5 z-20">
               🤖
             </span>
           )}
@@ -226,7 +228,7 @@ export default function PlayerSeat({
 
         {/* Card count badge in compact mode */}
         {compact && !isLocalPlayer && cardCount > 0 && (
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-slate-900/90 text-slate-300 text-[10px] font-bold px-1 rounded-full leading-tight border border-slate-700">
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-slate-900/90 text-slate-300 text-xs font-bold px-1 rounded-full leading-tight border border-slate-700">
             {cardCount}
           </span>
         )}
@@ -237,7 +239,7 @@ export default function PlayerSeat({
         <div className="flex items-center gap-1 flex-wrap justify-center">
           <span
             className={clsx(
-              'rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-100 text-xs px-2 py-0.5 font-semibold max-w-[72px] truncate',
+              'rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-100 text-sm px-2 py-0.5 font-semibold max-w-[72px] truncate',
               isLocalPlayer ? 'text-sky-200' : 'text-slate-100',
               isDisconnected && 'line-through text-slate-500'
             )}
@@ -249,7 +251,7 @@ export default function PlayerSeat({
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="text-[10px] font-bold bg-emerald-600 text-white px-1 rounded"
+            className="text-xs font-bold bg-emerald-600 text-white px-1 rounded"
             title="Partner revealed"
           >
             🤝 Partner
@@ -260,25 +262,26 @@ export default function PlayerSeat({
         {/* Score (individual until partners revealed; combined for Team A after reveal) */}
         {displayPoints !== null && (
           <span className={clsx(
-            'text-[10px] font-bold tabular-nums',
+            'text-xs font-bold tabular-nums',
             displayPoints < 0 ? 'text-red-400' : scoreColor
           )}>
             {displayPoints < 0 ? `−${Math.abs(displayPoints)}` : displayPoints} pts
-            {isRevealed && isPartner && <span className="text-[8px] ml-0.5 opacity-70">(combined)</span>}
+            {(isRevealed && isPartner) && <span className="text-[9px] ml-0.5 opacity-70">(team A)</span>}
+            {showCombinedLabel && !isPartner && <span className="text-[9px] ml-0.5 opacity-70">(team B)</span>}
           </span>
         )}
 
         {isDisconnected && (
-          <span className="text-[9px] text-yellow-500 font-medium">⚡ DC</span>
+          <span className="text-[11px] text-yellow-500 font-medium">⚡ DC</span>
         )}
 
         {isLocalPlayer && !isDisconnected && (
-          <span className="text-[9px] text-slate-500 font-medium">You</span>
+          <span className="text-[11px] text-slate-500 font-medium">You</span>
         )}
 
         {/* Card count badge in normal mode */}
         {!compact && !isLocalPlayer && cardCount > 0 && (
-          <span className="bg-slate-900/90 text-slate-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-slate-700">
+          <span className="bg-slate-900/90 text-slate-300 text-xs font-bold px-1.5 py-0.5 rounded-full border border-slate-700">
             {cardCount}
           </span>
         )}

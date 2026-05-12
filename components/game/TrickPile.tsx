@@ -139,7 +139,7 @@ export default function TrickPile({
                     <div>{SUIT_SYMBOLS[tc.card.suit]}</div>
                   </div>
                 </div>
-                <span className={clsx('text-[9px] font-medium truncate max-w-[44px] text-center',
+                <span className={clsx('text-xs font-medium truncate max-w-[44px] text-center',
                   isWinner ? 'text-yellow-400 font-bold' : 'text-slate-400')}>
                   {getPlayerName(tc.playerId)}
                 </span>
