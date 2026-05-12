@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import type { Suit, Card as CardType, Rank } from '@/types';
-import Button from '@/components/ui/Button';
 
 const SUIT_SYMBOLS: Record<Suit, string> = {
   spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣',
@@ -47,29 +46,30 @@ export default function TrumpSelector({ onSelect, bidAmount, myHand = [] }: Trum
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
-
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
       <motion.div
-        className="relative bg-slate-900 border border-slate-700 rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col max-h-[92vh]"
+        className="relative bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col"
         initial={{ opacity: 0, y: 60 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 340, damping: 28 }}
       >
+        {/* Gold accent strip */}
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+
         {/* Header */}
-        <div className="text-center pt-6 pb-4 px-6 shrink-0">
-          <div className="inline-flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-full px-4 py-1 mb-3">
-            <span className="text-yellow-400 text-sm font-bold">🏆 Bid Won: {bidAmount}</span>
+        <div className="text-center pt-7 pb-4 px-6 shrink-0">
+          <div className="inline-flex items-center gap-2 bg-amber-900/40 border border-amber-600/50 rounded-full px-4 py-1 mb-2">
+            <span className="text-amber-300 text-sm font-bold">🏆 Bid Won: {bidAmount}</span>
           </div>
-          <h2 className="text-xl font-bold text-slate-100">Choose Trump Suit</h2>
-          <p className="text-slate-400 text-sm mt-1">Review your cards, then pick the strongest suit</p>
+          <h2 className="text-xl font-black text-slate-100 mt-2">Select Trump Suit</h2>
+          <p className="text-slate-400 text-sm mt-1">Choose the suit that will dominate this round</p>
         </div>
 
         {/* Your hand — scrollable horizontal strip */}
         {myHand.length > 0 && (
           <div className="px-4 pb-3 shrink-0">
             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-2 text-center">Your Hand</p>
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin" style={{ scrollbarWidth: 'none' }}>
+            <div className="flex gap-1 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
               {sortedHand.map((card) => {
                 const isCardRed = card.suit === 'hearts' || card.suit === 'diamonds';
                 const is3Spades = card.rank === '3' && card.suit === 'spades';
@@ -77,25 +77,25 @@ export default function TrumpSelector({ onSelect, bidAmount, myHand = [] }: Trum
                 return (
                   <motion.div
                     key={card.id}
-                    animate={{ y: highlighted ? -6 : 0, scale: highlighted ? 1.08 : 1 }}
+                    animate={{ y: highlighted ? -8 : 0, scale: highlighted ? 1.08 : 1 }}
                     transition={{ type: 'spring', stiffness: 380, damping: 22 }}
                     className={clsx(
-                      'shrink-0 w-9 h-14 rounded-lg border-2 flex flex-col items-center justify-between p-0.5 bg-white select-none',
+                      'shrink-0 w-8 h-12 rounded-lg border-2 flex flex-col items-center justify-between p-0.5 bg-white select-none',
                       is3Spades
                         ? 'border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]'
                         : highlighted
                           ? (isCardRed ? 'border-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]' : 'border-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.5)]')
-                          : 'border-slate-200 shadow-sm'
+                          : 'border-slate-200 shadow-sm opacity-70'
                     )}
                   >
-                    <div className={clsx('self-start text-[9px] font-black leading-none', isCardRed ? 'text-red-500' : 'text-slate-800')}>
+                    <div className={clsx('self-start text-[8px] font-black leading-none', isCardRed ? 'text-red-500' : 'text-slate-800')}>
                       <div>{card.rank}</div>
                       <div>{SUIT_SYMBOLS[card.suit]}</div>
                     </div>
-                    <div className={clsx('text-base leading-none font-bold', isCardRed ? 'text-red-500' : 'text-slate-800')}>
+                    <div className={clsx('text-sm leading-none font-bold', isCardRed ? 'text-red-500' : 'text-slate-800')}>
                       {SUIT_SYMBOLS[card.suit]}
                     </div>
-                    <div className={clsx('self-end text-[9px] font-black leading-none rotate-180', isCardRed ? 'text-red-500' : 'text-slate-800')}>
+                    <div className={clsx('self-end text-[8px] font-black leading-none rotate-180', isCardRed ? 'text-red-500' : 'text-slate-800')}>
                       <div>{card.rank}</div>
                       <div>{SUIT_SYMBOLS[card.suit]}</div>
                     </div>
@@ -107,7 +107,7 @@ export default function TrumpSelector({ onSelect, bidAmount, myHand = [] }: Trum
         )}
 
         {/* Suit selection grid */}
-        <div className="grid grid-cols-2 gap-3 px-4 pb-4">
+        <div className="grid grid-cols-2 gap-3 px-4 pb-4 overflow-y-auto">
           {SUITS.map((suit) => {
             const isSelected = selected === suit;
             const count = counts[suit];
@@ -121,31 +121,41 @@ export default function TrumpSelector({ onSelect, bidAmount, myHand = [] }: Trum
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 className={clsx(
-                  'flex items-center gap-3 p-4 rounded-xl border-2 font-bold transition-colors duration-150 text-left',
+                  'relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 cursor-pointer transition-all duration-150 text-center',
                   isSelected
                     ? isRed(suit)
-                      ? 'border-red-400 bg-red-900/40 text-red-300'
-                      : 'border-slate-300 bg-slate-700/60 text-slate-100'
-                    : isRed(suit)
-                      ? 'border-slate-700 bg-slate-800 text-red-400 hover:border-red-600 hover:bg-red-900/20'
-                      : 'border-slate-700 bg-slate-800 text-slate-200 hover:border-slate-500 hover:bg-slate-700/60'
+                      ? 'bg-red-950/60 border-red-500 shadow-[0_0_16px_rgba(239,68,68,0.3)]'
+                      : 'bg-slate-800 border-slate-300 shadow-[0_0_16px_rgba(148,163,184,0.3)]'
+                    : 'bg-slate-800/60 border-slate-700 hover:border-slate-500'
                 )}
               >
-                <span className="text-3xl leading-none">{SUIT_SYMBOLS[suit]}</span>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm leading-none">{SUIT_LABELS[suit]}</span>
-                  <span className="text-[10px] font-normal opacity-70">
-                    {count} card{count !== 1 ? 's' : ''}{count > 0 ? ` · best ${bestRankName}` : ''}
-                  </span>
-                </div>
+                {/* Checkmark badge */}
                 {isSelected && (
                   <motion.span
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="ml-auto text-xs bg-green-600 text-white px-2 py-0.5 rounded-full shrink-0"
+                    className="absolute top-2 right-2 text-[10px] bg-green-600 text-white w-4 h-4 rounded-full flex items-center justify-center font-bold"
                   >
                     ✓
                   </motion.span>
+                )}
+
+                {/* Large suit symbol */}
+                <span className={clsx('text-4xl leading-none', isRed(suit) ? 'text-red-400' : 'text-slate-100')}>
+                  {SUIT_SYMBOLS[suit]}
+                </span>
+
+                {/* Suit name */}
+                <span className={clsx('font-bold text-base', isRed(suit) ? 'text-red-400' : 'text-slate-100')}>
+                  {SUIT_LABELS[suit]}
+                </span>
+
+                {/* Card count */}
+                <span className="text-xs text-slate-400">{count} card{count !== 1 ? 's' : ''}</span>
+
+                {/* Best rank */}
+                {count > 0 && bestRankName && (
+                  <span className="text-xs text-slate-500">Best: {bestRankName}</span>
                 )}
               </motion.button>
             );
@@ -153,17 +163,23 @@ export default function TrumpSelector({ onSelect, bidAmount, myHand = [] }: Trum
         </div>
 
         {/* Confirm */}
-        <div className="px-4 pb-6 shrink-0">
-          <Button
-            size="lg"
-            className="w-full"
+        <div className="px-4 pb-6 pt-2 shrink-0">
+          <motion.button
             disabled={!selected}
             onClick={() => selected && onSelect(selected)}
+            whileHover={selected ? { scale: 1.02 } : {}}
+            whileTap={selected ? { scale: 0.98 } : {}}
+            className={clsx(
+              'w-full rounded-xl py-3 text-sm font-black border transition-all duration-150 flex items-center justify-center gap-2',
+              selected
+                ? 'bg-gradient-to-r from-amber-600 to-yellow-600 text-black border-amber-500 shadow-lg shadow-amber-900/40 cursor-pointer'
+                : 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed'
+            )}
           >
             {selected
               ? `Confirm ${SUIT_SYMBOLS[selected]} ${SUIT_LABELS[selected]} as Trump`
               : 'Select a suit above'}
-          </Button>
+          </motion.button>
         </div>
       </motion.div>
     </div>
