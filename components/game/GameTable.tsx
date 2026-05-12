@@ -928,7 +928,7 @@ export default function GameTable({
                 </span>
               </div>
             )}
-            {handHidden && phase === 'playing' && !isMyTurn ? (
+            {handHidden && !(isMyTurn && phase === 'playing') ? (
               <div className="flex items-center justify-center gap-1 py-3 px-4">
                 <div className="flex items-center gap-1 flex-wrap justify-center">
                   {myHand.map((_, i) => (
@@ -939,7 +939,7 @@ export default function GameTable({
                     }} />
                   ))}
                 </div>
-                <p className="text-[11px] text-slate-500 ml-2">Cards hidden</p>
+                <p className="text-[11px] text-slate-500 ml-2">Cards hidden — tap 👁️ to reveal</p>
               </div>
             ) : (
               <CardHand
