@@ -47,10 +47,10 @@ export default function Scoreboard({
       <button
         onClick={() => setOpen(true)}
         className={clsx(
-          'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-colors shrink-0',
+          'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold transition-all shrink-0',
           open
-            ? 'bg-slate-700 border-slate-500 text-slate-200'
-            : 'bg-slate-800/70 border-slate-700 text-slate-300 hover:bg-slate-700/80'
+            ? 'bg-slate-700 border-slate-500 text-slate-200 border-l-2 border-l-amber-500/70'
+            : 'bg-slate-800/70 border-slate-700 text-slate-300 hover:bg-slate-700/80 hover:shadow-[0_0_8px_rgba(212,160,23,0.25)]'
         )}
       >
         {trumpSuit && (
@@ -85,13 +85,15 @@ export default function Scoreboard({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '100%', opacity: 0 }}
               transition={{ type: 'spring', stiffness: 340, damping: 32 }}
-              className="fixed top-0 right-0 h-screen w-80 max-w-full z-50 bg-slate-900 border-l border-slate-700 shadow-2xl flex flex-col"
+              className="fixed top-0 right-0 h-screen w-80 max-w-full z-50 bg-slate-900 border-l border-slate-700 shadow-2xl flex flex-col overflow-hidden"
             >
+              {/* Gold accent line at top */}
+              <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-amber-500/60 to-transparent" />
               {/* Panel header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700/60 shrink-0">
                 <div>
                   <h2 className="text-slate-100 font-bold text-base">Scoreboard</h2>
-                  <p className="text-slate-500 text-xs">Round {roundNumber}</p>
+                  <p className="text-amber-400/80 text-xs">Round {roundNumber}</p>
                 </div>
                 <button
                   onClick={() => setOpen(false)}
@@ -104,19 +106,19 @@ export default function Scoreboard({
               <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                 {/* Trump + bid info */}
                 {(trumpSuit || (bidAmount && bidWinnerId)) && (
-                  <div className="rounded-xl bg-slate-800/60 border border-slate-700/50 p-3 space-y-2">
+                  <div className="rounded-xl bg-slate-800/70 border border-amber-700/20 p-3 space-y-2">
                     {trumpSuit && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-slate-400">Trump Suit</span>
-                        <span className={clsx('font-bold text-base', isRed(trumpSuit) ? 'text-red-400' : 'text-slate-100')}>
-                          {SUIT_SYMBOLS[trumpSuit]} {trumpSuit.charAt(0).toUpperCase() + trumpSuit.slice(1)}
+                        <span className={clsx('font-bold text-xl', isRed(trumpSuit) ? 'text-red-400' : 'text-slate-100')}>
+                          {SUIT_SYMBOLS[trumpSuit]} <span className="text-sm">{trumpSuit.charAt(0).toUpperCase() + trumpSuit.slice(1)}</span>
                         </span>
                       </div>
                     )}
                     {bidAmount && bidWinnerId && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-slate-400">Winning Bid</span>
-                        <span className="text-yellow-400 font-bold">{bidAmount} — {getPlayerName(bidWinnerId)}</span>
+                        <span className="text-amber-400 font-bold">{bidAmount} — {getPlayerName(bidWinnerId)}</span>
                       </div>
                     )}
                   </div>
@@ -141,7 +143,7 @@ export default function Scoreboard({
                           className={clsx(
                             'rounded-xl border p-3 space-y-2',
                             isBidTeam
-                              ? 'border-yellow-500/40 bg-yellow-900/10'
+                              ? 'border-amber-600/40 bg-amber-900/10'
                               : 'border-slate-700/50 bg-slate-800/30'
                           )}
                         >
@@ -152,7 +154,7 @@ export default function Scoreboard({
                             </div>
                             <div className="flex flex-col items-end">
                               <span className={clsx(
-                                'text-lg font-bold',
+                                'text-2xl font-black',
                                 team.totalPoints < 0 ? 'text-red-400' : ti === 0 ? 'text-sky-400' : 'text-orange-400'
                               )}>
                                 {team.totalPoints < 0 ? `−${Math.abs(team.totalPoints)}` : team.totalPoints}
@@ -189,7 +191,7 @@ export default function Scoreboard({
                           </div>
 
                           {/* Stats */}
-                          <div className="flex gap-4 pt-1 border-t border-slate-700/40 text-xs">
+                          <div className="flex gap-4 pt-1 border-t border-slate-700/30 text-xs">
                             <div>
                               <span className="text-slate-500">Tricks</span>
                               <span className="ml-1.5 font-bold text-slate-200">{team.tricksWon}</span>
@@ -214,9 +216,9 @@ export default function Scoreboard({
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center gap-3 py-8">
-                    <span className="text-5xl opacity-20">♠</span>
-                    <p className="text-slate-400 text-sm text-center font-medium">Bidding in progress</p>
-                    <p className="text-slate-600 text-xs text-center">Teams will be revealed after bidding ends</p>
+                    <span className="text-5xl opacity-30">♠</span>
+                    <p className="text-slate-300 text-sm text-center font-semibold">Bidding in progress</p>
+                    <p className="text-slate-500 text-xs text-center">Teams will be revealed after bidding ends</p>
                   </div>
                 )}
               </div>

@@ -130,15 +130,15 @@ export default function CardHand({
               initial={{ opacity: 0, y: 3 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 3 }}
-              className="text-[10px] text-green-400/80 font-medium flex-1"
+              className="text-[11px] text-green-400/90 font-medium flex-1"
             >
-              Tap to select · tap again to play
+              ✋ Tap to select · tap again to play
             </motion.p>
           )}
         </AnimatePresence>
         <button
           onClick={handleSort}
-          className="ml-auto shrink-0 text-[10px] text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded px-2 py-0.5 transition-colors font-medium"
+          className="ml-auto shrink-0 text-[10px] text-slate-400 hover:text-slate-200 bg-slate-800/90 border border-slate-600/60 rounded-full px-3 py-1 transition-colors font-medium"
           title="Sort cards by suit and rank"
         >
           ↕ Sort
@@ -233,7 +233,7 @@ export default function CardHand({
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="ml-3 mb-2 px-4 py-2.5 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white rounded-xl font-bold text-sm shadow-lg shadow-green-900/60 border border-green-500 shrink-0 min-h-[44px]"
+              className="ml-3 mb-2 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-green-900/60 border border-green-500/60 shrink-0 min-h-[44px] transition-all"
               onClick={() => {
                 const card = cards.find(c => c.id === selectedCardId);
                 if (card) onCardPlay?.(card);

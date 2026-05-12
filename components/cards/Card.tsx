@@ -41,15 +41,24 @@ export default function Card({
       <motion.div
         layoutId={animate ? `card-${card.id}` : undefined}
         className={clsx(
-          'relative rounded-lg border-2 border-green-700 bg-green-900 overflow-hidden',
+          'relative rounded-lg border-2 border-blue-700/80 overflow-hidden',
           small ? 'w-10 h-16' : 'w-16 h-24',
           className
         )}
+        style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 55%, #2563eb 100%)' }}
       >
-        <div className="absolute inset-1 rounded border border-green-700/60" />
-        <div className="absolute inset-2 rounded border border-green-700/30" />
+        <div
+          className="absolute rounded"
+          style={{
+            inset: 4,
+            borderRadius: 4,
+            border: '1px solid rgba(96,165,250,0.25)',
+            backgroundImage:
+              'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.04) 3px, rgba(255,255,255,0.04) 6px)',
+          }}
+        />
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={clsx('text-green-600/50 font-bold', small ? 'text-lg' : 'text-2xl')}>
+          <span className={clsx('text-blue-400/40 font-bold', small ? 'text-lg' : 'text-2xl')}>
             ♠
           </span>
         </div>
@@ -64,10 +73,10 @@ export default function Card({
         'relative rounded-lg border-2 flex flex-col justify-between cursor-pointer select-none',
         small ? 'w-10 h-16 p-0.5' : 'w-14 h-20 p-0.5 sm:w-16 sm:h-24 sm:p-1',
         isThreeOfSpades
-          ? 'border-yellow-400 shadow-[0_0_14px_rgba(250,204,21,0.7)] bg-amber-50'
+          ? 'border-yellow-400 shadow-[0_0_18px_rgba(250,204,21,0.75)] bg-amber-50'
           : selected
-            ? 'border-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)] bg-white'
-            : 'border-slate-300 bg-white',
+            ? 'border-sky-400 shadow-[0_0_14px_rgba(56,189,248,0.65)] bg-white'
+            : 'border-slate-200 bg-white',
         !playable && !selected && 'opacity-50 cursor-not-allowed',
         className
       )}
