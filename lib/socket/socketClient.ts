@@ -9,6 +9,7 @@ import type {
   PlayCardPayload,
   ReconnectPayload,
   RoomConfig,
+  VoteEndPayload,
 } from '@/types';
 
 // ─── Singleton socket instance ────────────────────────────────────────────────
@@ -91,4 +92,7 @@ export const socketEmit = {
 
   skipDeal: (roomId: string) =>
     getSocket().emit('game:skipDeal', { roomId }),
+
+  voteEnd: (roomId: string) =>
+    getSocket().emit('game:voteEnd', { roomId } satisfies VoteEndPayload),
 };

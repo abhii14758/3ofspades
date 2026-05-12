@@ -19,6 +19,7 @@ import type {
   AddBotPayload,
   ReconnectPayload,
   Suit,
+  VoteEndPayload,
 } from '@/types';
 
 import { gameConfig, defaultRoomConfig, getConfigForPreset } from '@/config/gameConfig';
@@ -70,6 +71,9 @@ const roundStartTimers = new Map<string, NodeJS.Timeout>();
 
 /** Pending deal-animation timers — can be cancelled by game:skipDeal. */
 const dealTimers = new Map<string, NodeJS.Timeout>();
+
+/** Per-room timers that delay advancing to the next trick after a trick completes. */
+const trickClearTimers = new Map<string, NodeJS.Timeout>();
 
 /**
  * Computes how long (ms) the server waits before transitioning dealing → bidding.
@@ -349,6 +353,8 @@ function startNewRound(io: Server, roomId: string): void {
     prevTotals,
     cfg,
   );
+  newGameState.playerTotals = prev.playerTotals ?? {};
+  newGameState.voteEndVotes = {};
   room.gameState = newGameState;
 
   io.to(roomId).emit('game:started', { gameState: getSafeGameState(newGameState) });
@@ -581,12 +587,49 @@ function handlePlayCard(
       const finalState = finalizeRound(newState, cfg);
       room.gameState = finalState;
 
+      // Per-player score deltas for this round
+      const prevPlayerTotals: Record<string, number> = newState.playerTotals ?? {};
+      const updatedPlayerTotals: Record<string, number> = { ...prevPlayerTotals };
+      const lastHistory = finalState.roundHistory[finalState.roundHistory.length - 1];
+
+      if (lastHistory && finalState.teams) {
+        const bidTeamIsA = finalState.teams.A.playerIds.includes(finalState.bidWinnerId ?? '');
+        const bidTeamId: TeamId = bidTeamIsA ? 'A' : 'B';
+        const otherTeamId: TeamId = bidTeamIsA ? 'B' : 'A';
+
+        for (const player of finalState.players) {
+          const onBidTeam = finalState.teams[bidTeamId].playerIds.includes(player.id);
+          const delta = lastHistory.bidMade
+            ? (onBidTeam
+                ? finalState.teams[bidTeamId].roundPoints
+                : finalState.teams[otherTeamId].roundPoints)
+            : (onBidTeam
+                ? -lastHistory.bidAmount
+                : finalState.teams[otherTeamId].roundPoints + lastHistory.bidAmount);
+          updatedPlayerTotals[player.id] = (prevPlayerTotals[player.id] ?? 0) + delta;
+        }
+      }
+
+      finalState.playerTotals = updatedPlayerTotals;
+
+      const lastIdx = finalState.roundHistory.length - 1;
+      if (lastIdx >= 0) {
+        const playerRoundDeltas: Record<string, number> = {};
+        for (const player of finalState.players) {
+          playerRoundDeltas[player.id] =
+            (updatedPlayerTotals[player.id] ?? 0) - (prevPlayerTotals[player.id] ?? 0);
+        }
+        finalState.roundHistory[lastIdx] = {
+          ...finalState.roundHistory[lastIdx],
+          playerRoundDeltas,
+        };
+      }
+
       roomTeamTotals.set(roomId, {
         A: finalState.teams?.A.totalPoints ?? 0,
         B: finalState.teams?.B.totalPoints ?? 0,
       });
 
-      const lastHistory = finalState.roundHistory[finalState.roundHistory.length - 1];
       io.to(roomId).emit('game:roundEnd', {
         roundHistory: lastHistory,
         teams: finalState.teams,
@@ -602,8 +645,20 @@ function handlePlayCard(
       }
       // No auto-restart: host must emit game:nextRound to begin the next round
     } else {
-      syncStateToAll(io, room);
-      scheduleAutoPlayIfNeeded(io, room);
+      // Cancel any pending trick-clear timer for this room
+      const existingClear = trickClearTimers.get(roomId);
+      if (existingClear) { clearTimeout(existingClear); trickClearTimers.delete(roomId); }
+
+      // Show completed trick for 5s before advancing to next trick
+      const trickClearDelay = 5000;
+      const clearTimer = setTimeout(() => {
+        trickClearTimers.delete(roomId);
+        const currentRoom = rooms.get(roomId);
+        if (!currentRoom?.gameState) return;
+        syncStateToAll(io, currentRoom);
+        scheduleAutoPlayIfNeeded(io, currentRoom);
+      }, trickClearDelay);
+      trickClearTimers.set(roomId, clearTimer);
     }
   } else {
     syncStateToAll(io, room);
@@ -779,6 +834,8 @@ export function setupSocketServer(io: Server): void {
       }
 
       const gameState = initRound(room.id, room.players, 0, 1, null, cfg);
+      gameState.playerTotals = {};
+      gameState.voteEndVotes = {};
       room.gameState = gameState;
 
       io.to(payload.roomId).emit('game:started', { gameState: getSafeGameState(gameState) });
@@ -882,6 +939,36 @@ export function setupSocketServer(io: Server): void {
       }
 
       startNewRound(io, payload.roomId);
+    });
+
+    // ── game:voteEnd ──────────────────────────────────────────────────────
+    socket.on('game:voteEnd', (payload: VoteEndPayload) => {
+      const info = socketToPlayer.get(socket.id);
+      if (!info) return;
+      const { roomId, playerId } = info;
+      const room = rooms.get(roomId);
+      if (!room?.gameState) return;
+      if (room.gameState.phase === 'lobby' || room.gameState.phase === 'dealing') return;
+
+      // Record vote
+      if (!room.gameState.voteEndVotes) room.gameState.voteEndVotes = {};
+      room.gameState.voteEndVotes[playerId] = true;
+
+      const totalPlayers = room.players.filter((p) => p.status !== 'disconnected').length;
+      const yesVotes = Object.values(room.gameState.voteEndVotes).filter(Boolean).length;
+      const percentage = totalPlayers > 0 ? yesVotes / totalPlayers : 0;
+
+      io.to(roomId).emit('game:voteEndUpdate', {
+        votes: room.gameState.voteEndVotes,
+        yesCount: yesVotes,
+        totalCount: totalPlayers,
+        percentage,
+      });
+
+      if (percentage >= 0.8) {
+        io.to(roomId).emit('game:terminated', { reason: 'vote', roomId });
+        room.gameState = null;
+      }
     });
 
     // ── game:terminate ────────────────────────────────────────────────────

@@ -71,6 +71,7 @@ export interface RoundHistory {
   partnerCards: Card[];
   teams: { A: Team; B: Team };
   bidMade: boolean;
+  playerRoundDeltas?: Record<string, number>; // per-player score change this round
 }
 
 export interface GameState {
@@ -94,6 +95,8 @@ export interface GameState {
   turnTimerEndsAt: number | null; // epoch ms when current turn timer expires
   roundHistory: RoundHistory[];
   winnerTeamId: TeamId | null;
+  voteEndVotes?: Record<string, boolean>; // playerId → true (voted to end)
+  playerTotals?: Record<string, number>;  // per-player cumulative score across rounds
 }
 
 export interface RoomConfig {
@@ -193,4 +196,8 @@ export interface ChatMessage {
   playerName: string;
   text: string;
   timestamp: number;
+}
+
+export interface VoteEndPayload {
+  roomId: string;
 }
