@@ -159,21 +159,21 @@ export default function PlayerSeat({
       )}
 
       {/* Avatar with turn indicator and timer ring */}
-      <div className="relative mt-1" style={{ width: 44, height: 44 }}>
+      <div className="relative mt-1" style={{ width: 48, height: 48 }}>
         {/* Turn glow */}
         {isCurrentTurn && (
           <>
             <motion.div
               className="absolute rounded-full"
-              style={{ inset: -8, background: 'radial-gradient(circle, rgba(74,222,128,0.35) 0%, transparent 70%)' }}
-              animate={{ opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 1.3, repeat: Infinity }}
+              style={{ inset: -10, background: 'radial-gradient(circle, rgba(74,222,128,0.4) 0%, transparent 70%)' }}
+              animate={{ opacity: [0.4, 0.9, 0.4], scale: [0.95, 1.05, 0.95] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
             />
             <motion.div
-              className="absolute rounded-full border-2 border-green-400"
-              style={{ inset: -6 }}
-              animate={{ opacity: [1, 0.3, 1] }}
-              transition={{ duration: 1.3, repeat: Infinity }}
+              className="absolute rounded-full"
+              style={{ inset: -6, border: '2px solid rgba(74,222,128,0.8)', boxShadow: '0 0 12px rgba(74,222,128,0.5)' }}
+              animate={{ opacity: [0.8, 0.3, 0.8] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
             />
           </>
         )}
@@ -190,9 +190,10 @@ export default function PlayerSeat({
         )}
 
         {/* Avatar circle */}
+        <div style={{ padding: '3px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', boxShadow: '0 0 0 1px rgba(255,255,255,0.1), 0 4px 12px rgba(0,0,0,0.8)' }}>
         <motion.div
           className={clsx(
-            'w-11 h-11 rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-sm uppercase shadow-md text-white relative overflow-hidden',
+            'w-12 h-12 rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-sm uppercase shadow-md text-white relative overflow-hidden',
             gradient,
             isCurrentTurn && 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900',
             isPartner && isRevealed && !isCurrentTurn && 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-900'
@@ -217,6 +218,7 @@ export default function PlayerSeat({
             </span>
           )}
         </motion.div>
+        </div>
 
         {player.isHost && (
           <span className="absolute -top-1 -right-1 text-xs leading-none">👑</span>

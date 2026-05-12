@@ -112,7 +112,7 @@ export default function TrickPile({
                 <div
                   className={clsx(
                     'flex flex-col items-center justify-between p-0.5 bg-white rounded-lg border-2 select-none relative',
-                    'w-10 h-14 md:w-11 md:h-16',
+                    'w-11 h-16',
                     is3Spades
                       ? 'border-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.9)]'
                       : isWinner
@@ -131,7 +131,7 @@ export default function TrickPile({
                     <div>{tc.card.rank}</div>
                     <div>{SUIT_SYMBOLS[tc.card.suit]}</div>
                   </div>
-                  <div className={clsx('text-lg leading-none font-bold', isRed ? 'text-red-500' : 'text-slate-800')}>
+                  <div className={clsx('text-xl leading-none font-bold', isRed ? 'text-red-500' : 'text-slate-800')}>
                     {SUIT_SYMBOLS[tc.card.suit]}
                   </div>
                   <div className={clsx('self-end leading-none font-black text-[9px] rotate-180', isRed ? 'text-red-500' : 'text-slate-800')}>

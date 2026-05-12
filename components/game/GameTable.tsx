@@ -68,8 +68,8 @@ function getPlayerPositions(
   myPlayerId: string,
 ): Array<{ player: Player; x: number; y: number; angle: number }> {
   const N = players.length;
-  const rx = 46;
-  const ry = 43;
+  const rx = 41;
+  const ry = 38;
   const cx = 50;
   const cy = 50;
   const myIndex = players.findIndex((p) => p.id === myPlayerId);
@@ -489,7 +489,7 @@ export default function GameTable({
       className="flex flex-row overflow-hidden select-none"
       style={{
         height: '100dvh',
-        background: 'radial-gradient(ellipse 110% 90% at 50% 60%, #0b1a0b 0%, #040c04 45%, #010301 100%)',
+        background: 'radial-gradient(ellipse 160% 120% at 50% 60%, #071507 0%, #020802 40%, #000000 100%)',
       }}
     >
       {/* ── Game section ── */}
@@ -583,77 +583,101 @@ export default function GameTable({
         <motion.div
           ref={tableRef}
           initial={{ scale: 0.88, opacity: 0, rotateX: 0 }}
-          animate={{ scale: 1, opacity: 1, rotateX: 14 }}
+          animate={{ scale: 1, opacity: 1, rotateX: 18 }}
           transition={{ type: 'spring', stiffness: 160, damping: 26, delay: 0.04 }}
           className="relative"
           style={{
-            width: 'min(92vw, 900px)',
-            height: 'min(60vh, 560px)',
-            minHeight: '300px',
-            perspective: '1100px',
+            width: 'min(94vw, 920px)',
+            height: 'min(52vh, 480px)',
+            minHeight: '260px',
+            perspective: '900px',
             transformStyle: 'preserve-3d',
           }}
         >
           {/* ── Table layers (bottom → top) ── */}
 
-          {/* 1. Outer table body — deep mahogany/ebony base with strong drop shadow */}
-          <div className="absolute inset-0 rounded-[50%]" style={{
-            background: 'linear-gradient(175deg, #5a2208 0%, #321005 30%, #1c0803 65%, #080301 100%)',
+          {/* Table physical body */}
+          <div className="absolute rounded-[50%]" style={{
+            inset: 0,
+            background: 'linear-gradient(175deg, #4a1e08 0%, #1a0a02 45%, #0a0300 100%)',
             boxShadow: [
               '0 50px 100px rgba(0,0,0,0.98)',
-              '0 20px 50px rgba(0,0,0,0.9)',
-              '0 6px 18px rgba(0,0,0,0.8)',
-              '0 0 140px rgba(0,0,0,0.95)',
-              'inset 0 -12px 28px rgba(0,0,0,0.6)',
+              '0 20px 60px rgba(0,0,0,0.95)',
+              '0 0 0 1px rgba(0,0,0,0.8)',
+              'inset 0 -30px 60px rgba(0,0,0,0.7)',
             ].join(', '),
+            transform: 'translateY(12px) scaleX(0.96)',
           }} />
 
-          {/* 2. Gold bead rail — thick, bright amber with strong glow */}
-          <div className="absolute inset-[2px] rounded-[50%]" style={{
+          {/* Wood/mahogany rail base */}
+          <div className="absolute rounded-[50%]" style={{
+            inset: 0,
+            background: 'radial-gradient(ellipse at 50% 40%, #7a3510 0%, #4a1e08 40%, #2a0e04 70%, #0f0401 100%)',
+            boxShadow: '0 0 80px rgba(0,0,0,0.9), 0 30px 60px rgba(0,0,0,0.8)',
+          }} />
+
+          {/* Gold bead rail */}
+          <div className="absolute rounded-[50%]" style={{
+            inset: '4px',
             background: 'transparent',
             boxShadow: [
-              '0 0 0 10px rgba(212,160,23,0.92)',      /* solid gold band          */
-              '0 0 0 11px rgba(255,200,50,0.55)',       /* bright highlight edge    */
-              '0 0 30px 4px rgba(212,160,23,0.75)',     /* close amber glow         */
-              '0 0 70px 10px rgba(212,160,23,0.3)',     /* mid diffuse glow         */
-              '0 0 130px 20px rgba(212,160,23,0.12)',   /* wide room glow           */
-              'inset 0 0 0 8px rgba(140,95,10,0.6)',   /* inner darker gold shadow */
+              '0 0 0 10px rgba(180,130,10,0.95)',
+              '0 0 0 11px rgba(230,175,20,0.7)',
+              '0 0 0 13px rgba(150,100,5,0.5)',
+              '0 0 40px rgba(212,160,23,0.6)',
+              '0 0 80px rgba(212,160,23,0.25)',
+              'inset 0 0 0 10px rgba(180,130,10,0.3)',
             ].join(', '),
           }} />
 
-          {/* 3. Inner mahogany wood ring — between rail and felt */}
-          <div className="absolute inset-[18px] rounded-[50%]" style={{
-            background: 'linear-gradient(155deg, #4a2008 0%, #241004 45%, #120602 100%)',
-            boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.7)',
+          {/* Wood channel between rail and felt */}
+          <div className="absolute rounded-[50%]" style={{
+            inset: '18px',
+            background: 'linear-gradient(160deg, #3d1a06 0%, #1e0b02 60%, #0f0501 100%)',
+            boxShadow: 'inset 0 4px 16px rgba(0,0,0,0.8)',
           }} />
 
-          {/* 4. Felt surface — vibrant Kelly green (#1a883d → #0f5c28) */}
-          <div className="absolute inset-[24px] rounded-[50%]" style={{
-            background: 'radial-gradient(ellipse at 48% 34%, #22a845 0%, #1a883d 22%, #136830 48%, #0c4e22 72%, #072e14 100%)',
+          {/* Felt surface */}
+          <div className="absolute rounded-[50%]" style={{
+            inset: '26px',
+            background: [
+              'radial-gradient(ellipse at 50% 35%,',
+              '#2db84d 0%,',
+              '#23943e 20%,',
+              '#1a7a32 45%,',
+              '#125928 70%,',
+              '#0a3a1a 100%)',
+            ].join(' '),
             boxShadow: [
-              'inset 0 28px 80px rgba(0,0,0,0.5)',
-              'inset 0 -18px 50px rgba(0,0,0,0.4)',
-              'inset 0 0 100px rgba(0,0,0,0.25)',
+              'inset 0 30px 80px rgba(0,0,0,0.5)',
+              'inset 0 -20px 50px rgba(0,0,0,0.4)',
+              'inset 30px 0 60px rgba(0,0,0,0.25)',
+              'inset -30px 0 60px rgba(0,0,0,0.25)',
             ].join(', '),
           }} />
 
-          {/* 5. Felt cloth weave texture */}
-          <div className="absolute inset-[24px] rounded-[50%] pointer-events-none" style={{
-            opacity: 0.045,
+          {/* Felt weave texture */}
+          <div className="absolute rounded-[50%] pointer-events-none" style={{
+            inset: '26px',
+            opacity: 0.035,
             backgroundImage: [
-              'repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(255,255,255,1) 4px, rgba(255,255,255,1) 5px)',
-              'repeating-linear-gradient(90deg, transparent, transparent 4px, rgba(255,255,255,1) 4px, rgba(255,255,255,1) 5px)',
-            ].join(', '),
+              'repeating-linear-gradient(0deg, transparent, transparent 5px,',
+              'rgba(255,255,255,1) 5px, rgba(255,255,255,1) 6px),',
+              'repeating-linear-gradient(90deg, transparent, transparent 5px,',
+              'rgba(255,255,255,1) 5px, rgba(255,255,255,1) 6px)',
+            ].join(' '),
           }} />
 
-          {/* 6. Felt top highlight — overhead casino lamp cone */}
-          <div className="absolute inset-[24px] rounded-[50%] pointer-events-none" style={{
-            background: 'radial-gradient(ellipse 65% 40% at 50% 26%, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.03) 55%, transparent 100%)',
+          {/* Top highlight */}
+          <div className="absolute rounded-[50%] pointer-events-none" style={{
+            inset: '26px',
+            background: 'radial-gradient(ellipse 55% 30% at 50% 25%, rgba(255,255,255,0.07) 0%, transparent 100%)',
           }} />
 
-          {/* 7. Gold inner trim ring on felt edge */}
-          <div className="absolute inset-[24px] rounded-[50%] pointer-events-none" style={{
-            boxShadow: 'inset 0 0 0 2.5px rgba(212,160,23,0.28), inset 0 0 12px rgba(212,160,23,0.08)',
+          {/* Gold inner felt edge ring */}
+          <div className="absolute rounded-[50%] pointer-events-none" style={{
+            inset: '26px',
+            boxShadow: 'inset 0 0 0 2px rgba(212,160,23,0.15), inset 0 0 20px rgba(0,0,0,0.3)',
           }} />
 
           {/* Trump badge + trick counter — center of table */}
@@ -669,19 +693,14 @@ export default function GameTable({
               }} />
               {/* Main emblem ring */}
               <div style={{
-                width: 96, height: 96, borderRadius: '50%',
-                border: '2.5px solid rgba(212,160,23,0.7)',
-                background: 'radial-gradient(circle at 50% 40%, rgba(212,160,23,0.14) 0%, rgba(212,160,23,0.05) 55%, transparent 100%)',
-                boxShadow: [
-                  '0 0 0 1px rgba(212,160,23,0.25)',
-                  '0 0 20px rgba(212,160,23,0.35)',
-                  '0 0 50px rgba(212,160,23,0.15)',
-                  'inset 0 0 20px rgba(212,160,23,0.1)',
-                ].join(', '),
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+                width: 110, height: 110, borderRadius: '50%',
+                border: '2px solid rgba(212,160,23,0.5)',
+                background: 'radial-gradient(circle, rgba(212,160,23,0.1) 0%, rgba(212,160,23,0.03) 60%, transparent 100%)',
+                boxShadow: '0 0 0 1px rgba(212,160,23,0.15), 0 0 40px rgba(212,160,23,0.18), inset 0 0 30px rgba(0,0,0,0.4)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
               }}>
-                <span style={{ fontSize: 26, color: 'rgba(212,160,23,0.75)', lineHeight: 1, textShadow: '0 0 12px rgba(212,160,23,0.6)' }}>♠</span>
-                <span style={{ fontSize: 7.5, color: 'rgba(212,160,23,0.65)', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase' }}>3 of Spades</span>
+                <span style={{ fontSize: 28, opacity: 0.5, color: '#d4a017', lineHeight: 1 }}>♠</span>
+                <span style={{ fontSize: 8, opacity: 0.45, color: '#d4a017', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase' }}>3 of Spades</span>
               </div>
             </div>
             <div className="flex flex-col items-center gap-2" style={{ position: 'relative', zIndex: 1 }}>
