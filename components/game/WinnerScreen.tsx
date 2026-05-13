@@ -14,6 +14,7 @@ interface WinnerScreenProps {
   players: Player[];
   playerTotals: Record<string, number>;
   roundHistory: RoundHistory[];
+  isHost: boolean;
   onPlayAgain: () => void;
   onHome: () => void;
 }
@@ -47,6 +48,7 @@ export default function WinnerScreen({
   players,
   playerTotals,
   roundHistory,
+  isHost,
   onPlayAgain,
   onHome,
 }: WinnerScreenProps) {
@@ -63,7 +65,7 @@ export default function WinnerScreen({
   ).length;
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center overflow-y-auto">
       {/* Confetti */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {Array.from({ length: 40 }).map((_, i) => (
@@ -71,7 +73,7 @@ export default function WinnerScreen({
         ))}
       </div>
 
-      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl w-full">
+      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl w-full my-8">
         {/* Gold radial glow behind trophy */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full bg-amber-500/8 blur-3xl pointer-events-none" />
 
@@ -208,9 +210,15 @@ export default function WinnerScreen({
           </button>
           <button
             onClick={onPlayAgain}
-            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 transition-all text-white font-bold rounded-xl py-3 text-sm shadow-lg shadow-green-900/40"
+            disabled={!isHost}
+            className={clsx(
+              'flex-1 font-bold rounded-xl py-3 text-sm shadow-lg transition-all',
+              isHost
+                ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-green-900/40'
+                : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+            )}
           >
-            🎮 Play Again
+            {isHost ? '🎮 Play Again' : '⏳ Waiting for host...'}
           </button>
         </motion.div>
       </div>

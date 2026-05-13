@@ -1022,6 +1022,34 @@ export function setupSocketServer(io: Server): void {
       startNewRound(io, payload.roomId);
     });
 
+    // ── game:playAgain ─────────────────────────────────────────────────────
+    // Host-only. Allowed from game_end phase. Keeps room + playerTotals.
+    // Resets team totals (fresh game) but playerTotals carry forward.
+    // Note: startNewRound() already does `newGameState.playerTotals = prev.playerTotals`
+    // so per-player scores are preserved automatically.
+    socket.on('game:playAgain', (payload: { roomId: string }) => {
+      const info = socketToPlayer.get(socket.id);
+      if (!info || info.roomId !== payload.roomId) return;
+
+      const room = rooms.get(payload.roomId);
+      if (!room) return;
+
+      if (info.playerId !== room.hostId) {
+        socket.emit('room:error', { message: 'Only the host can start a new game' });
+        return;
+      }
+      if (!room.gameState || room.gameState.phase !== 'game_end') {
+        socket.emit('room:error', { message: 'Game has not ended yet' });
+        return;
+      }
+
+      // Reset team totals so new game starts teams from 0
+      // (per-player totals carry forward via startNewRound's existing logic)
+      roomTeamTotals.set(payload.roomId, { A: 0, B: 0 });
+
+      startNewRound(io, payload.roomId);
+    });
+
     // ── game:voteEnd ──────────────────────────────────────────────────────
     socket.on('game:voteEnd', (payload: VoteEndPayload) => {
       const info = socketToPlayer.get(socket.id);

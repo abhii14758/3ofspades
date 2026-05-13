@@ -93,6 +93,9 @@ export const socketEmit = {
   startNextRound: (roomId: string) =>
     getSocket().emit('game:nextRound', { roomId }),
 
+  playAgain: (roomId: string) =>
+    getSocket().emit('game:playAgain', { roomId }),
+
   skipDeal: (roomId: string) =>
     getSocket().emit('game:skipDeal', { roomId }),
 

@@ -114,8 +114,11 @@ export default function GamePage() {
           players={gameState.players}
           playerTotals={gameState.playerTotals ?? {}}
           roundHistory={gameState.roundHistory}
+          isHost={isHost}
           onHome={() => router.push('/')}
-          onPlayAgain={() => router.push('/lobby')}
+          onPlayAgain={() => {
+            if (isHost && roomId) socketEmit.playAgain(roomId);
+          }}
         />
       )}
     </>
