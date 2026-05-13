@@ -571,11 +571,8 @@ export default function GameTable({
     [players, myPlayerId]
   );
 
-  useEffect(() => {
-    if (isMyTurn && phase === 'playing') {
-      setHandHidden(false);
-    }
-  }, [isMyTurn, phase]);
+  // effectivelyHidden: user preference, but auto-reveal during your turn in playing phase
+  const effectivelyHidden = handHidden && !(isMyTurn && phase === 'playing');
 
   return (
     <div
@@ -1064,22 +1061,8 @@ export default function GameTable({
                 expandedView={phase === 'bidding'}
                 compact={isMobile}
                 dimIfNotPlayable={phase !== 'bidding'}
+                hidden={effectivelyHidden}
               />
-              {/* Hidden overlay — sits on top without unmounting CardHand */}
-              {handHidden && (
-                <div className="absolute inset-0 flex items-center justify-center gap-1.5 flex-wrap px-4 py-3 z-10"
-                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.85) 100%)' }}>
-                  {myHand.map((_, i) => (
-                    <div key={i} style={{
-                      width: 44, height: 64, borderRadius: 8,
-                      background: 'linear-gradient(145deg, #1a2850 0%, #1e3570 55%, #243f8a 100%)',
-                      border: '1px solid rgba(100,140,255,0.5)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
-                    }} />
-                  ))}
-                  <p className="w-full text-center text-[11px] text-slate-500 mt-1">Cards hidden — tap 👁️ to reveal</p>
-                </div>
-              )}
             </div>
           </>
         )}
@@ -1132,21 +1115,8 @@ export default function GameTable({
                 compact={true}
                 dimIfNotPlayable={phase !== 'bidding'}
                 vertical={true}
+                hidden={effectivelyHidden}
               />
-              {handHidden && (
-                <div
-                  className="absolute inset-0 z-10 flex flex-col items-center gap-2 overflow-y-auto px-1 py-2"
-                  style={{ background: 'rgba(0,0,0,0.92)' }}
-                >
-                  {myHand.map((_, i) => (
-                    <div key={i} style={{
-                      width: 40, height: 58, borderRadius: 6, flexShrink: 0,
-                      background: 'linear-gradient(145deg, #1a2850 0%, #1e3570 55%, #243f8a 100%)',
-                      border: '1px solid rgba(100,140,255,0.45)',
-                    }} />
-                  ))}
-                </div>
-              )}
             </div>
           )}
         </div>

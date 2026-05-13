@@ -27,6 +27,7 @@ interface CardHandProps {
   compact?: boolean;
   dimIfNotPlayable?: boolean;
   vertical?: boolean;
+  hidden?: boolean;
 }
 
 function getHighlightSuit(cards: CardType[], leadSuit?: Suit | null, trumpSuit?: Suit | null): Suit | null {
@@ -49,6 +50,7 @@ export default function CardHand({
   compact = false,
   dimIfNotPlayable = true,
   vertical = false,
+  hidden = false,
 }: CardHandProps) {
   const CARD_W = compact ? CARD_W_MOBILE : CARD_W_DESKTOP;
   const CARD_H = compact ? CARD_H_MOBILE : CARD_H_DESKTOP;
@@ -84,7 +86,40 @@ export default function CardHand({
 
   if (cards.length === 0) return null;
 
-  // Vertical layout path
+  // Hidden mode — render face-down cards in the same layout (no card faces exposed)
+  if (hidden) {
+    const hiddenW = compact ? CARD_W_MOBILE : CARD_W_DESKTOP;
+    const hiddenH = compact ? CARD_H_MOBILE : CARD_H_DESKTOP;
+    const hiddenCount = orderedCards.length;
+    const hiddenScale = hiddenCount > 14 ? 0.68 : hiddenCount > 11 ? 0.78 : hiddenCount > 8 ? 0.90 : 1;
+    const scaledHW = hiddenW * hiddenScale;
+    const scaledHH = hiddenH * hiddenScale;
+    const availHW = Math.max(360 - 120, 80);
+    const hiddenStep = hiddenCount <= 1 ? scaledHW : Math.max(28, Math.min(scaledHW * 0.85, (availHW - scaledHW) / (hiddenCount - 1)));
+    const hiddenContainerW = hiddenCount <= 1 ? scaledHW : Math.ceil(hiddenStep * (hiddenCount - 1) + scaledHW);
+    const hiddenContainerH = scaledHH + 40;
+    const hiddenBaseTop = Math.round(hiddenContainerH - scaledHH - 6);
+    return (
+      <div className="flex flex-col items-center gap-1 select-none w-full">
+        <div className="flex items-end justify-center w-full pb-2">
+          <div className="relative shrink-0" style={{ width: hiddenContainerW, height: hiddenContainerH }}>
+            {orderedCards.map((card, i) => (
+              <motion.div
+                key={card.id}
+                className="absolute"
+                style={{ left: Math.round(i * hiddenStep), top: hiddenBaseTop, zIndex: i + 1, transformOrigin: 'top left' }}
+                animate={{ scale: hiddenScale, y: 0, opacity: 1 }}
+                transition={{ delay: i * 0.025, type: 'spring', stiffness: 340, damping: 26 }}
+              >
+                <Card card={card} faceDown flat />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+        <p className="text-[11px] text-slate-500 pb-1">Cards hidden — tap 👁️ to reveal</p>
+      </div>
+    );
+  }
   if (vertical) {
     return (
       <div className="flex flex-col items-center gap-1.5 overflow-y-auto h-full px-1 py-2">
@@ -95,11 +130,12 @@ export default function CardHand({
             <Card
               key={card.id}
               card={card}
-              selected={isSelected}
-              playable={isMyTurn && isPlayable}
+              faceDown={hidden}
+              selected={hidden ? false : isSelected}
+              playable={!hidden && isMyTurn && isPlayable}
               dimIfNotPlayable={false}
               onClick={() => {
-                if (!isMyTurn) return;
+                if (hidden || !isMyTurn) return;
                 if (selectedCardId === card.id) onCardPlay?.(card);
                 else onCardSelect?.(card);
               }}
