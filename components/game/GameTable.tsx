@@ -940,9 +940,12 @@ export default function GameTable({
             />
           )}
 
-          {/* Player seats — absolute by seatIndex, same layout for all players */}
+          {/* Player seats — positioned relative to current viewer (viewer always at bottom, seat 0) */}
           {players.map((player) => {
-            const { x, y } = getSeatPosition(player.seatIndex, players.length);
+            const myPlayer = players.find((p) => p.id === myPlayerId);
+            const mySeatIdx = myPlayer?.seatIndex ?? 0;
+            const relativeSeatIdx = (player.seatIndex - mySeatIdx + players.length) % players.length;
+            const { x, y } = getSeatPosition(relativeSeatIdx, players.length);
             const isCurrentTurn = player.id === currentTurnPlayerId;
             const isPartner = revealedPartnerIds.includes(player.id);
             const cardCount = hands[player.id]?.length ?? 0;
