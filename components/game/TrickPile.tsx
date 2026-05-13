@@ -15,7 +15,6 @@ function getCardPower(
   rank: Rank, suit: Suit,
   leadSuit: Suit | null, trumpSuit: Suit | null
 ): number {
-  if (rank === '3' && suit === 'spades' && trumpSuit === 'spades') return 2000;
   if (trumpSuit && suit === trumpSuit) return 100 + RANK_VALS[rank];
   if (leadSuit && suit === leadSuit) return RANK_VALS[rank];
   return 0;
@@ -28,7 +27,9 @@ function getCurrentWinnerIdx(trick: Trick, trumpSuit: Suit | null): number {
   let bestPow = getCardPower(trick.cards[0].card.rank, trick.cards[0].card.suit, lead, trumpSuit);
   for (let i = 1; i < trick.cards.length; i++) {
     const p = getCardPower(trick.cards[i].card.rank, trick.cards[i].card.suit, lead, trumpSuit);
-    if (p > bestPow) { bestPow = p; bestIdx = i; }
+    // Use >= so that when two cards have equal power (duplicate cards in double-deck),
+    // the LAST one played wins — matching the game engine's tiebreak rule.
+    if (p >= bestPow && p > 0) { bestPow = p; bestIdx = i; }
   }
   return bestIdx;
 }
@@ -81,7 +82,6 @@ export default function TrickPile({
           const isWinner = i === winnerIdx;
           const isRed = tc.card.suit === 'hearts' || tc.card.suit === 'diamonds';
           const isTrump = tc.card.suit === trumpSuit;
-          const is3Spades = tc.card.rank === '3' && tc.card.suit === 'spades';
 
           return (
             <div
@@ -115,19 +115,15 @@ export default function TrickPile({
                     width: 48, height: 68,
                     background: '#ffffff',
                     border: isWinner
-                      ? '2px solid #fde68a'
-                      : is3Spades
-                      ? '2px solid #d4a017'
-                      : isTrump
-                      ? '1.5px solid rgba(253,186,116,0.7)'
-                      : '1.5px solid #d0d0d0',
-                    boxShadow: isWinner
-                      ? '0 0 0 2px rgba(253,224,71,0.6), 0 0 24px rgba(253,224,71,0.8), 0 8px 20px rgba(0,0,0,0.7)'
-                      : is3Spades
-                      ? '0 0 18px rgba(212,160,23,0.7), 0 4px 14px rgba(0,0,0,0.6)'
-                      : isTrump
-                      ? '0 0 10px rgba(253,186,116,0.5), 0 4px 12px rgba(0,0,0,0.5)'
-                      : '0 4px 12px rgba(0,0,0,0.5)',
+                        ? '2px solid #fde68a'
+                        : isTrump
+                        ? '1.5px solid rgba(253,186,116,0.7)'
+                        : '1.5px solid #d0d0d0',
+                      boxShadow: isWinner
+                        ? '0 0 0 2px rgba(253,224,71,0.6), 0 0 24px rgba(253,224,71,0.8), 0 8px 20px rgba(0,0,0,0.7)'
+                        : isTrump
+                        ? '0 0 10px rgba(253,186,116,0.5), 0 4px 12px rgba(0,0,0,0.5)'
+                        : '0 4px 12px rgba(0,0,0,0.5)',
                     padding: '3px 4px',
                     overflow: 'hidden',
                     position: 'relative',
@@ -135,12 +131,7 @@ export default function TrickPile({
                     transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                   }}
                 >
-                  {is3Spades && (
-                    <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-                    </div>
-                  )}
-                  {/* Top-left rank+suit */}
+                 {/* Top-left rank+suit */}
                   <div style={{ alignSelf: 'flex-start', lineHeight: 1 }}>
                     <div style={{
                       fontSize: 10, fontWeight: 800, lineHeight: 1,
