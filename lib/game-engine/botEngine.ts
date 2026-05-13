@@ -68,7 +68,7 @@ function getCurrentTrickWinner(trick: Trick, trumpSuit: Suit | null): Card {
   for (let i = 1; i < trick.cards.length; i++) {
     const c = trick.cards[i].card;
     if (
-      getCardTrickValue(c, leadSuit, trumpSuit) >
+      getCardTrickValue(c, leadSuit, trumpSuit) >=
       getCardTrickValue(winner, leadSuit, trumpSuit)
     ) {
       winner = c;
@@ -115,7 +115,7 @@ export function botDecideBid(
 /**
  * Select trump suit.
  * Scores each suit by card count and point potential.
- * Adds a small spades bonus for 3♠ synergy.
+ * Adds a small spades preference bonus (historically dominant suit).
  */
 export function botSelectTrump(hand: Card[], _config: GameConfig): Suit {
   const suitScore: Partial<Record<Suit, number>> = {};
@@ -296,7 +296,7 @@ function selectDiscardOrTrumpCard(hand: Card[], trick: Trick, trumpSuit: Suit | 
         (c) => getCardTrickValue(c, leadSuit, trumpSuit) > winnerValue,
       );
       if (winningTrumps.length > 0) {
-        // Use the weakest winning trump to preserve 3♠ and high trumps
+        // Use the weakest winning trump to preserve high trumps
         return winningTrumps.reduce((best, c) =>
           getCardTrickValue(c, leadSuit, trumpSuit) <
           getCardTrickValue(best, leadSuit, trumpSuit)

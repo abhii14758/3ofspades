@@ -31,8 +31,8 @@ function cardBeats(
   if (cIsTrump && wIsTrump) {
     const rankDiff = RANK_ORDER.indexOf(challenger.rank) - RANK_ORDER.indexOf(current.rank);
     if (rankDiff !== 0) return rankDiff > 0;
-    // Same rank + trump suit duplicate: last played wins
-    return challenger.suit === current.suit;
+    // Duplicate card (same rank + suit in double-deck): last played wins
+    return true;
   }
 
   // Neither is trump
@@ -45,8 +45,8 @@ function cardBeats(
   if (cIsLead && wIsLead) {
     const rankDiff = RANK_ORDER.indexOf(challenger.rank) - RANK_ORDER.indexOf(current.rank);
     if (rankDiff !== 0) return rankDiff > 0;
-    // Same rank + same suit (double-deck duplicate): last played wins
-    return challenger.suit === current.suit;
+    // Duplicate card (same rank + suit in double-deck): last played wins
+    return true;
   }
 
   // Both off-suit — challenger cannot beat current
