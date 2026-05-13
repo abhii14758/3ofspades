@@ -58,29 +58,36 @@ export default function PartnerSelector({
   const handleCardClick = (typeId: string) => {
     const heldCount = myHandTypeCounts[typeId] ?? 0;
     const maxSelectable = deckCount - heldCount;
-    if (maxSelectable <= 0) return; // fully in hand
+    if (maxSelectable <= 0) return; // fully in hand — can never be a partner card
 
     const currentSlots = selectedSlots.filter(s => s.typeId === typeId);
+    const canAddAnother = currentSlots.length < maxSelectable && selectedSlots.length < partnerCount;
 
-    if (currentSlots.length > 0) {
-      // Clicking again deselects all slots for this card
+    if (currentSlots.length > 0 && !canAddAnother) {
+      // Can't add more for this card — deselect all its slots
       setSelectedSlots(prev => prev.filter(s => s.typeId !== typeId));
       return;
     }
 
-    if (selectedSlots.length >= partnerCount) return; // already at max
+    if (currentSlots.length === 0 && selectedSlots.length >= partnerCount) return; // overall max reached
 
     if (deckCount === 1) {
-      // Single deck: always ordinal 1, no popup
-      setSelectedSlots(prev => [...prev, { typeId, ordinal: 1 }]);
+      // Single deck: toggle
+      if (currentSlots.length > 0) {
+        setSelectedSlots(prev => prev.filter(s => s.typeId !== typeId));
+      } else {
+        setSelectedSlots(prev => [...prev, { typeId, ordinal: 1 }]);
+      }
     } else {
-      // Double deck: show ordinal popup
+      // Double deck: open ordinal popup (it will only show available ordinals)
       setPendingCard(typeId);
     }
   };
 
   const handleOrdinalSelect = (ordinal: 1 | 2) => {
     if (!pendingCard) return;
+    // Guard: don't add same ordinal twice for the same card
+    if (selectedSlots.some(s => s.typeId === pendingCard && s.ordinal === ordinal)) return;
     setSelectedSlots(prev => [...prev, { typeId: pendingCard, ordinal }]);
     setPendingCard(null);
   };
@@ -150,35 +157,44 @@ export default function PartnerSelector({
                   const heldCount = myHandTypeCounts[cardTypeId] ?? 0;
                   const maxSelectable = deckCount - heldCount;
                   const isFullyInHand = maxSelectable <= 0;
+                  // Card is "full" if all available occurrences are picked or total partner count reached
+                  const canAddAnother = selectedCount < maxSelectable && selectedSlots.length < partnerCount;
+                  const isDisabled = isFullyInHand || (selectedCount === 0 && selectedSlots.length >= partnerCount);
+                  // Dimmed (all slots used, click will deselect)
+                  const isAllSlotsFilled = selectedCount > 0 && !canAddAnother;
 
                   return (
                     <motion.button
                       key={cardTypeId}
-                      onClick={() => !isFullyInHand && handleCardClick(cardTypeId)}
-                      disabled={isFullyInHand}
-                      whileHover={isFullyInHand ? {} : { scale: 1.05 }}
-                      whileTap={isFullyInHand ? {} : { scale: 0.94 }}
+                      onClick={() => !isDisabled && handleCardClick(cardTypeId)}
+                      disabled={isDisabled}
+                      whileHover={isDisabled ? {} : { scale: 1.05 }}
+                      whileTap={isDisabled ? {} : { scale: 0.94 }}
                       className={clsx(
                         'relative w-10 h-14 rounded-lg border-2 flex flex-col justify-between p-1 text-[10px] font-bold transition-all',
                         isFullyInHand
                           ? 'border-slate-700 bg-slate-900/60 opacity-50 cursor-not-allowed'
-                          : selectedCount > 0
-                            ? 'border-sky-400 bg-sky-950/50 shadow-[0_0_12px_rgba(56,189,248,0.4)] scale-105'
-                            : isRed(suit)
-                              ? 'border-slate-600 bg-slate-800 text-red-400 hover:border-slate-400 hover:scale-105'
-                              : 'border-slate-600 bg-slate-800 text-slate-100 hover:border-slate-400 hover:scale-105'
+                          : isDisabled
+                          ? 'border-slate-700 bg-slate-900/60 opacity-40 cursor-not-allowed'
+                          : isAllSlotsFilled
+                            ? 'border-emerald-400 bg-emerald-950/50 shadow-[0_0_12px_rgba(52,211,153,0.4)] scale-105'
+                            : selectedCount > 0
+                              ? 'border-sky-400 bg-sky-950/50 shadow-[0_0_12px_rgba(56,189,248,0.4)] scale-105'
+                              : isRed(suit)
+                                ? 'border-slate-600 bg-slate-800 text-red-400 hover:border-slate-400 hover:scale-105'
+                                : 'border-slate-600 bg-slate-800 text-slate-100 hover:border-slate-400 hover:scale-105'
                       )}
                     >
                       <div className={clsx(
                         'leading-none',
-                        isFullyInHand ? 'text-slate-600' : selectedCount > 0 ? 'text-sky-300' : isRed(suit) ? 'text-red-400' : 'text-slate-100'
+                        isFullyInHand || isDisabled ? 'text-slate-600' : isAllSlotsFilled ? 'text-emerald-300' : selectedCount > 0 ? 'text-sky-300' : isRed(suit) ? 'text-red-400' : 'text-slate-100'
                       )}>
                         <div>{rank}</div>
                         <div>{SUIT_SYMBOLS[suit]}</div>
                       </div>
                       <div className={clsx(
                         'self-center text-base leading-none',
-                        isFullyInHand ? 'text-slate-600' : selectedCount > 0 ? 'text-sky-300' : isRed(suit) ? 'text-red-400' : 'text-slate-100'
+                        isFullyInHand || isDisabled ? 'text-slate-600' : isAllSlotsFilled ? 'text-emerald-300' : selectedCount > 0 ? 'text-sky-300' : isRed(suit) ? 'text-red-400' : 'text-slate-100'
                       )}>
                         {SUIT_SYMBOLS[suit]}
                       </div>
@@ -264,6 +280,11 @@ export default function PartnerSelector({
               {(() => {
                 const [suit, rank] = pendingCard.split('_') as [Suit, Rank];
                 const isRedCard = suit === 'hearts' || suit === 'diamonds';
+                const takenOrdinals = selectedSlots
+                  .filter(s => s.typeId === pendingCard)
+                  .map(s => s.ordinal);
+                const ord1Taken = takenOrdinals.includes(1);
+                const ord2Taken = takenOrdinals.includes(2);
                 return (
                   <>
                     <p className="text-center text-sm text-slate-300 mb-4 font-semibold">
@@ -275,16 +296,30 @@ export default function PartnerSelector({
                     </p>
                     <div className="flex gap-3 mb-4">
                       <button
-                        onClick={() => handleOrdinalSelect(1)}
-                        className="flex-1 py-3 rounded-xl bg-sky-700 hover:bg-sky-600 border border-sky-500 text-white font-black text-sm transition-colors"
+                        onClick={() => !ord1Taken && handleOrdinalSelect(1)}
+                        disabled={ord1Taken}
+                        className={clsx(
+                          'flex-1 py-3 rounded-xl border font-black text-sm transition-colors',
+                          ord1Taken
+                            ? 'bg-slate-700 border-slate-600 text-slate-500 cursor-not-allowed opacity-50'
+                            : 'bg-sky-700 hover:bg-sky-600 border-sky-500 text-white'
+                        )}
                       >
                         🥇 1st played
+                        {ord1Taken && <div className="text-[10px] font-normal">already picked</div>}
                       </button>
                       <button
-                        onClick={() => handleOrdinalSelect(2)}
-                        className="flex-1 py-3 rounded-xl bg-indigo-700 hover:bg-indigo-600 border border-indigo-500 text-white font-black text-sm transition-colors"
+                        onClick={() => !ord2Taken && handleOrdinalSelect(2)}
+                        disabled={ord2Taken}
+                        className={clsx(
+                          'flex-1 py-3 rounded-xl border font-black text-sm transition-colors',
+                          ord2Taken
+                            ? 'bg-slate-700 border-slate-600 text-slate-500 cursor-not-allowed opacity-50'
+                            : 'bg-indigo-700 hover:bg-indigo-600 border-indigo-500 text-white'
+                        )}
                       >
                         🥈 2nd played
+                        {ord2Taken && <div className="text-[10px] font-normal">already picked</div>}
                       </button>
                     </div>
                     <button
