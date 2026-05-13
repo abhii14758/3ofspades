@@ -703,8 +703,8 @@ export default function GameTable({
         <AvatarUpload roomId={gameState.roomId} className="shrink-0" />
       </motion.div>
 
-      {/* ── Opponent strip — mobile portrait only ── */}
-      {isMobile && (
+      {/* ── Opponent strip — mobile portrait only (hidden in landscape, space too tight) ── */}
+      {isMobile && !isLandscape && (
         <OpponentStrip
           opponents={players.filter((p) => p.id !== myPlayerId)}
           currentTurnPlayerId={currentTurnPlayerId}
@@ -736,12 +736,12 @@ export default function GameTable({
           className="relative"
           style={{
             width: isMobile
-              ? (isLandscape ? '70vw' : '96vw')
+              ? (isLandscape ? '60vw' : '96vw')
               : isTablet ? 'min(94vw, 760px)' : 'min(94vw, 920px)',
             height: isMobile
               ? (isLandscape ? 'min(85vh, 320px)' : 'auto')
               : isTablet ? 'min(50vh, 380px)' : 'min(52vh, 480px)',
-            aspectRatio: isMobile && !isLandscape ? '2/1' : undefined,
+            aspectRatio: isMobile && !isLandscape ? '5/3' : undefined,
             minHeight: isMobile ? (isLandscape ? '180px' : '200px') : '260px',
             perspective: isMobile ? '600px' : '900px',
             transformStyle: 'preserve-3d',
@@ -940,15 +940,6 @@ export default function GameTable({
             />
           )}
 
-          {/* Partner slot tracker — visible to bid winner during playing phase */}
-          {phase === 'playing' && myPlayerId === bidWinnerId && myCalledCardSlots.length > 0 && (
-            <PartnerTracker
-              slots={myCalledCardSlots}
-              players={players}
-              bidWinnerId={bidWinnerId!}
-            />
-          )}
-
           {/* Player seats — absolute by seatIndex, same layout for all players */}
           {players.map((player) => {
             const { x, y } = getSeatPosition(player.seatIndex, players.length);
@@ -991,6 +982,15 @@ export default function GameTable({
             );
           })}
         </motion.div>
+
+        {/* Partner slot tracker — outside 3D transform, no perspective skew */}
+        {phase === 'playing' && myPlayerId === bidWinnerId && myCalledCardSlots.length > 0 && (
+          <PartnerTracker
+            slots={myCalledCardSlots}
+            players={players}
+            bidWinnerId={bidWinnerId!}
+          />
+        )}
 
         {/* ── Table legs + underside amber glow ── */}
         <div
