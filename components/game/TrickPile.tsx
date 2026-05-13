@@ -88,7 +88,8 @@ export default function TrickPile({
               className="flex flex-col items-center gap-0.5"
               key={tc.playerId}
               ref={(el) => {
-                if (el) {
+                if (el && !el.dataset.gsapAnimated) {
+                  el.dataset.gsapAnimated = '1';
                   gsap.fromTo(el,
                     { scale: 0.5, opacity: 0, y: -16 },
                     { scale: 1, opacity: 1, y: isWinner ? -8 : 0, duration: 0.28, delay: i * 0.07, ease: 'back.out(1.4)' }

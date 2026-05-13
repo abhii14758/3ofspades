@@ -1015,7 +1015,7 @@ export default function GameTable({
         {!showDealAnim && (
           <>
             {calledCards.length > 0 && phase === 'playing' && (
-              <div className="flex items-center justify-center gap-2 mb-2 px-4 flex-wrap">
+              <div className="flex items-center justify-center gap-1.5 mb-1.5 px-3 flex-wrap">
                 <span className="text-xs text-slate-400 shrink-0 font-medium">
                   {bidWinnerId === myPlayerId ? '🤝 Your partner cards:' : '🤝 Partner cards:'}
                 </span>
