@@ -23,17 +23,23 @@ const ALL_RANKS: Rank[] = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K
 // ─── Deck builder (exported for server use) ───────────────────────────────────
 
 export function buildFullDeck(config: GameConfig): Card[] {
+  const count = config.deckCount ?? 1;
+  const colors: Array<'red' | 'blue'> = ['red', 'blue'];
   const cards: Card[] = [];
-  for (const suit of ALL_SUITS) {
-    for (const rank of ALL_RANKS) {
-      const id = `${suit}_${rank}`;
-      const points =
-        config.cardValues[`${rank}_${suit}`] !== undefined
-          ? config.cardValues[`${rank}_${suit}`]
-          : config.cardValues[rank] !== undefined
-            ? config.cardValues[rank]
-            : 0;
-      cards.push({ id, suit, rank, points });
+
+  for (let d = 0; d < count; d++) {
+    const deckColor = colors[d] ?? 'red';
+    for (const suit of ALL_SUITS) {
+      for (const rank of ALL_RANKS) {
+        const id = count === 1 ? `red_${suit}_${rank}` : `${deckColor}_${suit}_${rank}`;
+        const points =
+          config.cardValues[`${rank}_${suit}`] !== undefined
+            ? config.cardValues[`${rank}_${suit}`]
+            : config.cardValues[rank] !== undefined
+              ? config.cardValues[rank]
+              : 0;
+        cards.push({ id, suit, rank, deckColor: count === 1 ? 'red' : deckColor, points });
+      }
     }
   }
   return cards;
@@ -43,14 +49,10 @@ export function buildFullDeck(config: GameConfig): Card[] {
 
 /**
  * Returns a numeric "winning power" for a card given the trick context.
- * 3♠ is the supreme trump (2000) when spades is trump.
  * Trump cards outrank lead-suit cards.
  * Off-suit non-trump cards score 0 (cannot win).
  */
 function getCardTrickValue(card: Card, leadSuit: Suit | null, trumpSuit: Suit | null): number {
-  if (card.rank === '3' && card.suit === 'spades' && trumpSuit === 'spades') {
-    return 2000;
-  }
   if (trumpSuit && card.suit === trumpSuit) {
     return RANK_VALUES[card.rank] + 100;
   }
@@ -123,7 +125,7 @@ export function botSelectTrump(hand: Card[], _config: GameConfig): Suit {
     suitScore[card.suit] = current + card.points + RANK_VALUES[card.rank];
   }
 
-  // Slight spades preference: 3♠ (30 pts) is only useful as trump
+  // Slight spades preference: historically strong suit
   suitScore['spades'] = (suitScore['spades'] ?? 0) + 10;
 
   let best: Suit = 'spades';
@@ -154,14 +156,14 @@ export function botSelectPartnerCards(
   const partnerCount = config.partnerCount ?? 2;
 
   // Build set of canonical type IDs held in bot's hand
-  const toTypeId = (id: string) => id.replace(/_[01]$/, '');
-  const handTypeIds = new Set(hand.map((c) => toTypeId(c.id)));
+  const toTypeId = (card: Card) => `${card.suit}_${card.rank}`;
+  const handTypeIds = new Set(hand.map((c) => toTypeId(c)));
 
   // All distinct canonical type IDs from the full deck
   const seenTypeIds = new Set<string>();
   const candidates: Card[] = [];
   for (const c of allCards) {
-    const typeId = toTypeId(c.id);
+    const typeId = toTypeId(c);
     if (!handTypeIds.has(typeId) && !seenTypeIds.has(typeId)) {
       seenTypeIds.add(typeId);
       // Use canonical id for partner selection

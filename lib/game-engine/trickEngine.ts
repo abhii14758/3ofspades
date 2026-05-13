@@ -22,10 +22,6 @@ function cardBeats(
   leadSuit: Suit,
   trumpSuit: Suit | null,
 ): boolean {
-  // 3 of Spades is the supreme card — it always wins
-  if (challenger.rank === '3' && challenger.suit === 'spades') return true;
-  if (current.rank === '3' && current.suit === 'spades') return false;
-
   const cIsTrump = trumpSuit !== null && challenger.suit === trumpSuit;
   const wIsTrump = trumpSuit !== null && current.suit === trumpSuit;
 
@@ -33,7 +29,10 @@ function cardBeats(
   if (!cIsTrump && wIsTrump) return false;
 
   if (cIsTrump && wIsTrump) {
-    return RANK_ORDER.indexOf(challenger.rank) > RANK_ORDER.indexOf(current.rank);
+    const rankDiff = RANK_ORDER.indexOf(challenger.rank) - RANK_ORDER.indexOf(current.rank);
+    if (rankDiff !== 0) return rankDiff > 0;
+    // Same rank + trump suit duplicate: last played wins
+    return challenger.suit === current.suit;
   }
 
   // Neither is trump
@@ -44,7 +43,10 @@ function cardBeats(
   if (!cIsLead && wIsLead) return false;
 
   if (cIsLead && wIsLead) {
-    return RANK_ORDER.indexOf(challenger.rank) > RANK_ORDER.indexOf(current.rank);
+    const rankDiff = RANK_ORDER.indexOf(challenger.rank) - RANK_ORDER.indexOf(current.rank);
+    if (rankDiff !== 0) return rankDiff > 0;
+    // Same rank + same suit (double-deck duplicate): last played wins
+    return challenger.suit === current.suit;
   }
 
   // Both off-suit — challenger cannot beat current
@@ -113,11 +115,11 @@ export function playCard(trick: Trick, playerId: string, card: Card): Trick {
 /**
  * Determines the winner of a completed trick.
  *
- * - 3♠ (3 of Spades) is the supreme card and always wins, regardless of suit or trump.
  * - Trump beats non-trump (when `trumpSuit` is set).
  * - Highest trump wins if multiple trump cards are played.
  * - Highest card of lead suit wins when no trump is played.
  * - Rank order: 3 < 4 < 5 < 6 < 7 < 8 < 9 < 10 < J < Q < K < A
+ * - Duplicate cards (same rank + suit, double-deck): last played wins.
  *
  * Returns the `playerId` of the winner.
  */
