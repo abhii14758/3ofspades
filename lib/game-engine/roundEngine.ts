@@ -1,4 +1,4 @@
-import type { GameState, Card, Suit, Trick, RoundHistory, Team, Player } from '@/types';
+import type { GameState, Card, Suit, Trick, RoundHistory, Team, Player, CalledCardSlot, TeamId } from '@/types';
 import type { GameConfig } from '@/types';
 import { createDeck, shuffleDeck, dealCards, getCardTypeId } from './deck';
 import { initBidState } from './bidEngine';
@@ -64,6 +64,8 @@ export function initRound(
     partnerCards: [],
     calledCards: [],
     bidWinnerId: null,
+    calledCardSlots: [],
+    playTypeCounters: {},
     partnerIds: [],
     revealedPartnerIds: [],
     teams: placeholderTeams,
@@ -134,19 +136,16 @@ export function afterTrumpSelected(gameState: GameState, trumpSuit: Suit): GameS
 /**
  * Records the partner cards called by the bid winner and sets up teams.
  *
- * - calledCardTypeIds are type IDs like "spades_K"; duplicates allowed for count=2
- * - Looks through all hands to identify which players hold a card of each called type.
- * - Those players (excluding the bid winner) become Team A partners.
- * - Team B = remaining players.
- * - Previous round totals are carried forward from the placeholder teams.
- * - Transitions to 'playing'; first trick lead goes to the bid winner (fallback: player left of dealer).
+ * Partners are assigned DYNAMICALLY as called cards are played — only the
+ * bidder starts on Team A. All others start on Team B and move to A when
+ * they play their assigned called card.
  */
 export function afterPartnersSelected(
   gameState: GameState,
-  calledCardTypeIds: string[], // type IDs like "spades_K"; duplicates allowed for count=2
+  slots: CalledCardSlot[],
 ): GameState {
-  // Build display cards — one entry per UNIQUE type ID
-  const uniqueTypeIds = [...new Set(calledCardTypeIds)];
+  // Build display cards — one per unique typeId
+  const uniqueTypeIds = [...new Set(slots.map(s => s.typeId))];
   const allCards: Card[] = Object.values(gameState.hands).flat();
 
   const calledCards: Card[] = uniqueTypeIds.map((typeId) => {
@@ -160,25 +159,24 @@ export function afterPartnersSelected(
     return { ...found, id: typeId };
   });
 
-  // Find partners — one per slot in calledCardTypeIds (supports duplicate typeIds for count=2)
-  const partnerIds: string[] = [];
-  for (const typeId of calledCardTypeIds) {
-    for (const [pid, hand] of Object.entries(gameState.hands)) {
-      if (pid === gameState.bidWinnerId) continue;
-      if (partnerIds.includes(pid)) continue; // already assigned
-      const holds = hand.some((c) => getCardTypeId(c) === typeId);
-      if (holds) {
-        partnerIds.push(pid);
-        break;
-      }
-    }
-  }
-
+  // Only bidder on Team A initially — partners join dynamically
   const allPlayerIds = gameState.players.map((p) => p.id);
-  const teams = createInitialTeams(gameState.bidWinnerId!, partnerIds, allPlayerIds);
-
-  teams.A.totalPoints = gameState.teams?.A.totalPoints ?? 0;
-  teams.B.totalPoints = gameState.teams?.B.totalPoints ?? 0;
+  const teams = {
+    A: {
+      id: 'A' as TeamId,
+      playerIds: [gameState.bidWinnerId!],
+      tricksWon: 0,
+      roundPoints: 0,
+      totalPoints: gameState.teams?.A.totalPoints ?? 0,
+    },
+    B: {
+      id: 'B' as TeamId,
+      playerIds: allPlayerIds.filter(id => id !== gameState.bidWinnerId),
+      tricksWon: 0,
+      roundPoints: 0,
+      totalPoints: gameState.teams?.B.totalPoints ?? 0,
+    },
+  };
 
   const bidWinnerPlayer = gameState.players.find((p) => p.id === gameState.bidWinnerId);
   const leadPlayer = bidWinnerPlayer ?? getPlayerToLeftOfDealer(gameState.players, gameState.dealerIndex);
@@ -189,11 +187,36 @@ export function afterPartnersSelected(
     phase: 'playing',
     calledCards,
     partnerCards: calledCards,
-    partnerIds,
+    calledCardSlots: slots,
+    playTypeCounters: {},
+    partnerIds: [],
+    revealedPartnerIds: [],
     teams,
     currentTrick: firstTrick,
     currentTurnPlayerId: leadPlayer.id,
   };
+}
+
+// ─── Private helpers ──────────────────────────────────────────────────────────
+
+function recalculateTeamPoints(
+  completedTricks: Trick[],
+  teams: { A: Team; B: Team },
+): { A: Team; B: Team } {
+  const newA = { ...teams.A, tricksWon: 0, roundPoints: 0 };
+  const newB = { ...teams.B, tricksWon: 0, roundPoints: 0 };
+  for (const trick of completedTricks) {
+    if (!trick.winnerId) continue;
+    const pts = getTrickPoints(trick);
+    if (newA.playerIds.includes(trick.winnerId)) {
+      newA.tricksWon++;
+      newA.roundPoints += pts;
+    } else {
+      newB.tricksWon++;
+      newB.roundPoints += pts;
+    }
+  }
+  return { A: newA, B: newB };
 }
 
 /**
@@ -202,7 +225,7 @@ export function afterPartnersSelected(
  * Steps:
  * 1. Remove the card from the player's hand.
  * 2. Add the card to the current trick.
- * 3. Check if the played card is one of the called partner cards → reveal.
+ * 3. Dynamic partner reveal — match by CalledCardSlot typeId + ordinal.
  * 4. If the trick is now complete (all players have played):
  *    a. Resolve the winner.
  *    b. Update team trick counts and round points.
@@ -231,24 +254,61 @@ export function processCardPlay(
   // 2. Add card to current trick
   const updatedTrick = playCard(gameState.currentTrick!, playerId, card);
 
-  // 3. Partner reveal check — match by type ID so double-deck copies are caught
+  // 3. Dynamic partner reveal — check if this play matches any unfilled CalledCardSlot
   let partnerRevealed = false;
   let revealedPartnerId: string | undefined;
   let updatedPartnerIds = [...gameState.partnerIds];
   let updatedRevealedPartnerIds = [...(gameState.revealedPartnerIds ?? [])];
+  let updatedCalledCardSlots = [...(gameState.calledCardSlots ?? [])];
 
-  // NEW — type-based match:
+  // Increment play counter for this card type
   const cardTypeId = getCardTypeId(card);
-  const isCalledCard = gameState.calledCards.some((cc) => cc.id === cardTypeId);
-  if (
-    isCalledCard &&
-    playerId !== gameState.bidWinnerId &&
-    gameState.partnerIds.includes(playerId) && // only pre-assigned partners reveal
-    !updatedRevealedPartnerIds.includes(playerId)
-  ) {
-    partnerRevealed = true;
-    revealedPartnerId = playerId;
-    updatedRevealedPartnerIds = [...updatedRevealedPartnerIds, playerId];
+  const newPlayTypeCounters = {
+    ...(gameState.playTypeCounters ?? {}),
+    [cardTypeId]: ((gameState.playTypeCounters ?? {})[cardTypeId] ?? 0) + 1,
+  };
+  const newOrdinal = newPlayTypeCounters[cardTypeId];
+
+  // Initialize updatedTeams here so partner reveal can modify it
+  let updatedTeams = gameState.teams
+    ? { A: { ...gameState.teams.A }, B: { ...gameState.teams.B } }
+    : null;
+
+  // Find the first unfilled slot matching typeId + ordinal
+  const slotIndex = updatedCalledCardSlots.findIndex(
+    (s) => s.typeId === cardTypeId && s.ordinal === newOrdinal && !s.assignedPartnerId && !s.isVoid
+  );
+
+  if (slotIndex !== -1) {
+    const slot = updatedCalledCardSlots[slotIndex];
+    if (playerId === gameState.bidWinnerId) {
+      // Bidder played the partner card → void this slot
+      updatedCalledCardSlots[slotIndex] = { ...slot, isVoid: true };
+    } else if (updatedPartnerIds.includes(playerId)) {
+      // Already a partner (deduplication) → void this slot
+      updatedCalledCardSlots[slotIndex] = { ...slot, isVoid: true };
+    } else {
+      // Valid new partner!
+      updatedCalledCardSlots[slotIndex] = { ...slot, assignedPartnerId: playerId };
+      updatedPartnerIds = [...updatedPartnerIds, playerId];
+      updatedRevealedPartnerIds = [...updatedRevealedPartnerIds, playerId];
+      partnerRevealed = true;
+      revealedPartnerId = playerId;
+
+      // Move player from Team B to Team A
+      if (updatedTeams) {
+        updatedTeams.A = {
+          ...updatedTeams.A,
+          playerIds: [...updatedTeams.A.playerIds, playerId],
+        };
+        updatedTeams.B = {
+          ...updatedTeams.B,
+          playerIds: updatedTeams.B.playerIds.filter((id) => id !== playerId),
+        };
+        // Retroactively recalculate team points from all completed tricks
+        updatedTeams = recalculateTeamPoints(gameState.completedTricks, updatedTeams);
+      }
+    }
   }
 
   const trickComplete = updatedTrick.cards.length === gameState.players.length;
@@ -261,14 +321,7 @@ export function processCardPlay(
     const resolvedTrick: Trick = { ...updatedTrick, winnerId };
     const completedTricks = [...gameState.completedTricks, resolvedTrick];
 
-    // 4b. Update team stats (carry forward accumulated totals)
-    let updatedTeams = gameState.teams
-      ? {
-          A: { ...gameState.teams.A },
-          B: { ...gameState.teams.B },
-        }
-      : null;
-
+    // 4b. Update team stats
     if (updatedTeams) {
       const pts = getTrickPoints(resolvedTrick);
       if (updatedTeams.A.playerIds.includes(winnerId)) {
@@ -283,7 +336,6 @@ export function processCardPlay(
     const allTricksDone = completedTricks.length >= config.totalTricks;
 
     if (allTricksDone) {
-      // 4c. All tricks complete — let finalizeRound handle scoring
       newState = {
         ...gameState,
         hands: updatedHands,
@@ -292,10 +344,11 @@ export function processCardPlay(
         teams: updatedTeams,
         partnerIds: updatedPartnerIds,
         revealedPartnerIds: updatedRevealedPartnerIds,
+        calledCardSlots: updatedCalledCardSlots,
+        playTypeCounters: newPlayTypeCounters,
         currentTurnPlayerId: null,
       };
     } else {
-      // 4d. Start the next trick; the trick winner leads
       const nextTrick = initTrick(completedTricks.length);
       newState = {
         ...gameState,
@@ -305,6 +358,8 @@ export function processCardPlay(
         teams: updatedTeams,
         partnerIds: updatedPartnerIds,
         revealedPartnerIds: updatedRevealedPartnerIds,
+        calledCardSlots: updatedCalledCardSlots,
+        playTypeCounters: newPlayTypeCounters,
         currentTurnPlayerId: winnerId,
       };
     }
@@ -315,8 +370,11 @@ export function processCardPlay(
       ...gameState,
       hands: updatedHands,
       currentTrick: updatedTrick,
+      teams: updatedTeams,
       partnerIds: updatedPartnerIds,
       revealedPartnerIds: updatedRevealedPartnerIds,
+      calledCardSlots: updatedCalledCardSlots,
+      playTypeCounters: newPlayTypeCounters,
       currentTurnPlayerId: nextPlayerId,
     };
   }

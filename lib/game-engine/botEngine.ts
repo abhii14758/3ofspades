@@ -1,4 +1,4 @@
-import type { Card, GameState, GameConfig, Suit, BidState, Rank, Trick } from '@/types';
+import type { Card, GameState, GameConfig, Suit, BidState, Rank, Trick, CalledCardSlot } from '@/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -153,7 +153,7 @@ export function botSelectPartnerCards(
   hand: Card[],
   allCards: Card[],
   config: GameConfig,
-): string[] {
+): CalledCardSlot[] {
   const partnerCount = config.partnerCount ?? 2;
 
   // Build set of canonical type IDs held in bot's hand
@@ -196,7 +196,13 @@ export function botSelectPartnerCards(
     if (!selected.includes(card.id)) selected.push(card.id);
   }
 
-  return selected.slice(0, partnerCount);
+  // Return CalledCardSlot[] with ordinal always 1
+  return selected.slice(0, partnerCount).map((typeId) => ({
+    typeId,
+    ordinal: 1 as const,
+    assignedPartnerId: null,
+    isVoid: false,
+  }));
 }
 
 /**

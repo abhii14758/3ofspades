@@ -75,6 +75,13 @@ export interface RoundHistory {
   playerRoundDeltas?: Record<string, number>; // per-player score change this round
 }
 
+export interface CalledCardSlot {
+  typeId: string;       // e.g. "spades_A"
+  ordinal: 1 | 2;       // which occurrence (1st or 2nd time typeId is played this round)
+  assignedPartnerId: string | null;  // null = not yet assigned
+  isVoid: boolean;      // true = bidder played it OR slot deduped
+}
+
 export interface GameState {
   roomId: string;
   phase: GamePhase;
@@ -90,6 +97,8 @@ export interface GameState {
   bidWinnerId: string | null;
   partnerIds: string[];
   revealedPartnerIds: string[]; // starts empty, grows as partners play called cards
+  calledCardSlots: CalledCardSlot[];
+  playTypeCounters: Record<string, number>;
   teams: { A: Team; B: Team } | null;
   dealerIndex: number;
   currentTurnPlayerId: string | null;
@@ -175,6 +184,7 @@ export interface SelectTrumpPayload {
 export interface SelectPartnersPayload {
   roomId: string;
   cardIds: string[];
+  cardSlots?: Array<{ typeId: string; ordinal: 1 | 2 }>;
 }
 
 export interface PlayCardPayload {

@@ -60,7 +60,7 @@ export default function GamePage() {
   const handleBid = (amount: number) => placeBid(amount);
   const handlePass = () => placeBid('pass');
   const handleSelectTrump = (suit: Suit) => selectTrump(suit);
-  const handleSelectPartners = (ids: string[]) => selectPartners(ids);
+  const handleSelectPartners = (slots: Array<{ typeId: string; ordinal: 1 | 2 }>) => selectPartners(slots);
 
   const lastRoundHistory =
     gameState.roundHistory.length > 0

@@ -15,6 +15,7 @@ import { useGameStore } from '@/store/gameStore';
 import CardHand from '@/components/cards/CardHand';
 import AvatarUpload from './AvatarUpload';
 import OpponentStrip from './OpponentStrip';
+import PartnerTracker from './PartnerTracker';
 import { socketEmit } from '@/lib/socket/socketClient';
 
 const SUIT_SYMBOLS: Record<Suit, string> = {
@@ -393,7 +394,7 @@ interface GameTableProps {
   onBid?: (amount: number) => void;
   onPass?: () => void;
   onSelectTrump?: (suit: Suit) => void;
-  onSelectPartners?: (cardIds: string[]) => void;
+  onSelectPartners?: (slots: Array<{ typeId: string; ordinal: 1 | 2 }>) => void;
   isHost?: boolean;
   onTerminate?: () => void;
   partnerCount?: number;
@@ -434,6 +435,7 @@ export default function GameTable({
   // Held trick — keeps last full trick visible for 5s after it completes
   const [heldTrick, setHeldTrick] = useState<typeof gameState.currentTrick>(null);
   const myCalledCards = useGameStore((s) => s.myCalledCards);
+  const myCalledCardSlots = useGameStore((s) => s.myCalledCardSlots);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const [tableDims, setTableDims] = useState({ w: 860, h: 540 });
@@ -932,6 +934,15 @@ export default function GameTable({
             />
           )}
 
+          {/* Partner slot tracker — visible to bid winner during playing phase */}
+          {phase === 'playing' && myPlayerId === bidWinnerId && myCalledCardSlots.length > 0 && (
+            <PartnerTracker
+              slots={myCalledCardSlots}
+              players={players}
+              bidWinnerId={bidWinnerId!}
+            />
+          )}
+
           {/* Player seats — absolute by seatIndex, same layout for all players */}
           {players.map((player) => {
             const { x, y } = getSeatPosition(player.seatIndex, players.length);
@@ -1126,7 +1137,7 @@ export default function GameTable({
           myHand={myHand}
           partnerCount={partnerCount}
           deckCount={deckCount}
-          onSelect={(ids) => onSelectPartners!(ids)}
+          onSelect={(slots) => onSelectPartners!(slots)}
         />
       )}
       </div>{/* end flex-1 game section */}

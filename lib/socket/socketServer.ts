@@ -20,6 +20,7 @@ import type {
   ReconnectPayload,
   Suit,
   VoteEndPayload,
+  CalledCardSlot,
 } from '@/types';
 
 import { gameConfig, defaultRoomConfig, getConfigForPreset } from '@/config/gameConfig';
@@ -314,7 +315,6 @@ function executeAutoPlay(io: Server, roomId: string, playerId: string): void {
       if (playerId === gameState.bidWinnerId) {
         // Build the canonical deck type IDs — independent of single/double deck suffix
         const fullDeck = buildFullDeck(cfg);
-        // Pass full deck (the function handles type-ID normalization internally)
         handleSelectPartners(
           io,
           roomId,
@@ -477,7 +477,7 @@ function handleSelectPartners(
   io: Server,
   roomId: string,
   playerId: string,
-  cardIds: string[],
+  slots: Array<{ typeId: string; ordinal: 1 | 2 }>,
 ): boolean {
   const room = rooms.get(roomId);
   if (!room?.gameState) return false;
@@ -485,7 +485,10 @@ function handleSelectPartners(
   const gameState = room.gameState;
 
   const cfg = getRoomConfig(room);
-  const validation = validatePartnerSelection(gameState, playerId, cardIds, cfg);
+
+  // Validate using typeIds
+  const typeIds = slots.map(s => s.typeId);
+  const validation = validatePartnerSelection(gameState, playerId, typeIds, cfg);
   if (!validation.valid) return false;
 
   // Check bidder doesn't hold all copies of any selected typeId
@@ -498,8 +501,8 @@ function handleSelectPartners(
   }
   // Count selection occurrences per typeId
   const selectionCounts: Record<string, number> = {};
-  for (const typeId of cardIds) {
-    selectionCounts[typeId] = (selectionCounts[typeId] ?? 0) + 1;
+  for (const slot of slots) {
+    selectionCounts[slot.typeId] = (selectionCounts[slot.typeId] ?? 0) + 1;
   }
   // Reject if fewer copies exist outside the bidder's hand than slots requested
   for (const [typeId, selectCount] of Object.entries(selectionCounts)) {
@@ -507,21 +510,15 @@ function handleSelectPartners(
     if (heldCount + selectCount > deckCount) return false;
   }
 
-  // Verify enough distinct non-bidder players hold each selected typeId
-  const partnerSlots: Record<string, number> = {};
-  for (const typeId of cardIds) {
-    partnerSlots[typeId] = (partnerSlots[typeId] ?? 0) + 1;
-  }
-  for (const [typeId, slotsNeeded] of Object.entries(partnerSlots)) {
-    const holders = Object.entries(gameState.hands)
-      .filter(([pid, hand]) =>
-        pid !== playerId && hand.some((c) => getCardTypeId(c) === typeId)
-      ).length;
-    if (holders < slotsNeeded) return false;
-  }
+  // Convert to CalledCardSlot[]
+  const calledCardSlots: CalledCardSlot[] = slots.map((s) => ({
+    typeId: s.typeId,
+    ordinal: s.ordinal,
+    assignedPartnerId: null,
+    isVoid: false,
+  }));
 
-  // afterPartnersSelected handles team setup, phase transition, and first-trick init
-  const newGameState = afterPartnersSelected(gameState, cardIds);
+  const newGameState = afterPartnersSelected(gameState, calledCardSlots);
   room.gameState = newGameState;
 
   // Persist team totals for next round carry-over
@@ -539,7 +536,10 @@ function handleSelectPartners(
     bidWinnerPlayer.type === 'human' &&
     bidWinnerPlayer.status !== 'disconnected'
   ) {
-    io.to(bidWinnerPlayer.socketId).emit('player:calledCards', { cards: newGameState.calledCards });
+    io.to(bidWinnerPlayer.socketId).emit('player:calledCards', {
+      cards: newGameState.calledCards,
+      slots: newGameState.calledCardSlots,
+    });
   }
 
   syncStateToAll(io, room);
@@ -584,6 +584,7 @@ function handlePlayCard(
       playerId: revealedPartnerId,
       card,
       partnerName: partnerPlayer?.name ?? 'Unknown',
+      calledCardSlots: newState.calledCardSlots,
     });
   }
 
@@ -985,7 +986,8 @@ export function setupSocketServer(io: Server): void {
         socket.emit('room:error', { message: 'Invalid room' });
         return;
       }
-      if (!handleSelectPartners(io, payload.roomId, info.playerId, payload.cardIds)) {
+      const slots = payload.cardSlots ?? (payload.cardIds?.map(id => ({ typeId: id, ordinal: 1 as const })) ?? []);
+      if (!handleSelectPartners(io, payload.roomId, info.playerId, slots)) {
         socket.emit('room:error', { message: 'Invalid partner selection' });
       }
     });
@@ -1168,7 +1170,10 @@ export function setupSocketServer(io: Server): void {
 
         // Re-send called cards if this player is the bid winner and already selected partners
         if (playerId === room.gameState.bidWinnerId && room.gameState.calledCards.length > 0) {
-          socket.emit('player:calledCards', { cards: room.gameState.calledCards });
+          socket.emit('player:calledCards', {
+            cards: room.gameState.calledCards,
+            slots: room.gameState.calledCardSlots ?? [],
+          });
         }
       }
     });

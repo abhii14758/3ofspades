@@ -17,6 +17,7 @@ import type {
   TeamId,
   Card,
   RoundHistory,
+  CalledCardSlot,
 } from '@/types';
 
 export function useSocket() {
@@ -108,8 +109,9 @@ export function useSocket() {
       gameStore.setMyHand(cards);
     });
 
-    socket.on('player:calledCards', ({ cards }: { cards: Card[] }) => {
+    socket.on('player:calledCards', ({ cards, slots }: { cards: Card[]; slots?: CalledCardSlot[] }) => {
       gameStore.setMyCalledCards(cards);
+      if (slots) gameStore.setMyCalledCardSlots(slots);
       toast.success('Partner cards selected! Keep them secret.');
     });
 
@@ -203,12 +205,14 @@ export function useSocket() {
         playerId: pid,
         card,
         partnerName,
+        calledCardSlots,
       }: {
         playerId: string;
         card: Card;
         partnerName: string;
+        calledCardSlots?: CalledCardSlot[];
       }) => {
-        gameStore.applyPartnerRevealed(pid, card, partnerName);
+        gameStore.applyPartnerRevealed(pid, card, partnerName, calledCardSlots);
         toast.success(`🎉 Partner revealed: ${partnerName}!`, { duration: 4000 });
       }
     );

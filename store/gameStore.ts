@@ -10,12 +10,14 @@ import type {
   Suit,
   RoundHistory,
   Player,
+  CalledCardSlot,
 } from '@/types';
 
 interface GameStore {
   gameState: GameState | null;
   myHand: Card[];
   myCalledCards: Card[];
+  myCalledCardSlots: CalledCardSlot[];
   lastPlayedCard: { playerId: string; card: Card } | null;
   lastRevealedPartner: { playerId: string; partnerName: string } | null;
   showRoundResult: boolean;
@@ -26,6 +28,7 @@ interface GameStore {
   setGameState: (state: GameState) => void;
   setMyHand: (cards: Card[]) => void;
   setMyCalledCards: (cards: Card[]) => void;
+  setMyCalledCardSlots: (slots: CalledCardSlot[]) => void;
   updateBidState: (bidState: BidState, currentTurnPlayerId: string) => void;
   updateTrump: (trumpSuit: Suit, currentTurnPlayerId: string) => void;
   setTurnTimer: (endsAt: number | null) => void;
@@ -36,7 +39,7 @@ interface GameStore {
     nextTurnPlayerId: string,
     teams: { A: Team; B: Team }
   ) => void;
-  applyPartnerRevealed: (playerId: string, card: Card, partnerName: string) => void;
+  applyPartnerRevealed: (playerId: string, card: Card, partnerName: string, calledCardSlots?: CalledCardSlot[]) => void;
   setRoundEnd: (
     roundHistory: RoundHistory,
     teams: { A: Team; B: Team },
@@ -61,6 +64,7 @@ const initialState = {
   gameState: null,
   myHand: [] as Card[],
   myCalledCards: [] as Card[],
+  myCalledCardSlots: [] as CalledCardSlot[],
   lastPlayedCard: null,
   lastRevealedPartner: null,
   showRoundResult: false,
@@ -80,6 +84,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   setMyHand: (cards) => set({ myHand: cards }),
 
   setMyCalledCards: (cards) => set({ myCalledCards: cards }),
+
+  setMyCalledCardSlots: (slots) => set({ myCalledCardSlots: slots }),
 
   updateBidState: (bidState, currentTurnPlayerId) =>
     set((s) => ({
@@ -137,13 +143,14 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       };
     }),
 
-  applyPartnerRevealed: (playerId, _card, partnerName) =>
+  applyPartnerRevealed: (playerId, _card, partnerName, calledCardSlots?) =>
     set((s) => ({
       lastRevealedPartner: { playerId, partnerName },
       gameState: s.gameState ? {
         ...s.gameState,
         revealedPartnerIds: [...(s.gameState.revealedPartnerIds ?? []), playerId],
         partnerIds: [...(s.gameState.partnerIds ?? []), playerId],
+        calledCardSlots: calledCardSlots ?? s.gameState.calledCardSlots,
       } : null,
     })),
 

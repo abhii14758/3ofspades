@@ -33,9 +33,13 @@ export function useGame() {
     socketEmit.selectTrump({ roomId, suit });
   };
 
-  const selectPartners = (cardIds: string[]) => {
+  const selectPartners = (slots: Array<{ typeId: string; ordinal: 1 | 2 }>) => {
     if (!roomId) return;
-    socketEmit.selectPartners({ roomId, cardIds });
+    socketEmit.selectPartners({
+      roomId,
+      cardIds: slots.map(s => s.typeId),  // backward compat
+      cardSlots: slots,
+    });
   };
 
   const startNextRound = () => {
