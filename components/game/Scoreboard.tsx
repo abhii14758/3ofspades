@@ -16,6 +16,7 @@ interface ScoreboardProps {
   trumpSuit: Suit | null;
   roundNumber: number;
   revealedPartnerIds?: string[];
+  playerTotals?: Record<string, number>;
 }
 
 export default function Scoreboard({
@@ -26,6 +27,7 @@ export default function Scoreboard({
   trumpSuit,
   roundNumber,
   revealedPartnerIds = [],
+  playerTotals = {},
 }: ScoreboardProps) {
   const [open, setOpen] = useState(false);
 
@@ -124,7 +126,7 @@ export default function Scoreboard({
                   </div>
                 )}
 
-                {/* Teams */}
+                {/* Teams with per-player scores */}
                 {teams ? (
                   <div className="space-y-3">
                     {(['A', 'B'] as const).map((teamId, ti) => {
@@ -154,10 +156,10 @@ export default function Scoreboard({
                             </div>
                             <div className="flex flex-col items-end">
                               <span className={clsx(
-                                'text-2xl font-black',
-                                team.totalPoints < 0 ? 'text-red-400' : ti === 0 ? 'text-sky-400' : 'text-orange-400'
+                                'text-xs font-bold',
+                                ti === 0 ? 'text-sky-400/70' : 'text-orange-400/70'
                               )}>
-                                {team.totalPoints < 0 ? `−${Math.abs(team.totalPoints)}` : team.totalPoints}
+                                {team.roundPoints} round pts
                               </span>
                               {isBidTeam && bidAmount && (
                                 <span className={clsx(
@@ -170,45 +172,35 @@ export default function Scoreboard({
                             </div>
                           </div>
 
-                          {/* Players */}
-                          <div className="space-y-0.5">
-                            {knownPlayerIds.map((id) => (
-                              <div key={id} className="flex items-center gap-1.5 text-xs text-slate-300">
-                                <span className={clsx('w-1.5 h-1.5 rounded-full shrink-0', ti === 0 ? 'bg-sky-400' : 'bg-orange-400')} />
-                                <span className="truncate">{getPlayerName(id)}</span>
-                                {id === bidWinnerId && <span className="text-yellow-400 text-[10px]">★ Bid Winner</span>}
-                                {revealedPartnerIds.includes(id) && id !== bidWinnerId && (
-                                  <span className="text-emerald-400 text-[10px]">✓ Partner</span>
-                                )}
-                              </div>
-                            ))}
+                          {/* Per-player scores */}
+                          <div className="space-y-1">
+                            {knownPlayerIds.map((id) => {
+                              const total = playerTotals[id] ?? 0;
+                              return (
+                                <div key={id} className="flex items-center justify-between text-xs">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className={clsx('w-1.5 h-1.5 rounded-full shrink-0', ti === 0 ? 'bg-sky-400' : 'bg-orange-400')} />
+                                    <span className="truncate text-slate-300">{getPlayerName(id)}</span>
+                                    {id === bidWinnerId && <span className="text-yellow-400 text-[9px] shrink-0">★</span>}
+                                    {revealedPartnerIds.includes(id) && id !== bidWinnerId && (
+                                      <span className="text-emerald-400 text-[9px] shrink-0">✓</span>
+                                    )}
+                                  </div>
+                                  <span className={clsx(
+                                    'font-black text-sm tabular-nums shrink-0 ml-2',
+                                    total > 0 ? (ti === 0 ? 'text-sky-300' : 'text-orange-300') : total < 0 ? 'text-red-400' : 'text-slate-500'
+                                  )}>
+                                    {total > 0 ? total : total < 0 ? `−${Math.abs(total)}` : '0'}
+                                  </span>
+                                </div>
+                              );
+                            })}
                             {hiddenCount > 0 && (
                               <div className="flex items-center gap-1.5 text-xs text-slate-500 italic">
                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0" />
                                 +{hiddenCount} hidden partner{hiddenCount > 1 ? 's' : ''}
                               </div>
                             )}
-                          </div>
-
-                          {/* Stats */}
-                          <div className="flex gap-4 pt-1 border-t border-slate-700/30 text-xs">
-                            <div>
-                              <span className="text-slate-500">Tricks</span>
-                              <span className="ml-1.5 font-bold text-slate-200">{team.tricksWon}</span>
-                            </div>
-                            <div>
-                              <span className="text-slate-500">Round pts</span>
-                              <span className="ml-1.5 font-bold text-slate-200">{team.roundPoints}</span>
-                            </div>
-                            <div>
-                              <span className="text-slate-500">Cumulative</span>
-                              <span className={clsx(
-                                'ml-1.5 font-bold',
-                                team.totalPoints < 0 ? 'text-red-400' : ti === 0 ? 'text-sky-400' : 'text-orange-400'
-                              )}>
-                                {team.totalPoints < 0 ? `−${Math.abs(team.totalPoints)}` : team.totalPoints}
-                              </span>
-                            </div>
                           </div>
                         </div>
                       );

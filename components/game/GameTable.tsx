@@ -86,8 +86,10 @@ function getPlayerPositions(
 }
 
 // ── Deal animation ─────────────────────────────────────────────────────────────
-// CARD_INTERVAL controls pace; total duration = N_players * cardsPerPlayer * CARD_INTERVAL
-const DEAL_INTERVAL = 0.28; // seconds per card — 6p×8cards = 13.4s, 10p×9cards = 25.2s capped
+// Shows cardsPerPlayer "rounds" — in each round ALL players receive one card simultaneously.
+// Total visual duration = cardsPerPlayer * ROUND_INTERVAL (e.g. 9 rounds × 0.5s = 4.5s)
+const ROUND_INTERVAL = 0.5; // seconds between each dealing round
+const CARD_FLIGHT = 0.42;   // seconds for one card to fly to its player
 
 function DealAnimation({
   players,
@@ -107,34 +109,26 @@ function DealAnimation({
   onComplete: () => void;
 }) {
   const N = players.length;
-  const ROUNDS = cardsPerPlayer; // always deal all cards — no artificial cap
-  const totalCards = N * ROUNDS;
-  const totalDuration = totalCards * DEAL_INTERVAL;
+  const ROUNDS = cardsPerPlayer; // one visual round per card per player
+  const totalDuration = ROUNDS * ROUND_INTERVAL + CARD_FLIGHT;
 
-  // Fire onComplete
+  // Fire onComplete after all rounds finish
   useEffect(() => {
     const t = setTimeout(onComplete, totalDuration * 1000 + 800);
     return () => clearTimeout(t);
   }, [totalDuration, onComplete]);
 
-  // Fire onCardDealtToMe for each card arriving at local player (relIndex === 0)
+  // Fire onCardDealtToMe once per round (when the card for "me" arrives)
   useEffect(() => {
-    const myIdx = players.findIndex((p) => p.id === myPlayerId);
     const timers: ReturnType<typeof setTimeout>[] = [];
     for (let round = 0; round < ROUNDS; round++) {
-      for (let pi = 0; pi < N; pi++) {
-        const player = players[pi];
-        const relIdx = (players.findIndex(p => p.id === player.id) - myIdx + N) % N;
-        if (relIdx === 0) {
-          const delay = (round * N + pi) * DEAL_INTERVAL * 1000 + 500; // +500ms = card arrives
-          timers.push(setTimeout(onCardDealtToMe, delay));
-        }
-      }
+      const delay = round * ROUND_INTERVAL * 1000 + (CARD_FLIGHT * 1000 * 0.6);
+      timers.push(setTimeout(onCardDealtToMe, delay));
     }
     return () => timers.forEach(clearTimeout);
-  }, [players, myPlayerId, N, ROUNDS, onCardDealtToMe]);
+  }, [ROUNDS, onCardDealtToMe]);
 
-  // Calculate player positions as pixel offsets from table center
+  // Player positions as pixel offsets from table center
   const positions = useMemo(() => {
     const myIdx = players.findIndex((p) => p.id === myPlayerId);
     const rx = 0.46;
@@ -149,14 +143,16 @@ function DealAnimation({
     });
   }, [players, myPlayerId, N, tableW, tableH]);
 
-  // Round-robin deal sequence
+  // Build card list: each round has N cards (one per player), all flying simultaneously
   const cards = useMemo(() => {
-    const result: { key: number; delay: number; playerIdx: number; rotation: number }[] = [];
+    const result: { key: number; roundDelay: number; playerIdx: number; playerDelay: number; rotation: number }[] = [];
     for (let round = 0; round < ROUNDS; round++) {
       for (let pi = 0; pi < N; pi++) {
         result.push({
           key: round * N + pi,
-          delay: (round * N + pi) * DEAL_INTERVAL,
+          roundDelay: round * ROUND_INTERVAL,
+          // stagger slightly within the round so cards don't stack exactly
+          playerDelay: round * ROUND_INTERVAL + pi * 0.04,
           playerIdx: pi,
           rotation: (Math.random() - 0.5) * 18,
         });
@@ -208,8 +204,8 @@ function DealAnimation({
         </div>
       </motion.div>
 
-      {/* Flying cards — one at a time, round-robin */}
-      {cards.map(({ key, delay, playerIdx, rotation }) => {
+      {/* Flying cards — all players get a card simultaneously each round */}
+      {cards.map(({ key, playerDelay, playerIdx, rotation }) => {
         const { dx, dy } = positions[playerIdx];
         return (
           <motion.div
@@ -235,11 +231,11 @@ function DealAnimation({
               rotate: rotation,
             }}
             transition={{
-              delay,
-              duration: 0.52,
+              delay: playerDelay,
+              duration: CARD_FLIGHT,
               ease: [0.16, 1, 0.3, 1],
-              opacity: { times: [0, 0.07, 0.55, 0.82, 1], duration: 0.58, delay },
-              scale: { times: [0, 0.3, 1], duration: 0.52, delay },
+              opacity: { times: [0, 0.07, 0.55, 0.82, 1], duration: CARD_FLIGHT + 0.06, delay: playerDelay },
+              scale: { times: [0, 0.3, 1], duration: CARD_FLIGHT, delay: playerDelay },
             }}
           >
             <div style={{
@@ -447,6 +443,18 @@ export default function GameTable({
     }
   }, [gameState.phase]);
 
+  // Keyboard shortcut: H to toggle hide cards
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'h' || e.key === 'H') {
+        if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+        setHandHidden(v => !v);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
+
   const handleDealComplete = useCallback(() => setDealAnimDone(true), []);
   const handleSkipDeal = useCallback(() => {
     setDealAnimDone(true);
@@ -634,6 +642,7 @@ export default function GameTable({
             trumpSuit={trumpSuit}
             roundNumber={roundNumber}
             revealedPartnerIds={revealedPartnerIds}
+            playerTotals={gameState.playerTotals ?? {}}
           />
         </div>
 
@@ -656,17 +665,6 @@ export default function GameTable({
         </div> */}
 
         <AvatarUpload roomId={gameState.roomId} className="shrink-0" />
-        <button
-          onClick={() => setHandHidden(v => !v)}
-          className={`shrink-0 text-xs px-2 py-1 rounded border transition-colors ${
-            handHidden
-              ? 'bg-amber-900/60 border-amber-700/60 text-amber-300'
-              : 'bg-slate-800/80 border-slate-700/50 text-slate-400 hover:text-slate-300'
-          }`}
-          title={handHidden ? 'Show cards' : 'Hide cards'}
-        >
-          {handHidden ? '👁️' : '🙈'}
-        </button>
       </motion.div>
 
       {/* ── Opponent strip — mobile portrait only ── */}
@@ -1017,6 +1015,22 @@ export default function GameTable({
         {/* Normal play — partner cards bar + full hand */}
         {!showDealAnim && (
           <>
+            {/* Hide/show button — above cards, easy to reach */}
+            <div className="flex items-center justify-center pt-1 pb-0.5">
+              <button
+                onClick={() => setHandHidden(v => !v)}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border font-semibold transition-all ${
+                  handHidden
+                    ? 'bg-amber-900/70 border-amber-600/70 text-amber-300 shadow-[0_0_8px_rgba(217,119,6,0.3)]'
+                    : 'bg-slate-800/80 border-slate-700/50 text-slate-400 hover:text-slate-200 hover:border-slate-500/70'
+                }`}
+                title={`${handHidden ? 'Show' : 'Hide'} cards (H)`}
+              >
+                <span>{handHidden ? '👁️' : '🙈'}</span>
+                <span>{handHidden ? 'Show' : 'Hide'}</span>
+                <kbd className="ml-1 text-[9px] px-1 py-0.5 rounded bg-slate-700/60 border border-slate-600/50 text-slate-500 font-mono">H</kbd>
+              </button>
+            </div>
             {calledCards.length > 0 && phase === 'playing' && (
               <div className="flex items-center justify-center gap-1.5 mb-1.5 px-3 flex-wrap">
                 <span className="text-xs text-slate-400 shrink-0 font-medium">
