@@ -28,7 +28,7 @@ const CARD_POINTS: Record<Rank, number> = {
 
 function makeAllCards(): CardType[] {
   return ALL_SUITS.flatMap((suit) =>
-    ALL_RANKS.map((rank) => ({ id: `${suit}_${rank}`, suit, rank, points: CARD_POINTS[rank] }))
+    ALL_RANKS.map((rank) => ({ id: `${suit}_${rank}`, suit, rank, points: CARD_POINTS[rank], deckColor: 'red' as const }))
   );
 }
 
@@ -37,6 +37,7 @@ interface PartnerSelectorProps {
   trumpSuit: Suit;
   myHand: CardType[];
   partnerCount?: number; // default 2
+  deckCount?: number; // default 1
 }
 
 /** Normalise a card ID to its canonical type ID (strips _0/_1 double-deck suffix). */
@@ -57,16 +58,38 @@ export default function PartnerSelector({
   trumpSuit,
   myHand,
   partnerCount = 2,
+  deckCount = 1,
 }: PartnerSelectorProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  // Normalise hand card IDs to type IDs so double-deck cards still match
-  const myHandTypeIds = useMemo(() => new Set(myHand.map((c) => toTypeId(c.id))), [myHand]);
+  
+  // Count how many copies of each type the bidder holds
+  const myHandTypeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const c of myHand) {
+      const t = toTypeId(c.id);
+      counts[t] = (counts[t] ?? 0) + 1;
+    }
+    return counts;
+  }, [myHand]);
 
-  const toggle = (cardId: string) => {
+  const toggleCard = (cardId: string) => {
     setSelectedIds((prev) => {
-      if (prev.includes(cardId)) return prev.filter((id) => id !== cardId);
-      if (prev.length >= partnerCount) return [...prev.slice(1), cardId];
-      return [...prev, cardId];
+      const currentCount = prev.filter((id) => id === cardId).length;
+      const heldCount = myHandTypeCounts[cardId] ?? 0;
+      const maxSelectable = deckCount - heldCount;
+
+      if (currentCount === 0) {
+        // First selection
+        if (prev.length >= partnerCount) return [...prev.slice(1), cardId];
+        return [...prev, cardId];
+      } else if (currentCount === 1 && deckCount === 2 && maxSelectable >= 2) {
+        // In double-deck, clicking again selects both copies
+        if (prev.length >= partnerCount) return [...prev.slice(1), cardId];
+        return [...prev, cardId];
+      } else {
+        // Deselect all copies
+        return prev.filter((id) => id !== cardId);
+      }
     });
   };
 
@@ -135,23 +158,25 @@ export default function PartnerSelector({
               {/* Cards */}
               <div className="flex flex-wrap gap-1.5">
                 {ALL_RANKS.map((rank) => {
-                  const cardId = `${suit}_${rank}`;
-                  const isSelected = selectedIds.includes(cardId);
-                  const isInHand = myHandTypeIds.has(cardId);
+                  const cardTypeId = `${suit}_${rank}`;
+                  const selectedCount = selectedIds.filter(id => id === cardTypeId).length;
+                  const heldCount = myHandTypeCounts[cardTypeId] ?? 0;
+                  const maxSelectable = deckCount - heldCount;
+                  const isFullyInHand = maxSelectable <= 0;
 
                   return (
                     <motion.button
-                      key={cardId}
-                      onClick={() => !isInHand && toggle(cardId)}
-                      disabled={isInHand}
-                      title={isInHand ? 'In your hand — cannot select' : undefined}
-                      whileHover={isInHand ? {} : { scale: 1.05 }}
-                      whileTap={isInHand ? {} : { scale: 0.94 }}
+                      key={cardTypeId}
+                      onClick={() => !isFullyInHand && toggleCard(cardTypeId)}
+                      disabled={isFullyInHand}
+                      title={isFullyInHand ? 'In your hand — cannot select' : selectedCount === 2 ? 'Both copies selected (click to deselect)' : undefined}
+                      whileHover={isFullyInHand ? {} : { scale: 1.05 }}
+                      whileTap={isFullyInHand ? {} : { scale: 0.94 }}
                       className={clsx(
                         'relative w-10 h-14 rounded-lg border-2 flex flex-col justify-between p-1 text-[10px] font-bold transition-all',
-                        isInHand
+                        isFullyInHand
                           ? 'border-slate-700 bg-slate-900/60 opacity-50 cursor-not-allowed'
-                          : isSelected
+                          : selectedCount > 0
                             ? 'border-sky-400 bg-sky-950/50 shadow-[0_0_12px_rgba(56,189,248,0.4)] scale-105'
                             : isRed(suit)
                               ? 'border-slate-600 bg-slate-800 text-red-400 hover:border-slate-400 hover:scale-105'
@@ -161,7 +186,7 @@ export default function PartnerSelector({
                       {/* Top rank + suit */}
                       <div className={clsx(
                         'leading-none',
-                        isInHand ? 'text-slate-600' : isSelected ? 'text-sky-300' : isRed(suit) ? 'text-red-400' : 'text-slate-100'
+                        isFullyInHand ? 'text-slate-600' : selectedCount > 0 ? 'text-sky-300' : isRed(suit) ? 'text-red-400' : 'text-slate-100'
                       )}>
                         <div>{rank}</div>
                         <div>{SUIT_SYMBOLS[suit]}</div>
@@ -170,14 +195,20 @@ export default function PartnerSelector({
                       {/* Center suit symbol */}
                       <div className={clsx(
                         'self-center text-base leading-none',
-                        isInHand ? 'text-slate-600' : isSelected ? 'text-sky-300' : isRed(suit) ? 'text-red-400' : 'text-slate-100'
+                        isFullyInHand ? 'text-slate-600' : selectedCount > 0 ? 'text-sky-300' : isRed(suit) ? 'text-red-400' : 'text-slate-100'
                       )}>
                         {SUIT_SYMBOLS[suit]}
                       </div>
 
-                      {/* Amber dot for in-hand cards */}
-                      {isInHand && (
-                        <div className="absolute bottom-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
+                      {/* Amber dot for held cards */}
+                      {heldCount > 0 && (
+                        <div className="absolute bottom-1 right-1 w-2 h-2 bg-amber-500 rounded-full"
+                             title={`${heldCount}/${deckCount} in your hand`} />
+                      )}
+
+                      {/* Sky-blue dot for both copies selected */}
+                      {selectedCount === 2 && (
+                        <div className="absolute top-1 right-1 w-2 h-2 bg-sky-400 rounded-full" />
                       )}
                     </motion.button>
                   );
@@ -225,9 +256,10 @@ export default function PartnerSelector({
             )}
           >
             {isComplete
-              ? `Confirm: ${selectedIds.map((id) => {
+              ? `Confirm: ${[...new Set(selectedIds)].map((id) => {
                   const [s, r] = id.split('_') as [Suit, Rank];
-                  return `${r}${SUIT_SYMBOLS[s]}`;
+                  const count = selectedIds.filter(x => x === id).length;
+                  return `${r}${SUIT_SYMBOLS[s]}${count === 2 ? '×2' : ''}`;
                 }).join(', ')}`
               : `Select ${partnerCount - selectedIds.length} more card${partnerCount - selectedIds.length !== 1 ? 's' : ''}`}
           </motion.button>

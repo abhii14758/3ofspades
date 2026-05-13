@@ -90,6 +90,7 @@ export default function GamePage() {
         maxBid={roomGameConfig.totalRoundPoints}
         totalTricks={roomGameConfig.totalTricks}
         turnTimerTotalSeconds={currentRoom?.config?.turnTimerSeconds ?? 30}
+        deckCount={roomGameConfig.deckCount}
       />
 
       {showRoundResult && lastRoundHistory && gameState.teams && (

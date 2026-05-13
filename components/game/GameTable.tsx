@@ -369,6 +369,7 @@ interface GameTableProps {
   maxBid?: number;
   totalTricks?: number;
   turnTimerTotalSeconds?: number;
+  deckCount?: number;
 }
 
 export default function GameTable({
@@ -386,6 +387,7 @@ export default function GameTable({
   maxBid = 250,
   totalTricks = 8,
   turnTimerTotalSeconds = 30,
+  deckCount = 1,
 }: GameTableProps) {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   // const [chatOpen, setChatOpen] = useState(false);
@@ -1096,6 +1098,7 @@ export default function GameTable({
           trumpSuit={trumpSuit!}
           myHand={myHand}
           partnerCount={partnerCount}
+          deckCount={deckCount}
           onSelect={(ids) => onSelectPartners!(ids)}
         />
       )}
