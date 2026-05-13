@@ -63,6 +63,9 @@ export const socketEmit = {
   setReady: (roomId: string) =>
     getSocket().emit('room:ready', { roomId }),
 
+  kickPlayer: (roomId: string, targetPlayerId: string) =>
+    getSocket().emit('room:kickPlayer', { roomId, targetPlayerId }),
+
   addBot: (roomId: string) =>
     getSocket().emit('room:addBot', { roomId }),
 

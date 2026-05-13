@@ -807,6 +807,61 @@ export function setupSocketServer(io: Server): void {
       io.to(payload.roomId).emit('room:updated', { room: getSafeRoom(room) });
     });
 
+    // ── room:kickPlayer ───────────────────────────────────────────────────
+    socket.on('room:kickPlayer', (payload: { roomId: string; targetPlayerId: string }) => {
+      const info = socketToPlayer.get(socket.id);
+      if (!info) return;
+
+      const room = rooms.get(payload.roomId);
+      if (!room) return;
+
+      if (info.playerId !== room.hostId) {
+        socket.emit('room:error', { message: 'Only the host can remove players' });
+        return;
+      }
+      if (room.gameState) {
+        socket.emit('room:error', { message: 'Cannot remove players during a game' });
+        return;
+      }
+      if (payload.targetPlayerId === room.hostId) {
+        socket.emit('room:error', { message: 'Host cannot kick themselves' });
+        return;
+      }
+
+      const targetPlayer = room.players.find((p) => p.id === payload.targetPlayerId);
+      if (!targetPlayer) {
+        socket.emit('room:error', { message: 'Player not found' });
+        return;
+      }
+
+      // Cancel any pending disconnect timer for this player
+      const existingTimer = disconnectTimers.get(payload.targetPlayerId);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+        disconnectTimers.delete(payload.targetPlayerId);
+      }
+
+      // Remove from room
+      room.players = room.players.filter((p) => p.id !== payload.targetPlayerId);
+
+      // Notify the kicked player
+      if (targetPlayer.socketId) {
+        io.to(targetPlayer.socketId).emit('room:kicked', {
+          reason: 'You were removed from the room by the host',
+        });
+        // Remove their socket→player mapping
+        for (const [sid, info] of socketToPlayer.entries()) {
+          if (info.playerId === payload.targetPlayerId) {
+            socketToPlayer.delete(sid);
+            break;
+          }
+        }
+      }
+
+      // Notify everyone else
+      io.to(payload.roomId).emit('room:updated', { room: getSafeRoom(room) });
+    });
+
     // ── game:start ────────────────────────────────────────────────────────
     socket.on('game:start', (payload: { roomId: string }) => {
       const info = socketToPlayer.get(socket.id);
@@ -1103,19 +1158,18 @@ export function setupSocketServer(io: Server): void {
           delete currentRoom.gameState.hands[playerId];
           currentRoom.players.splice(idx, 1);
         } else {
+          // Lobby — if host left, close the room entirely
+          if (currentRoom.hostId === playerId) {
+            rooms.delete(roomId);
+            io.to(roomId).emit('room:closed', { reason: 'Host has left the room' });
+            return;
+          }
+
           currentRoom.players.splice(idx, 1);
 
           if (currentRoom.players.length === 0) {
             rooms.delete(roomId);
             return;
-          }
-
-          // Transfer host to the next available human
-          if (currentRoom.hostId === playerId) {
-            const newHost =
-              currentRoom.players.find((p) => p.type === 'human') ?? currentRoom.players[0];
-            newHost.isHost = true;
-            currentRoom.hostId = newHost.id;
           }
         }
 

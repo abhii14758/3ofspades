@@ -89,8 +89,24 @@ export default function RoomPage() {
       clearRoom();
       router.push('/');
     };
+    const onKicked = ({ reason }: { reason: string }) => {
+      toast.error(reason ?? 'You were removed from the room');
+      clearRoom();
+      router.push('/');
+    };
+    const onRoomClosed = ({ reason }: { reason: string }) => {
+      toast.error(reason ?? 'Room was closed');
+      clearRoom();
+      router.push('/');
+    };
     socket.on('game:terminated', onTerminated);
-    return () => { socket.off('game:terminated', onTerminated); };
+    socket.on('room:kicked', onKicked);
+    socket.on('room:closed', onRoomClosed);
+    return () => {
+      socket.off('game:terminated', onTerminated);
+      socket.off('room:kicked', onKicked);
+      socket.off('room:closed', onRoomClosed);
+    };
   }, [clearRoom, router]);
 
   const room = currentRoom;
@@ -411,7 +427,17 @@ export default function RoomPage() {
                       <p className="text-xs text-slate-500 mt-0.5">Seat {player.seatIndex + 1}</p>
                     </div>
 
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex items-center gap-2">
+                      {/* Kick button — only host sees it, not for self, only in lobby */}
+                      {isHost && !isLocal && !gameState && (
+                        <button
+                          onClick={() => socketEmit.kickPlayer(roomId, player.id)}
+                          className="w-7 h-7 rounded-full flex items-center justify-center bg-red-900/30 hover:bg-red-800/60 border border-red-700/40 hover:border-red-600/60 text-red-400 hover:text-red-300 transition-all text-xs"
+                          title={`Remove ${player.name}`}
+                        >
+                          ✕
+                        </button>
+                      )}
                       {ready ? (
                         <span className="inline-flex items-center gap-1 text-xs bg-green-900/40 text-emerald-400 border border-emerald-700/40 px-2.5 py-1 rounded-full font-medium">
                           ✓ Ready
