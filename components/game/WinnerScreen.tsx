@@ -12,6 +12,7 @@ interface WinnerScreenProps {
   winnerTeamId: 'A' | 'B';
   teams: { A: Team; B: Team };
   players: Player[];
+  playerTotals: Record<string, number>;
   roundHistory: RoundHistory[];
   onPlayAgain: () => void;
   onHome: () => void;
@@ -44,6 +45,7 @@ export default function WinnerScreen({
   winnerTeamId,
   teams,
   players,
+  playerTotals,
   roundHistory,
   onPlayAgain,
   onHome,
@@ -103,7 +105,7 @@ export default function WinnerScreen({
           {getTeamNames(winnerTeam)}
         </motion.p>
 
-        {/* Final score card */}
+        {/* Final scores — per-player leaderboard */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -113,36 +115,46 @@ export default function WinnerScreen({
           <div className="px-5 py-3 bg-slate-800/60 border-b border-slate-700 text-left">
             <p className="text-slate-300 font-bold text-sm">Final Scores</p>
           </div>
-          <div className="grid grid-cols-2 divide-x divide-slate-700">
-            {(['A', 'B'] as const).map((tid) => {
-              const team = teams[tid];
-              const isWinner = tid === winnerTeamId;
-              return (
-                <div
-                  key={tid}
-                  className={clsx(
-                    'px-5 py-4 text-center',
-                    isWinner
-                      ? 'bg-amber-900/20 border border-amber-600/30'
-                      : 'bg-slate-800/40'
-                  )}
-                >
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide">
-                      Team {tid}
+          <div className="divide-y divide-slate-700/50">
+            {[...players]
+              .sort((a, b) => (playerTotals[b.id] ?? 0) - (playerTotals[a.id] ?? 0))
+              .map((p, rank) => {
+                const onTeamA = teams.A.playerIds.includes(p.id);
+                const teamId = onTeamA ? 'A' : 'B';
+                const isWinnerPlayer = teamId === winnerTeamId;
+                const total = playerTotals[p.id] ?? 0;
+                return (
+                  <div
+                    key={p.id}
+                    className={clsx(
+                      'flex items-center gap-3 px-5 py-3',
+                      isWinnerPlayer ? 'bg-amber-900/15' : 'bg-slate-800/30'
+                    )}
+                  >
+                    <span className={clsx(
+                      'w-6 text-center font-black text-sm',
+                      rank === 0 ? 'text-amber-400' : rank === 1 ? 'text-slate-300' : 'text-slate-500'
+                    )}>
+                      {rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `#${rank + 1}`}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-100 truncate text-sm">{p.name}</p>
+                      <span className={clsx(
+                        'text-[10px] font-semibold px-1.5 py-0.5 rounded',
+                        teamId === 'A' ? 'text-sky-300 bg-sky-900/50' : 'text-orange-300 bg-orange-900/50'
+                      )}>
+                        Team {teamId} {isWinnerPlayer ? '🏆' : ''}
+                      </span>
+                    </div>
+                    <p className={clsx(
+                      'font-black text-xl tabular-nums',
+                      total > 0 ? (isWinnerPlayer ? 'text-amber-300' : 'text-slate-200') : 'text-red-400'
+                    )}>
+                      {total}
                     </p>
-                    {isWinner && <span className="text-xs text-amber-400 font-bold">🏆 WINNER</span>}
                   </div>
-                  <p className={clsx(
-                    'text-3xl font-black',
-                    isWinner ? 'text-amber-300' : 'text-slate-400'
-                  )}>
-                    {team.totalPoints}
-                  </p>
-                  <p className="text-[11px] text-slate-500 mt-1 truncate">{getTeamNames(team)}</p>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </motion.div>
 

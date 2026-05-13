@@ -97,6 +97,7 @@ export default function GamePage() {
           roundHistory={lastRoundHistory}
           teams={gameState.teams}
           players={gameState.players}
+          playerTotals={gameState.playerTotals ?? {}}
           winnerTeamId={gameState.winnerTeamId}
           myPlayerId={playerId ?? ''}
           isHost={gameState.players.find((p) => p.id === playerId)?.isHost ?? false}
@@ -110,6 +111,7 @@ export default function GamePage() {
           winnerTeamId={gameState.winnerTeamId}
           teams={gameState.teams}
           players={gameState.players}
+          playerTotals={gameState.playerTotals ?? {}}
           roundHistory={gameState.roundHistory}
           onHome={() => router.push('/')}
           onPlayAgain={() => router.push('/lobby')}

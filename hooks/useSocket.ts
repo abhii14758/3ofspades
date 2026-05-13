@@ -221,12 +221,14 @@ export function useSocket() {
         roundHistory,
         teams,
         winnerTeamId,
+        playerTotals,
       }: {
         roundHistory: RoundHistory;
         teams: { A: Team; B: Team };
         winnerTeamId: TeamId | null;
+        playerTotals?: Record<string, number>;
       }) => {
-        gameStore.setRoundEnd(roundHistory, teams, winnerTeamId);
+        gameStore.setRoundEnd(roundHistory, teams, winnerTeamId, playerTotals);
       }
     );
 
@@ -235,12 +237,14 @@ export function useSocket() {
       ({
         winnerTeamId,
         teams,
+        playerTotals,
       }: {
         winnerTeamId: TeamId;
         teams: { A: Team; B: Team };
         roundHistory: RoundHistory[];
+        playerTotals?: Record<string, number>;
       }) => {
-        gameStore.setGameEnd(winnerTeamId, teams);
+        gameStore.setGameEnd(winnerTeamId, teams, playerTotals);
         toast.success(`🏆 Team ${winnerTeamId} wins the game!`, { duration: 8000 });
       }
     );

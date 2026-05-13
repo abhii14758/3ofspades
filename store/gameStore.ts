@@ -40,9 +40,10 @@ interface GameStore {
   setRoundEnd: (
     roundHistory: RoundHistory,
     teams: { A: Team; B: Team },
-    winnerTeamId: TeamId | null
+    winnerTeamId: TeamId | null,
+    playerTotals?: Record<string, number>
   ) => void;
-  setGameEnd: (winnerTeamId: TeamId, teams: { A: Team; B: Team }) => void;
+  setGameEnd: (winnerTeamId: TeamId, teams: { A: Team; B: Team }, playerTotals?: Record<string, number>) => void;
   dismissRoundResult: () => void;
   reset: () => void;
 
@@ -146,7 +147,7 @@ export const useGameStore = create<GameStore>()((set, get) => ({
       } : null,
     })),
 
-  setRoundEnd: (roundHistory, teams, winnerTeamId) =>
+  setRoundEnd: (roundHistory, teams, winnerTeamId, playerTotals?) =>
     set((s) => ({
       gameState: s.gameState
         ? {
@@ -155,15 +156,16 @@ export const useGameStore = create<GameStore>()((set, get) => ({
             teams,
             winnerTeamId,
             roundHistory: [...s.gameState.roundHistory, roundHistory],
+            playerTotals: playerTotals ?? s.gameState.playerTotals,
           }
         : null,
       showRoundResult: true,
     })),
 
-  setGameEnd: (winnerTeamId, teams) =>
+  setGameEnd: (winnerTeamId, teams, playerTotals?) =>
     set((s) => ({
       gameState: s.gameState
-        ? { ...s.gameState, phase: 'game_end' as const, teams, winnerTeamId }
+        ? { ...s.gameState, phase: 'game_end' as const, teams, winnerTeamId, playerTotals: playerTotals ?? s.gameState.playerTotals }
         : null,
       showWinner: true,
     })),

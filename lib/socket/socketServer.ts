@@ -634,6 +634,7 @@ function handlePlayCard(
         roundHistory: lastHistory,
         teams: finalState.teams,
         winnerTeamId: finalState.winnerTeamId ?? null,
+        playerTotals: updatedPlayerTotals,
       });
 
       if (finalState.winnerTeamId) {
@@ -641,6 +642,7 @@ function handlePlayCard(
           winnerTeamId: finalState.winnerTeamId,
           teams: finalState.teams,
           roundHistory: finalState.roundHistory,
+          playerTotals: updatedPlayerTotals,
         });
       }
       // No auto-restart: host must emit game:nextRound to begin the next round

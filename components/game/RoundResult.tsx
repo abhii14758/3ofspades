@@ -11,6 +11,7 @@ interface RoundResultProps {
   roundHistory: RoundHistory;
   teams: { A: Team; B: Team };
   players: Player[];
+  playerTotals: Record<string, number>;
   winnerTeamId: TeamId | null;
   myPlayerId: string;
   isHost: boolean;
@@ -22,6 +23,7 @@ export default function RoundResult({
   roundHistory,
   teams,
   players,
+  playerTotals,
   winnerTeamId,
   isHost,
   onStartNextRound,
@@ -120,52 +122,57 @@ export default function RoundResult({
             </div>
           </div>
 
-          {/* Score table */}
+          {/* Per-player score table */}
           <div className="rounded-xl border border-slate-700/60 overflow-hidden mb-5">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-800/80 text-slate-400 text-xs uppercase tracking-wide">
-                  <th className="text-left px-4 py-2">Team</th>
-                  <th className="text-center px-3 py-2">Tricks</th>
-                  <th className="text-center px-3 py-2">Round Pts</th>
+                  <th className="text-left px-4 py-2">Player</th>
+                  <th className="text-center px-3 py-2">Team</th>
+                  <th className="text-center px-3 py-2">This Round</th>
                   <th className="text-right px-4 py-2">Total</th>
                 </tr>
               </thead>
               <tbody>
-                {(['A', 'B'] as const).map((tid) => {
-                  const team = teams[tid];
-                  const isBidTeam = bidWinnerTeamId === tid;
+                {players.map((p) => {
+                  const onTeamA = teams.A.playerIds.includes(p.id);
+                  const teamId = onTeamA ? 'A' : 'B';
+                  const isBidTeam = bidWinnerTeamId === teamId;
+                  const delta = roundHistory.playerRoundDeltas?.[p.id] ?? 0;
+                  const total = playerTotals[p.id] ?? 0;
                   return (
                     <tr
-                      key={tid}
+                      key={p.id}
                       className={clsx(
                         'border-t border-slate-700/40',
                         isBidTeam ? 'bg-amber-900/10' : 'bg-slate-800/30'
                       )}
                     >
-                      <td className="px-4 py-3">
-                        <span className="font-bold text-slate-200">Team {tid}</span>
-                        {isBidTeam && (
-                          <span className="ml-2 text-[10px] text-amber-400 font-medium">Bid team</span>
+                      <td className="px-4 py-2.5">
+                        <span className="font-semibold text-slate-200 truncate max-w-[100px] block">{p.name}</span>
+                        {p.id === bidWinnerId && (
+                          <span className="text-[9px] text-amber-400 font-medium">👑 Bid winner</span>
                         )}
-                        <div className="text-[10px] text-slate-500 mt-0.5 truncate max-w-[120px]">
-                          {team.playerIds.map((id) => getPlayerName(id)).join(', ')}
-                        </div>
                       </td>
-                      <td className="text-center px-3 py-3 text-slate-300 font-medium">
-                        {team.tricksWon}
-                      </td>
-                      <td className={clsx(
-                        'text-center px-3 py-3 font-bold',
-                        team.roundPoints > 0 ? 'text-emerald-400' : 'text-red-400'
-                      )}>
-                        {team.roundPoints > 0 ? `+${team.roundPoints}` : team.roundPoints}
+                      <td className="text-center px-3 py-2.5">
+                        <span className={clsx(
+                          'text-xs font-bold px-1.5 py-0.5 rounded',
+                          teamId === 'A' ? 'bg-sky-900/60 text-sky-300' : 'bg-orange-900/60 text-orange-300'
+                        )}>
+                          {teamId}
+                        </span>
                       </td>
                       <td className={clsx(
-                        'text-right px-4 py-3 font-black text-base',
-                        tid === 'A' ? 'text-sky-300' : 'text-orange-300'
+                        'text-center px-3 py-2.5 font-bold',
+                        delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-red-400' : 'text-slate-500'
                       )}>
-                        {team.totalPoints}
+                        {delta > 0 ? `+${delta}` : delta}
+                      </td>
+                      <td className={clsx(
+                        'text-right px-4 py-2.5 font-black text-base',
+                        total > 0 ? 'text-slate-100' : total < 0 ? 'text-red-400' : 'text-slate-500'
+                      )}>
+                        {total}
                       </td>
                     </tr>
                   );
