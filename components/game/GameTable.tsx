@@ -402,6 +402,8 @@ export default function GameTable({
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
+  // Held trick — keeps last full trick visible for 5s after it completes
+  const [heldTrick, setHeldTrick] = useState<typeof gameState.currentTrick>(null);
   const myCalledCards = useGameStore((s) => s.myCalledCards);
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -452,7 +454,7 @@ export default function GameTable({
     socketEmit.skipDeal(gameState.roomId);
   }, [myHand.length, gameState.roomId]);
 
-  // Auto-end deal animation 1 second after the local player receives their last card
+  // Auto-end deal animation after local player receives their last card
   useEffect(() => {
     if (dealRevealedCount > 0 && myHand.length > 0 && dealRevealedCount >= myHand.length) {
       const t = setTimeout(() => setDealAnimDone(true), 1200);
@@ -460,16 +462,20 @@ export default function GameTable({
     }
   }, [dealRevealedCount, myHand.length]);
 
-  // Fallback: end deal animation as soon as actual hand is fully dealt by server
+  // Hold the last full trick visible for 5s so players can see the final card played
+  const prevTrickRef = useRef<typeof gameState.currentTrick>(null);
   useEffect(() => {
-    const expectedCards = myHand.length > 0
-      ? myHand.length
-      : (gameState.hands ? (Object.values(gameState.hands)[0]?.length ?? 0) : 0);
-    if (gameState.phase === 'dealing' && !dealAnimDone && expectedCards > 0 && myHand.length >= expectedCards) {
-      const t = setTimeout(() => setDealAnimDone(true), 600);
+    const incoming = gameState.currentTrick;
+    const prev = prevTrickRef.current;
+    // When a full trick just cleared (prev had all players' cards, now it's gone)
+    if (prev && prev.cards.length === gameState.players.length && (!incoming || incoming.cards.length === 0)) {
+      setHeldTrick(prev);
+      const t = setTimeout(() => setHeldTrick(null), 5000);
+      prevTrickRef.current = incoming ?? null;
       return () => clearTimeout(t);
     }
-  }, [myHand.length, gameState.hands, gameState.phase, dealAnimDone]);
+    prevTrickRef.current = incoming ?? null;
+  }, [gameState.currentTrick, gameState.players.length]);
 
   const {
     players,
@@ -881,7 +887,7 @@ export default function GameTable({
               </AnimatePresence>
 
               <TrickPile
-                trick={currentTrick}
+                trick={currentTrick ?? heldTrick}
                 players={players}
                 trumpSuit={trumpSuit}
                 completedTricksCount={completedTricks.length}
