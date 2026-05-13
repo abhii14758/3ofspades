@@ -501,10 +501,23 @@ function handleSelectPartners(
   for (const typeId of cardIds) {
     selectionCounts[typeId] = (selectionCounts[typeId] ?? 0) + 1;
   }
-  // Reject if bidder holds ALL copies of any selected typeId at requested count
+  // Reject if fewer copies exist outside the bidder's hand than slots requested
   for (const [typeId, selectCount] of Object.entries(selectionCounts)) {
     const heldCount = handTypeCounts[typeId] ?? 0;
     if (heldCount + selectCount > deckCount) return false;
+  }
+
+  // Verify enough distinct non-bidder players hold each selected typeId
+  const partnerSlots: Record<string, number> = {};
+  for (const typeId of cardIds) {
+    partnerSlots[typeId] = (partnerSlots[typeId] ?? 0) + 1;
+  }
+  for (const [typeId, slotsNeeded] of Object.entries(partnerSlots)) {
+    const holders = Object.entries(gameState.hands)
+      .filter(([pid, hand]) =>
+        pid !== playerId && hand.some((c) => getCardTypeId(c) === typeId)
+      ).length;
+    if (holders < slotsNeeded) return false;
   }
 
   // afterPartnersSelected handles team setup, phase transition, and first-trick init

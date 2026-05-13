@@ -247,7 +247,9 @@ export function processCardPlay(
   ) {
     partnerRevealed = true;
     revealedPartnerId = playerId;
-    updatedPartnerIds = [...updatedPartnerIds, playerId];
+    if (!updatedPartnerIds.includes(playerId)) {
+      updatedPartnerIds = [...updatedPartnerIds, playerId];
+    }
     updatedRevealedPartnerIds = [...updatedRevealedPartnerIds, playerId];
   }
 
