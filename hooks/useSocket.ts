@@ -88,6 +88,7 @@ export function useSocket() {
     // Game lifecycle
     // ------------------------------------------------------------------
     socket.on('game:started', ({ gameState }: { gameState: GameState }) => {
+      gameStore.reset();
       gameStore.setGameState(gameState);
       router.push(`/game/${gameState.roomId}`);
     });

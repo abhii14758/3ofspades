@@ -31,6 +31,7 @@ export function buildFullDeck(config: GameConfig): Card[] {
     const deckColor = colors[d] ?? 'red';
     for (const suit of ALL_SUITS) {
       for (const rank of ALL_RANKS) {
+        if (config.removedRanks.includes(rank)) continue;
         const id = count === 1 ? `red_${suit}_${rank}` : `${deckColor}_${suit}_${rank}`;
         const points =
           config.cardValues[`${rank}_${suit}`] !== undefined
