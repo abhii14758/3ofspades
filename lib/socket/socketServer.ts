@@ -78,11 +78,11 @@ const trickClearTimers = new Map<string, NodeJS.Timeout>();
 
 /**
  * Computes how long (ms) the server waits before transitioning dealing → bidding.
- * Matches the client DealAnimation timing: DEAL_INTERVAL (0.28s) × total cards + 2s buffer.
+ * Mirrors client DealAnimation: ROUND_INTERVAL(500ms) × cardsPerPlayer rounds + buffer.
+ * 6p 1-deck: 8×500+2720=6720ms, 6p 2-deck: 16×500+2720=10720ms, 8p 2-deck: 12×500+2720=8720ms
  */
 function computeDealTimeout(cfg: GameConfig): number {
-  const totalCards = cfg.playerCount * cfg.cardsPerPlayer;
-  return totalCards * 280 + 2000; // 6p×8c = 15440ms, 10p×9c = 27200ms
+  return cfg.cardsPerPlayer * 500 + 2720;
 }
 
 /** Fire dealing→bidding transition for a room (shared between startNewRound & game:start). */
