@@ -1050,6 +1050,7 @@ export default function GameTable({
                 trumpSuit={trumpSuit}
                 expandedView={phase === 'bidding'}
                 compact={isMobile}
+                dimIfNotPlayable={phase !== 'bidding'}
               />
               {/* Hidden overlay — sits on top without unmounting CardHand */}
               {handHidden && (

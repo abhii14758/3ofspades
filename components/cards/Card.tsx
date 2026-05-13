@@ -27,6 +27,7 @@ interface CardProps {
   small?: boolean;
   animate?: boolean;
   flat?: boolean;
+  dimIfNotPlayable?: boolean;
 }
 
 function PipGrid({ rank, suit, color }: { rank: string; suit: string; color: string }) {
@@ -128,6 +129,7 @@ export default function Card({
   small = false,
   animate = false,
   flat = false,
+  dimIfNotPlayable = true,
 }: CardProps) {
   const isThreeOfSpades = card.suit === 'spades' && card.rank === '3';
   const color = SUIT_COLORS[card.suit];
@@ -171,7 +173,7 @@ export default function Card({
       layoutId={animate ? `card-${card.id}` : undefined}
       className={clsx(
         'relative rounded-lg select-none',
-        !playable && !selected && 'opacity-60',
+        !playable && !selected && dimIfNotPlayable && 'opacity-60',
         className
       )}
       style={{

@@ -25,6 +25,8 @@ interface CardHandProps {
   trumpSuit?: Suit | null;
   expandedView?: boolean;
   compact?: boolean;
+  dimIfNotPlayable?: boolean;
+  vertical?: boolean;
 }
 
 function getHighlightSuit(cards: CardType[], leadSuit?: Suit | null, trumpSuit?: Suit | null): Suit | null {
@@ -45,6 +47,8 @@ export default function CardHand({
   trumpSuit,
   expandedView = false,
   compact = false,
+  dimIfNotPlayable = true,
+  vertical = false,
 }: CardHandProps) {
   const CARD_W = compact ? CARD_W_MOBILE : CARD_W_DESKTOP;
   const CARD_H = compact ? CARD_H_MOBILE : CARD_H_DESKTOP;
@@ -73,7 +77,40 @@ export default function CardHand({
     });
   }, [cards]);
 
+  // Ordered cards by user arrangement (computed early for vertical path)
+  const orderedCards = cardOrder
+    .map(id => cards.find(c => c.id === id))
+    .filter(Boolean) as CardType[];
+
   if (cards.length === 0) return null;
+
+  // Vertical layout path
+  if (vertical) {
+    return (
+      <div className="flex flex-col items-center gap-1.5 overflow-y-auto h-full px-1 py-2">
+        {orderedCards.map((card) => {
+          const isSelected = selectedCardId === card.id;
+          const isPlayable = !playableCardIds || playableCardIds.has(card.id);
+          return (
+            <Card
+              key={card.id}
+              card={card}
+              selected={isSelected}
+              playable={isMyTurn && isPlayable}
+              dimIfNotPlayable={false}
+              onClick={() => {
+                if (!isMyTurn) return;
+                if (selectedCardId === card.id) onCardPlay?.(card);
+                else onCardSelect?.(card);
+              }}
+              small
+              flat
+            />
+          );
+        })}
+      </div>
+    );
+  }
 
   const count = cards.length;
   const highlightSuit = isMyTurn ? getHighlightSuit(cards, leadSuit, trumpSuit) : null;
@@ -97,11 +134,6 @@ export default function CardHand({
   const containerH = scaledH + 40; // 40px headroom for lift animations
   // Cards sit near the bottom of the container (top = containerH - scaledH - 6)
   const baseTop = Math.round(containerH - scaledH - 6);
-
-  // Ordered cards by user arrangement
-  const orderedCards = cardOrder
-    .map(id => cards.find(c => c.id === id))
-    .filter(Boolean) as CardType[];
 
   const handleSort = () => {
     const sorted = [...cards].sort((a, b) => {
@@ -249,6 +281,7 @@ export default function CardHand({
                   selected={isSelected}
                   playable={isMyTurn && isPlayable}
                   onClick={() => handleCardClick(card)}
+                  dimIfNotPlayable={dimIfNotPlayable}
                   flat
                 />
               </motion.div>
