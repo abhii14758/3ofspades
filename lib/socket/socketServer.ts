@@ -51,6 +51,7 @@ import {
   botSelectCard,
   buildFullDeck,
 } from '@/lib/game-engine/botEngine';
+import { getCardTypeId } from '@/lib/game-engine/deck';
 
 // ─── Server-side state ────────────────────────────────────────────────────────
 
@@ -487,14 +488,24 @@ function handleSelectPartners(
   const validation = validatePartnerSelection(gameState, playerId, cardIds, cfg);
   if (!validation.valid) return false;
 
-  // Bid winner cannot call their own cards (by type prefix for double-deck)
+  // Check bidder doesn't hold all copies of any selected typeId
   const bidWinnerHand = gameState.hands[playerId] ?? [];
-  if (
-    cardIds.some((typeId) =>
-      bidWinnerHand.some((c) => c.id === typeId || c.id.startsWith(typeId + '_')),
-    )
-  )
-    return false;
+  const deckCount = cfg.deckCount ?? 1;
+  const handTypeCounts: Record<string, number> = {};
+  for (const c of bidWinnerHand) {
+    const t = getCardTypeId(c);
+    handTypeCounts[t] = (handTypeCounts[t] ?? 0) + 1;
+  }
+  // Count selection occurrences per typeId
+  const selectionCounts: Record<string, number> = {};
+  for (const typeId of cardIds) {
+    selectionCounts[typeId] = (selectionCounts[typeId] ?? 0) + 1;
+  }
+  // Reject if bidder holds ALL copies of any selected typeId at requested count
+  for (const [typeId, selectCount] of Object.entries(selectionCounts)) {
+    const heldCount = handTypeCounts[typeId] ?? 0;
+    if (heldCount + selectCount > deckCount) return false;
+  }
 
   // afterPartnersSelected handles team setup, phase transition, and first-trick init
   const newGameState = afterPartnersSelected(gameState, cardIds);

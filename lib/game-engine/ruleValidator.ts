@@ -107,12 +107,13 @@ export function validateTrumpSelection(
  * 1. Game phase must be 'partner_selection'.
  * 2. Player must be the bid winner.
  * 3. Exactly `config.partnerCount` cards must be provided.
- * 4. All card IDs must be valid (proper suit_rank format, no duplicates).
+ * 4. All card IDs must be valid (proper suit_rank format).
+ * 5. No typeId can be selected more times than it exists in the deck.
  */
 export function validatePartnerSelection(
   gameState: GameState,
   playerId: string,
-  cardIds: string[],
+  cardIds: string[], // these are typeIds: "suit_rank" format
   config: GameConfig,
 ): { valid: boolean; error?: string } {
   if (gameState.phase !== 'partner_selection') {
@@ -130,13 +131,12 @@ export function validatePartnerSelection(
     };
   }
 
-  if (new Set(cardIds).size !== cardIds.length) {
-    return { valid: false, error: 'Duplicate card IDs are not allowed.' };
-  }
-
   const validSuits = new Set(['spades', 'hearts', 'diamonds', 'clubs']);
   const validRanks = new Set(['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']);
+  const deckCount = config.deckCount ?? 1;
 
+  // Count occurrences of each typeId — max allowed = deckCount
+  const typeCounts: Record<string, number> = {};
   for (const cardId of cardIds) {
     const underscoreIdx = cardId.indexOf('_');
     if (underscoreIdx === -1) {
@@ -146,6 +146,10 @@ export function validatePartnerSelection(
     const rank = cardId.substring(underscoreIdx + 1);
     if (!validSuits.has(suit) || !validRanks.has(rank)) {
       return { valid: false, error: `Unknown card: "${cardId}".` };
+    }
+    typeCounts[cardId] = (typeCounts[cardId] ?? 0) + 1;
+    if (typeCounts[cardId] > deckCount) {
+      return { valid: false, error: `Cannot select more copies of "${cardId}" than exist in the deck.` };
     }
   }
 

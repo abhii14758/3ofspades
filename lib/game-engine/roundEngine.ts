@@ -1,6 +1,6 @@
 import type { GameState, Card, Suit, Trick, RoundHistory, Team, Player } from '@/types';
 import type { GameConfig } from '@/types';
-import { createDeck, shuffleDeck, dealCards } from './deck';
+import { createDeck, shuffleDeck, dealCards, getCardTypeId } from './deck';
 import { initBidState } from './bidEngine';
 import { initTrick, playCard, resolveTrick, getTrickPoints } from './trickEngine';
 import { calculateRoundScore, checkGameWinner, createInitialTeams } from './scoreEngine';
@@ -134,9 +134,7 @@ export function afterTrumpSelected(gameState: GameState, trumpSuit: Suit): GameS
 /**
  * Records the partner cards called by the bid winner and sets up teams.
  *
- * - calledCardIds are canonical TYPE IDs (`suit_rank`) — no deck-index suffix.
- *   This allows double-deck games (where actual IDs are `suit_rank_0`/`_1`)
- *   to still work by matching on suit+rank.
+ * - calledCardTypeIds are type IDs like "spades_K"; duplicates allowed for count=2
  * - Looks through all hands to identify which players hold a card of each called type.
  * - Those players (excluding the bid winner) become Team A partners.
  * - Team B = remaining players.
@@ -145,37 +143,33 @@ export function afterTrumpSelected(gameState: GameState, trumpSuit: Suit): GameS
  */
 export function afterPartnersSelected(
   gameState: GameState,
-  calledCardTypeIds: string[],
+  calledCardTypeIds: string[], // type IDs like "spades_K"; duplicates allowed for count=2
 ): GameState {
-  // Locate the first matching Card object for each called type (for display purposes)
+  // Build display cards — one entry per UNIQUE type ID
+  const uniqueTypeIds = [...new Set(calledCardTypeIds)];
   const allCards: Card[] = Object.values(gameState.hands).flat();
 
-  const calledCards: Card[] = calledCardTypeIds.map((typeId) => {
-    // Exact match (single deck) or prefix match (double deck: suit_rank_0 starts with suit_rank)
-    const found = allCards.find(
-      (c) => c.id === typeId || c.id.startsWith(typeId + '_'),
-    );
+  const calledCards: Card[] = uniqueTypeIds.map((typeId) => {
+    const found = allCards.find((c) => getCardTypeId(c) === typeId);
     if (!found) {
-      // Reconstruct minimal card from type ID as a safety fallback
       const parts = typeId.split('_');
       const suit = parts[0] as Card['suit'];
       const rank = parts.slice(1).join('_') as Card['rank'];
-      return { id: typeId, suit, rank, points: 0 };
+      return { id: typeId, suit, rank, points: 0, deckColor: 'red' as const };
     }
-    return { ...found, id: typeId }; // normalise to type ID for consistency
+    return { ...found, id: typeId };
   });
 
-  // Find which players hold a card of each called type (partners are secret until revealed)
+  // Find partners — one per slot in calledCardTypeIds (supports duplicate typeIds for count=2)
   const partnerIds: string[] = [];
   for (const typeId of calledCardTypeIds) {
     for (const [pid, hand] of Object.entries(gameState.hands)) {
       if (pid === gameState.bidWinnerId) continue;
-      const holds = hand.some(
-        (c) => c.id === typeId || c.id.startsWith(typeId + '_'),
-      );
-      if (holds && !partnerIds.includes(pid)) {
+      if (partnerIds.includes(pid)) continue; // already assigned
+      const holds = hand.some((c) => getCardTypeId(c) === typeId);
+      if (holds) {
         partnerIds.push(pid);
-        break; // one partner per called card type
+        break;
       }
     }
   }
@@ -183,11 +177,9 @@ export function afterPartnersSelected(
   const allPlayerIds = gameState.players.map((p) => p.id);
   const teams = createInitialTeams(gameState.bidWinnerId!, partnerIds, allPlayerIds);
 
-  // Restore accumulated totals from previous rounds
   teams.A.totalPoints = gameState.teams?.A.totalPoints ?? 0;
   teams.B.totalPoints = gameState.teams?.B.totalPoints ?? 0;
 
-  // First trick lead = bid winner; fall back to player left of dealer if not found
   const bidWinnerPlayer = gameState.players.find((p) => p.id === gameState.bidWinnerId);
   const leadPlayer = bidWinnerPlayer ?? getPlayerToLeftOfDealer(gameState.players, gameState.dealerIndex);
   const firstTrick = initTrick(0);
@@ -245,10 +237,9 @@ export function processCardPlay(
   let updatedPartnerIds = [...gameState.partnerIds];
   let updatedRevealedPartnerIds = [...(gameState.revealedPartnerIds ?? [])];
 
-  // calledCards are stored with canonical type IDs; match played card's type prefix
-  const isCalledCard = gameState.calledCards.some(
-    (cc) => card.id === cc.id || card.id.startsWith(cc.id + '_'),
-  );
+  // NEW — type-based match:
+  const cardTypeId = getCardTypeId(card);
+  const isCalledCard = gameState.calledCards.some((cc) => cc.id === cardTypeId);
   if (
     isCalledCard &&
     playerId !== gameState.bidWinnerId &&
