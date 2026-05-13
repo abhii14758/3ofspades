@@ -1,10 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import type { Player, Card as CardType } from '@/types';
-import CardBack from '@/components/cards/CardBack';
-import Card from '@/components/cards/Card';
 
 interface PlayerSeatProps {
   player: Player;
@@ -121,10 +119,6 @@ export default function PlayerSeat({
     : AVATAR_GRADIENTS[nameHash(player.name) % AVATAR_GRADIENTS.length];
 
   const isTeamA = isBidWinner || (isRevealed && isPartner);
-  const scoreColor = isTeamA ? 'text-sky-400' : showCombinedLabel ? 'text-orange-400' : 'text-slate-400';
-
-  // Flat horizontal card backs — no tilt, just a compact row
-  const maxVisible = compact ? Math.min(cardCount, 4) : Math.min(cardCount, 8);
 
   return (
     <div
@@ -133,37 +127,7 @@ export default function PlayerSeat({
         isDisconnected && 'opacity-40'
       )}
     >
-      {/* Flat card backs (hidden for local player and in compact mode) */}
-      {!isLocalPlayer && !compact && cardCount > 0 && (
-        <div className="flex items-center gap-0.5">
-          {Array.from({ length: maxVisible }).map((_, i) => (
-            <div key={i}>
-              <CardBack small />
-            </div>
-          ))}
-          {cardCount > maxVisible && (
-            <span className="text-[9px] text-slate-500 font-bold ml-0.5">+{cardCount - maxVisible}</span>
-          )}
-        </div>
-      )}
-
-      {/* Trick card played by this player */}
-      {!compact && (
-        <AnimatePresence>
-          {trickCard && (
-            <motion.div
-              key={trickCard.id}
-              initial={{ scale: 0.5, opacity: 0, y: -20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.5, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-              className="drop-shadow-lg"
-            >
-              <Card card={trickCard} small playable={false} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
+      {/* Trick card played by this player — removed, shown centrally in TrickPile */}
 
       {/* Avatar with turn indicator and timer ring */}
       <div className="relative mt-1" style={{ width: extraCompact ? 32 : 48, height: extraCompact ? 32 : 48 }}>
@@ -309,13 +273,15 @@ export default function PlayerSeat({
         {/* Score (individual until partners revealed; combined for Team A after reveal) */}
         {displayPoints !== null && (
           <span className={clsx(
-            'font-bold tabular-nums',
-            extraCompact ? 'text-[9px]' : 'text-[10px]',
-            displayPoints < 0 ? 'text-red-400' : scoreColor
-          )}>
+            'font-bold tabular-nums rounded px-1.5 py-0.5',
+            extraCompact ? 'text-[9px]' : 'text-[11px]',
+            displayPoints < 0 ? 'text-red-300 bg-red-950/60' : isTeamA ? 'text-sky-300 bg-sky-950/50' : showCombinedLabel ? 'text-orange-300 bg-orange-950/50' : 'text-slate-200 bg-black/40'
+          )}
+          style={{ border: '1px solid rgba(255,255,255,0.07)', lineHeight: 1.4 }}
+          >
             {displayPoints < 0 ? `−${Math.abs(displayPoints)}` : displayPoints} pts
-            {isTeamA && <span className="text-[9px] ml-0.5 opacity-70">(team A)</span>}
-            {showCombinedLabel && !isTeamA && <span className="text-[9px] ml-0.5 opacity-70">(team B)</span>}
+            {isTeamA && <span className="text-[8px] ml-0.5 opacity-70">(team A)</span>}
+            {showCombinedLabel && !isTeamA && <span className="text-[8px] ml-0.5 opacity-70">(team B)</span>}
           </span>
         )}
 
