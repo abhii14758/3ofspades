@@ -22,6 +22,7 @@ interface PlayerSeatProps {
   turnTimerEndsAt?: number | null;
   turnTimerTotalSeconds?: number;
   showCombinedLabel?: boolean;
+  extraCompact?: boolean;
 }
 
 const AVATAR_GRADIENTS = [
@@ -112,6 +113,7 @@ export default function PlayerSeat({
   turnTimerEndsAt,
   turnTimerTotalSeconds = 30,
   showCombinedLabel = false,
+  extraCompact = false,
 }: PlayerSeatProps) {
   const isDisconnected = player.status === 'disconnected';
   const gradient = isLocalPlayer
@@ -164,7 +166,7 @@ export default function PlayerSeat({
       )}
 
       {/* Avatar with turn indicator and timer ring */}
-      <div className="relative mt-1" style={{ width: 48, height: 48 }}>
+      <div className="relative mt-1" style={{ width: extraCompact ? 32 : 48, height: extraCompact ? 32 : 48 }}>
         {/* Turn glow */}
         {isCurrentTurn && (
           <>
@@ -209,7 +211,8 @@ export default function PlayerSeat({
         }}>
         <motion.div
           className={clsx(
-            'w-12 h-12 rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-sm uppercase shadow-md text-white relative overflow-hidden',
+            'rounded-full bg-gradient-to-br flex items-center justify-center font-bold uppercase shadow-md text-white relative overflow-hidden',
+            extraCompact ? 'w-8 h-8 text-xs' : 'w-12 h-12 text-sm',
             gradient,
             isCurrentTurn && 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900',
             isPartner && isRevealed && !isCurrentTurn && 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-900'
@@ -253,7 +256,8 @@ export default function PlayerSeat({
         <div className="flex items-center gap-1 flex-wrap justify-center">
           <span
             className={clsx(
-              'rounded px-2 py-0.5 font-bold text-xs truncate max-w-[80px]',
+              'rounded px-2 py-0.5 font-bold truncate',
+              extraCompact ? 'text-[10px] max-w-[60px]' : 'text-[11px] max-w-[72px]',
               isLocalPlayer
                 ? 'bg-sky-900/80 border border-sky-600/50 text-sky-200'
                 : isCurrentTurn
@@ -305,7 +309,8 @@ export default function PlayerSeat({
         {/* Score (individual until partners revealed; combined for Team A after reveal) */}
         {displayPoints !== null && (
           <span className={clsx(
-            'text-xs font-bold tabular-nums',
+            'font-bold tabular-nums',
+            extraCompact ? 'text-[9px]' : 'text-[10px]',
             displayPoints < 0 ? 'text-red-400' : scoreColor
           )}>
             {displayPoints < 0 ? `−${Math.abs(displayPoints)}` : displayPoints} pts

@@ -823,26 +823,28 @@ export default function GameTable({
           {/* Trump badge + trick counter — center of table */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             {/* 8. Center emblem — double-ring gold circle with ♠ */}
-            <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 0 }}>
-              {/* Outer dim ring */}
-              <div style={{
-                position: 'absolute',
-                width: 120, height: 120, borderRadius: '50%',
-                border: '1px solid rgba(212,160,23,0.15)',
-                boxShadow: '0 0 40px rgba(212,160,23,0.1)',
-              }} />
-              {/* Main emblem ring */}
-              <div style={{
-                width: 110, height: 110, borderRadius: '50%',
-                border: '2px solid rgba(212,160,23,0.5)',
-                background: 'radial-gradient(circle, rgba(212,160,23,0.1) 0%, rgba(212,160,23,0.03) 60%, transparent 100%)',
-                boxShadow: '0 0 0 1px rgba(212,160,23,0.15), 0 0 40px rgba(212,160,23,0.18), inset 0 0 30px rgba(0,0,0,0.4)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-              }}>
-                <span style={{ fontSize: 28, opacity: 0.5, color: '#d4a017', lineHeight: 1 }}>♠</span>
-                <span style={{ fontSize: 8, opacity: 0.45, color: '#d4a017', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase' }}>3 of Spades</span>
+            {(!currentTrick || currentTrick.cards.length === 0) && phase !== 'playing' && (
+              <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 0 }}>
+                {/* Outer dim ring */}
+                <div style={{
+                  position: 'absolute',
+                  width: 120, height: 120, borderRadius: '50%',
+                  border: '1px solid rgba(212,160,23,0.15)',
+                  boxShadow: '0 0 40px rgba(212,160,23,0.1)',
+                }} />
+                {/* Main emblem ring */}
+                <div style={{
+                  width: 110, height: 110, borderRadius: '50%',
+                  border: '2px solid rgba(212,160,23,0.5)',
+                  background: 'radial-gradient(circle, rgba(212,160,23,0.1) 0%, rgba(212,160,23,0.03) 60%, transparent 100%)',
+                  boxShadow: '0 0 0 1px rgba(212,160,23,0.15), 0 0 40px rgba(212,160,23,0.18), inset 0 0 30px rgba(0,0,0,0.4)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
+                }}>
+                  <span style={{ fontSize: 28, opacity: 0.5, color: '#d4a017', lineHeight: 1 }}>♠</span>
+                  <span style={{ fontSize: 8, opacity: 0.45, color: '#d4a017', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase' }}>3 of Spades</span>
+                </div>
               </div>
-            </div>
+            )}
             <div className="flex flex-col items-center gap-2" style={{ position: 'relative', zIndex: 1 }}>
               <AnimatePresence>
                 {trumpSuit && (
@@ -872,16 +874,6 @@ export default function GameTable({
                 completedTricksCount={completedTricks.length}
                 totalTricks={totalTricks}
               />
-
-              {completedTricks.length > 0 && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-sm text-green-500/70 font-medium tracking-wide"
-                >
-                  Trick {completedTricks.length + (currentTrick ? 1 : 0)}/{totalTricks}
-                </motion.p>
-              )}
             </div>
           </div>
 

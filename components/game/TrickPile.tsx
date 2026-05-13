@@ -1,6 +1,7 @@
 'use client';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
+import { gsap } from 'gsap';
 import type { Trick, Player, Suit, Rank } from '@/types';
 
 const SUIT_SYMBOLS: Record<string, string> = {
@@ -53,27 +54,20 @@ export default function TrickPile({
 
   if (cards.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2">
-        <div className="w-20 h-20 rounded-full border-2 border-dashed border-green-700/30 flex items-center justify-center">
-          <div className="text-center">
-            {completedTricksCount > 0 ? (
-              <>
-                <div className="text-green-400 text-2xl font-bold">{completedTricksCount}</div>
-                <div className="text-slate-500 text-xs">/{totalTricks}</div>
-              </>
-            ) : (
-              <span className="text-amber-600/30 text-3xl">♠</span>
-            )}
-          </div>
-        </div>
+      <div className="flex flex-col items-center gap-2 pointer-events-none">
         {completedTricksCount > 0 && (
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalTricks }).map((_, i) => (
-              <div key={i} className={clsx('w-2 h-2 rounded-full transition-colors',
-                i < completedTricksCount
-                  ? 'bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.6)]'
-                  : 'bg-slate-700')} />
-            ))}
+          <div
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full font-bold"
+            style={{
+              background: 'rgba(0,0,0,0.5)',
+              border: '1px solid rgba(212,160,23,0.3)',
+              color: 'rgba(212,160,23,0.9)',
+              backdropFilter: 'blur(4px)',
+            }}
+          >
+            <span style={{ fontSize: 10 }}>Trick</span>
+            <span style={{ fontSize: 14, fontWeight: 900 }}>{completedTricksCount}</span>
+            <span style={{ fontSize: 10, opacity: 0.6 }}>/ {totalTricks}</span>
           </div>
         )}
       </div>
@@ -82,23 +76,26 @@ export default function TrickPile({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="flex items-end gap-1.5 flex-wrap justify-center px-2">
-        <AnimatePresence>
-          {cards.map((tc, i) => {
-            const isWinner = i === winnerIdx;
-            const isRed = tc.card.suit === 'hearts' || tc.card.suit === 'diamonds';
-            const isTrump = tc.card.suit === trumpSuit;
-            const is3Spades = tc.card.rank === '3' && tc.card.suit === 'spades';
+      <div className="flex items-end gap-2 flex-wrap justify-center px-2">
+        {cards.map((tc, i) => {
+          const isWinner = i === winnerIdx;
+          const isRed = tc.card.suit === 'hearts' || tc.card.suit === 'diamonds';
+          const isTrump = tc.card.suit === trumpSuit;
+          const is3Spades = tc.card.rank === '3' && tc.card.suit === 'spades';
 
-            return (
-              <motion.div
-                key={tc.playerId}
-                initial={{ scale: 0.4, opacity: 0, y: -20 }}
-                animate={{ scale: 1, opacity: 1, y: isWinner ? -8 : 0 }}
-                exit={{ scale: 0.3, opacity: 0, transition: { duration: 0.15 } }}
-                transition={{ delay: i * 0.07, type: 'spring', stiffness: 400, damping: 24 }}
-                className="flex flex-col items-center gap-0.5"
-              >
+          return (
+            <div
+              className="flex flex-col items-center gap-0.5"
+              key={tc.playerId}
+              ref={(el) => {
+                if (el) {
+                  gsap.fromTo(el,
+                    { scale: 0.5, opacity: 0, y: -16 },
+                    { scale: 1, opacity: 1, y: isWinner ? -8 : 0, duration: 0.28, delay: i * 0.07, ease: 'back.out(1.4)' }
+                  );
+                }
+              }}
+            >
                 {isWinner && cards.length > 1 && (
                   <motion.span
                     initial={{ scale: 0 }}
@@ -175,26 +172,14 @@ export default function TrickPile({
                     }}>{SUIT_SYMBOLS[tc.card.suit]}</div>
                   </div>
                 </div>
-                <span className={clsx('text-xs font-medium truncate max-w-[44px] text-center',
-                  isWinner ? 'text-yellow-400 font-bold' : 'text-slate-400')}>
-                  {getPlayerName(tc.playerId)}
-                </span>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+              <span className={clsx('text-xs font-medium truncate max-w-[44px] text-center',
+                isWinner ? 'text-yellow-400 font-bold' : 'text-slate-400')}>
+                {getPlayerName(tc.playerId)}
+              </span>
+            </div>
+          );
+        })}
       </div>
-
-      {completedTricksCount > 0 && (
-        <div className="flex items-center gap-1">
-          {Array.from({ length: totalTricks }).map((_, i) => (
-            <div key={i} className={clsx('w-2 h-2 rounded-full transition-colors',
-              i < completedTricksCount
-                ? 'bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.6)]'
-                : 'bg-slate-700')} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }
