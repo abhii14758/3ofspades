@@ -18,8 +18,9 @@ export function getCardPoints(
 }
 
 /**
- * Returns the canonical type ID for a card (suit_rank), stripping any
- * double-deck suffix (_0 / _1). Used for partner matching in 2-deck games.
+ * Returns the canonical type ID for a card — always `suit_rank` (e.g. `spades_3`).
+ * In double-deck games the full card ID includes a color prefix (`red_spades_3`),
+ * so use this function for suit/rank-based lookups such as partner matching.
  */
 export function getCardTypeId(card: Pick<Card, 'suit' | 'rank'>): string {
   return `${card.suit}_${card.rank}`;
