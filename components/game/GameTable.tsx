@@ -1077,31 +1077,63 @@ export default function GameTable({
                 <kbd className="ml-1 text-[9px] px-1 py-0.5 rounded bg-slate-700/60 border border-slate-600/50 text-slate-500 font-mono">H</kbd>
               </button>
             </div>
-            {calledCards.length > 0 && phase === 'playing' && (
+            {(calledCardSlots.length > 0 ? calledCardSlots.length : calledCards.length) > 0 && phase === 'playing' && (
               <div className="flex items-center justify-center gap-1.5 mb-1.5 px-3 flex-wrap">
                 <span className="text-xs text-slate-400 shrink-0 font-medium">
                   {bidWinnerId === myPlayerId ? '🤝 Your partner cards:' : '🤝 Partner cards:'}
                 </span>
-                {calledCards.map((card) => {
-                  const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
-                  const SUIT_SYM: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
-                  const isMyCard = myHand.some((c) => c.suit === card.suit && c.rank === card.rank);
-                  return (
-                    <span
-                      key={card.id}
-                      className={`text-sm font-bold px-1.5 py-0.5 rounded border ${
-                        isMyCard
-                          ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40'
-                          : isRed
-                          ? 'text-red-400 border-red-700/50 bg-red-950/40'
-                          : 'text-slate-200 border-slate-600/50 bg-slate-800/60'
-                      }`}
-                      title={isMyCard ? 'You hold this partner card!' : undefined}
-                    >
-                      {card.rank}{SUIT_SYM[card.suit]}{isMyCard ? ' 🤝' : ''}
-                    </span>
-                  );
-                })}
+                {calledCardSlots.length > 0
+                  ? (() => {
+                      const SUIT_SYM: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+                      const showOrdinal = deckCount > 1;
+                      return calledCardSlots.map((slot, idx) => {
+                        const parts = slot.typeId.split('_');
+                        const suit = parts[0] as import('@/types').Suit;
+                        const rank = parts.slice(1).join('_') as import('@/types').Card['rank'];
+                        const isRed = suit === 'hearts' || suit === 'diamonds';
+                        const isMyCard = myHand.some((c) => c.suit === suit && c.rank === rank);
+                        const ordinalLabel = slot.ordinal === 1 ? '1st' : '2nd';
+                        return (
+                          <span
+                            key={`${slot.typeId}-${slot.ordinal}-${idx}`}
+                            className={`inline-flex items-center gap-0.5 text-sm font-bold px-1.5 py-0.5 rounded border ${
+                              isMyCard
+                                ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40'
+                                : isRed
+                                ? 'text-red-400 border-red-700/50 bg-red-950/40'
+                                : 'text-slate-200 border-slate-600/50 bg-slate-800/60'
+                            }`}
+                            title={isMyCard ? 'You hold this partner card!' : undefined}
+                          >
+                            {showOrdinal && (
+                              <span className="text-[9px] font-semibold opacity-70 leading-none">{ordinalLabel}</span>
+                            )}
+                            {rank}{SUIT_SYM[suit]}{isMyCard ? ' 🤝' : ''}
+                          </span>
+                        );
+                      });
+                    })()
+                  : calledCards.map((card) => {
+                      const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
+                      const SUIT_SYM: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+                      const isMyCard = myHand.some((c) => c.suit === card.suit && c.rank === card.rank);
+                      return (
+                        <span
+                          key={card.id}
+                          className={`text-sm font-bold px-1.5 py-0.5 rounded border ${
+                            isMyCard
+                              ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40'
+                              : isRed
+                              ? 'text-red-400 border-red-700/50 bg-red-950/40'
+                              : 'text-slate-200 border-slate-600/50 bg-slate-800/60'
+                          }`}
+                          title={isMyCard ? 'You hold this partner card!' : undefined}
+                        >
+                          {card.rank}{SUIT_SYM[card.suit]}{isMyCard ? ' 🤝' : ''}
+                        </span>
+                      );
+                    })
+                }
               </div>
             )}
             {/* CardHand is ALWAYS mounted to preserve sort order; placeholder overlays when hidden */}
