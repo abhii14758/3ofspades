@@ -538,6 +538,7 @@ export default function GameTable({
 
   const revealedPartnerIds: string[] = gameState.revealedPartnerIds ?? [];
   const calledCards: import('@/types').Card[] = gameState.calledCards ?? [];
+  const calledCardSlots = gameState.calledCardSlots ?? [];
 
   // ── Per-player individual round points ────────────────────────────────────
   const playerIndividualPoints = useMemo(() => {
@@ -566,20 +567,25 @@ export default function GameTable({
 
   const teamBIds = useMemo(() => {
     if (teams?.B.playerIds && teams.B.playerIds.length > 0) return teams.B.playerIds;
-    // Derive team B once all partners are revealed (teams may be null during play)
-    if (bidWinnerId && revealedPartnerIds.length >= partnerCount) {
+    // Derive team B once all partner slots are resolved (filled or voided)
+    const allSlotsResolved = calledCardSlots.length > 0
+      ? calledCardSlots.every((s) => !!s.assignedPartnerId || s.isVoid)
+      : revealedPartnerIds.length >= partnerCount;
+    if (bidWinnerId && allSlotsResolved) {
       const teamASet = new Set([bidWinnerId, ...revealedPartnerIds]);
       return players.map((p) => p.id).filter((id) => !teamASet.has(id));
     }
     return [];
-  }, [teams, bidWinnerId, revealedPartnerIds, partnerCount, players]);
+  }, [teams, bidWinnerId, revealedPartnerIds, partnerCount, players, calledCardSlots]);
 
   const teamBCombinedPoints = teamBIds.reduce(
     (sum, id) => sum + (playerIndividualPoints[id] ?? 0), 0
   );
 
-  // All partners revealed when the expected count from config is reached
-  const allPartnersRevealed = revealedPartnerIds.length >= partnerCount;
+  // All partner slots resolved = each slot is either assigned or voided
+  const allPartnersRevealed = calledCardSlots.length > 0
+    ? calledCardSlots.every((s) => !!s.assignedPartnerId || s.isVoid)
+    : revealedPartnerIds.length >= partnerCount;
 
   function getDisplayPoints(playerId: string): number {
     if (revealedTeamAIds.includes(playerId)) return teamACombinedPoints;
