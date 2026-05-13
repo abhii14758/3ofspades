@@ -1,0 +1,56 @@
+<h2>3 of Spades — Fix Plan Overview</h2>
+<p class="subtitle">8 changes across the 2_deck_fixes.md spec. Let's review scope and clarify the ambiguous ones before writing the plan.</p>
+
+<div class="section">
+  <div class="label">🔴 Architecture Changes (high impact)</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+    <div style="background:#1e1e2e;border:1px solid #e05252;border-left:4px solid #e05252;border-radius:8px;padding:14px">
+      <strong style="color:#f87171">1. Card Identity — deckColor</strong>
+      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px">Add <code style="background:#0f172a;padding:2px 6px;border-radius:4px">deckColor: "red" | "blue"</code> to every Card object. Affects deck.ts, GameState, hands, tricks, partner logic, bot engine, socket payloads, UI rendering. Propagates everywhere.</p>
+    </div>
+    <div style="background:#1e1e2e;border:1px solid #e05252;border-left:4px solid #e05252;border-radius:8px;padding:14px">
+      <strong style="color:#f87171">2. Partner Selection — exact physical card</strong>
+      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px">Bid winner picks <em>exact copy</em> (red_spades_K vs blue_spades_K). If bidder holds one copy, they can pick the other. UI shows both copies as separate selectable items. Backend validates by exact card ID.</p>
+    </div>
+    <div style="background:#1e1e2e;border:1px solid #e05252;border-left:4px solid #e05252;border-radius:8px;padding:14px">
+      <strong style="color:#f87171">3. Partner Reveal — exact ID match only</strong>
+      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px">Currently both copies of a card trigger reveal. New rule: only the <em>exact selected card</em> reveals a partner. The other copy (same rank+suit, different deck) is just a normal card.</p>
+    </div>
+    <div style="background:#1e1e2e;border:1px solid #e05252;border-left:4px solid #e05252;border-radius:8px;padding:14px">
+      <strong style="color:#f87171">4. Remove 3♠ Supreme Priority</strong>
+      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px">Currently 3♠ auto-wins every trick. New rule: 3♠ is a normal card with rank "3" (lowest rank). It keeps its 30-point value but has no special trick-winning power.</p>
+    </div>
+    <div style="background:#1e1e2e;border:1px solid #e05252;border-left:4px solid #e05252;border-radius:8px;padding:14px">
+      <strong style="color:#f87171">5. Trick Winner — last duplicate wins</strong>
+      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px">When two identical cards are played (double deck), currently the first one wins. New rule: the <em>last</em> played duplicate wins. e.g. A♠ then A♠ → second player wins.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px">
+  <div class="label">🟡 UI / Layout Changes</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+    <div style="background:#1e1e2e;border:1px solid #d97706;border-left:4px solid #d97706;border-radius:8px;padding:14px">
+      <strong style="color:#fbbf24">6. Player Position Sync — fixed absolute seats</strong>
+      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px">Currently each player sees themselves at the bottom (relative view). Spec says: ALL players must see the SAME table layout. Seat 0 is always at Bottom, Seat 1 always Left, etc. "You" label just highlights your seat.</p>
+    </div>
+    <div style="background:#1e1e2e;border:1px solid #d97706;border-left:4px solid #d97706;border-radius:8px;padding:14px">
+      <strong style="color:#fbbf24">7. Winner Dialog — scrollable</strong>
+      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px">The game-end dialog cuts off on small screens. Add max-height: 90vh + overflow-y: auto so leaderboard and buttons are always reachable.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px">
+  <div class="label">🟢 Already Partially Done</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+    <div style="background:#1e1e2e;border:1px solid #22c55e;border-left:4px solid #22c55e;border-radius:8px;padding:14px">
+      <strong style="color:#86efac">8. Score Persistence Between Rounds</strong>
+      <p style="color:#94a3b8;margin:4px 0 0;font-size:13px">The spec says "Play Another Round" was wiping scores. We already implemented cumulative per-player scoring and round continuation. This needs verification + any gaps filled.</p>
+    </div>
+  </div>
+</div>
+
+<div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:14px;margin-top:20px;color:#94a3b8;font-size:13px">
+  ℹ️ <strong style="color:#e2e8f0">No selection needed here.</strong> This is the overview — clarifying questions coming next in the terminal.
+</div>

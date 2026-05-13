@@ -1,0 +1,76 @@
+<h2>Task 6 — Player Position: Current vs. New</h2>
+<p class="subtitle">6-player game example. You are Seat 3. How should the table look to you?</p>
+
+<div class="split" style="gap:24px;align-items:flex-start">
+  <!-- CURRENT -->
+  <div class="mockup" style="flex:1">
+    <div class="mockup-header" style="background:#7f1d1d;color:#fca5a5">❌ CURRENT — Relative View (You always at bottom)</div>
+    <div class="mockup-body" style="padding:20px">
+      <div style="position:relative;width:100%;height:260px;background:#0f4c2a;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+        <!-- Bottom = You -->
+        <div style="position:absolute;bottom:0px;left:50%;transform:translateX(-50%);background:#3b82f6;color:white;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:bold;border:2px solid #60a5fa">
+          YOU (Seat 3)
+        </div>
+        <!-- Top -->
+        <div style="position:absolute;top:0px;left:50%;transform:translateX(-50%);background:#334155;color:#94a3b8;padding:5px 10px;border-radius:6px;font-size:12px">
+          Seat 0 (Player A)
+        </div>
+        <!-- Top-left -->
+        <div style="position:absolute;top:40px;left:5px;background:#334155;color:#94a3b8;padding:4px 8px;border-radius:6px;font-size:11px">
+          Seat 5
+        </div>
+        <!-- Top-right -->
+        <div style="position:absolute;top:40px;right:5px;background:#334155;color:#94a3b8;padding:4px 8px;border-radius:6px;font-size:11px">
+          Seat 1
+        </div>
+        <!-- Bottom-left -->
+        <div style="position:absolute;bottom:40px;left:5px;background:#334155;color:#94a3b8;padding:4px 8px;border-radius:6px;font-size:11px">
+          Seat 4
+        </div>
+        <!-- Bottom-right -->
+        <div style="position:absolute;bottom:40px;right:5px;background:#334155;color:#94a3b8;padding:4px 8px;border-radius:6px;font-size:11px">
+          Seat 2
+        </div>
+      </div>
+      <p style="color:#f87171;font-size:12px;margin-top:10px;text-align:center">Seat 0 sees a different layout. Players disagree on who is "left" or "right".</p>
+    </div>
+  </div>
+
+  <!-- NEW -->
+  <div class="mockup" style="flex:1">
+    <div class="mockup-header" style="background:#14532d;color:#86efac">✅ NEW — Absolute View (Fixed seats, You highlighted)</div>
+    <div class="mockup-body" style="padding:20px">
+      <div style="position:relative;width:100%;height:260px;background:#0f4c2a;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+        <!-- Seat 0 always Bottom Center -->
+        <div style="position:absolute;bottom:0px;left:50%;transform:translateX(-50%);background:#334155;color:#94a3b8;padding:5px 10px;border-radius:6px;font-size:12px">
+          Seat 0 (Player A)
+        </div>
+        <!-- Seat 1 always Bottom-left -->
+        <div style="position:absolute;bottom:40px;left:5px;background:#334155;color:#94a3b8;padding:4px 8px;border-radius:6px;font-size:11px">
+          Seat 1
+        </div>
+        <!-- Seat 2 always Top-left -->
+        <div style="position:absolute;top:40px;left:5px;background:#334155;color:#94a3b8;padding:4px 8px;border-radius:6px;font-size:11px">
+          Seat 2
+        </div>
+        <!-- Seat 3 always Top-center = YOU -->
+        <div style="position:absolute;top:0px;left:50%;transform:translateX(-50%);background:#3b82f6;color:white;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:bold;border:2px solid #60a5fa">
+          YOU (Seat 3)
+        </div>
+        <!-- Seat 4 always Top-right -->
+        <div style="position:absolute;top:40px;right:5px;background:#334155;color:#94a3b8;padding:4px 8px;border-radius:6px;font-size:11px">
+          Seat 4
+        </div>
+        <!-- Seat 5 always Bottom-right -->
+        <div style="position:absolute;bottom:40px;right:5px;background:#334155;color:#94a3b8;padding:4px 8px;border-radius:6px;font-size:11px">
+          Seat 5
+        </div>
+      </div>
+      <p style="color:#86efac;font-size:12px;margin-top:10px;text-align:center">Every player sees this exact layout. YOU can be anywhere — just highlighted in blue.</p>
+    </div>
+  </div>
+</div>
+
+<div style="background:#1e1e2e;border:1px solid #f59e0b;border-radius:8px;padding:14px;margin-top:16px;color:#fbbf24;font-size:13px">
+  ⚠️ <strong>Key consequence:</strong> If you joined as Seat 3, you'll see your own cards at the <em>top</em> of the screen (not the bottom). This is different from most card games but matches a real physical table where everyone sees the same thing.
+</div>
