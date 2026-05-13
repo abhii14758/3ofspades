@@ -40,18 +40,6 @@ interface PartnerSelectorProps {
   deckCount?: number; // default 1
 }
 
-/** Normalise a card ID to its canonical type ID (strips _0/_1 double-deck suffix). */
-function toTypeId(cardId: string): string {
-  // IDs are suit_rank (single deck) or suit_rank_0/suit_rank_1 (double deck).
-  // The suit name is the part before the first '_', the rank is next (1-2 chars),
-  // so we split and take the first two segments.
-  const parts = cardId.split('_');
-  if (parts.length <= 2) return cardId; // already a type ID
-  // Handle ranks that contain digits vs letter ranks:
-  // spades_10_0 → ['spades','10','0'] → 'spades_10'
-  // spades_A_0  → ['spades','A','0']  → 'spades_A'
-  return `${parts[0]}_${parts[1]}`;
-}
 
 export default function PartnerSelector({
   onSelect,
@@ -84,7 +72,6 @@ export default function PartnerSelector({
         return [...prev, cardId];
       } else if (currentCount === 1 && deckCount === 2 && maxSelectable >= 2 && prev.length < partnerCount) {
         // In double-deck, clicking again selects both copies
-        if (prev.length >= partnerCount) return [...prev.slice(1), cardId];
         return [...prev, cardId];
       } else {
         // Deselect all copies
