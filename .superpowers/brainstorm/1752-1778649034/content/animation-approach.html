@@ -1,0 +1,30 @@
+<h2>Animation Approach — GSAP vs Framer Motion</h2>
+<p class="subtitle">The codebase currently uses Framer Motion. Where should GSAP be added?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>GSAP for new animations only</h3>
+      <p>Keep existing Framer Motion as-is. Add GSAP only for the <strong>deal animation</strong> (card flying sequence) and <strong>trick pile card spread</strong>. Best of both — no migration risk.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>GSAP replaces deal + trick animations</h3>
+      <p>Replace the <code>DealAnimation</code> component and <code>TrickPile</code> card entrance animations with GSAP timelines. Smoother sequencing, card-count-driven timing. Framer Motion stays for everything else (panels, badges, overlays).</p>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Keep Framer Motion, just fix the bugs</h3>
+      <p>Don't introduce GSAP at all. Fix the timing bug in the existing Framer Motion deal animation. Simpler, no new dependency, fewer risks.</p>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:16px;background:rgba(212,160,23,0.08);border:1px solid rgba(212,160,23,0.2);border-radius:8px;padding:12px 16px;font-size:12px;color:#94a3b8">
+  💡 <strong style="color:#fbbf24">Recommendation: Option B</strong> — GSAP timelines are purpose-built for card-count-driven sequences. The deal animation especially benefits from <code>gsap.timeline()</code> which can stagger cards by index, not by wall-clock time.
+</div>
