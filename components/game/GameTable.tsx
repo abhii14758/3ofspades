@@ -401,6 +401,7 @@ export default function GameTable({
   const [handHidden, setHandHidden] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
   const myCalledCards = useGameStore((s) => s.myCalledCards);
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -419,14 +420,20 @@ export default function GameTable({
     const check = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      // Treat landscape phones (e.g. iPhone SE 667×375) as mobile
-      const mobile = w < 640 || (w < 900 && h < 480);
+      const isLandscapePhone = w >= 480 && h < 500 && w > h;
+      const isPortraitPhone = w < 640;
+      const mobile = isPortraitPhone || isLandscapePhone;
       setIsMobile(mobile);
       setIsTablet(!mobile && w >= 640 && w < 1024);
+      setIsLandscape(w > h);
     };
     check();
     window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+    window.addEventListener('orientationchange', check);
+    return () => {
+      window.removeEventListener('resize', check);
+      window.removeEventListener('orientationchange', check);
+    };
   }, []);
 
   // Reset deal anim when phase changes to dealing
@@ -566,9 +573,10 @@ export default function GameTable({
 
   return (
     <div
-      className="flex flex-row overflow-hidden select-none"
+      className="flex overflow-hidden select-none"
       style={{
         height: '100dvh',
+        flexDirection: isMobile && isLandscape ? 'row' : 'column',
         background: 'radial-gradient(ellipse 160% 120% at 50% 60%, #071507 0%, #020802 40%, #000000 100%)',
       }}
     >
@@ -579,7 +587,8 @@ export default function GameTable({
         initial={{ y: -44, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-        className="shrink-0 flex items-center gap-2 px-3 py-2 z-20 bg-black/50 backdrop-blur-sm border-b border-white/5"
+        className="shrink-0 flex items-center gap-2 z-20 bg-black/50 backdrop-blur-sm border-b border-white/5"
+        style={{ padding: isMobile && isLandscape ? '2px 8px' : '8px 12px' }}
       >
         {isHost && onTerminate && (
           <motion.button
@@ -689,10 +698,14 @@ export default function GameTable({
           transition={{ type: 'spring', stiffness: 160, damping: 26, delay: 0.04 }}
           className="relative"
           style={{
-            width: isMobile ? '96vw' : isTablet ? 'min(94vw, 760px)' : 'min(94vw, 920px)',
-            height: isMobile ? 'auto' : isTablet ? 'min(50vh, 380px)' : 'min(52vh, 480px)',
-            aspectRatio: isMobile ? '2/1' : undefined,
-            minHeight: isMobile ? '200px' : '260px',
+            width: isMobile
+              ? (isLandscape ? '70vw' : '96vw')
+              : isTablet ? 'min(94vw, 760px)' : 'min(94vw, 920px)',
+            height: isMobile
+              ? (isLandscape ? 'min(85vh, 320px)' : 'auto')
+              : isTablet ? 'min(50vh, 380px)' : 'min(52vh, 480px)',
+            aspectRatio: isMobile && !isLandscape ? '2/1' : undefined,
+            minHeight: isMobile ? (isLandscape ? '180px' : '200px') : '260px',
             perspective: isMobile ? '600px' : '900px',
             transformStyle: 'preserve-3d',
           }}
@@ -920,6 +933,7 @@ export default function GameTable({
                   trickCard={trickCard}
                   position="bottom"
                   compact={isMobile}
+                  extraCompact={isMobile && isLandscape}
                   displayPoints={getDisplayPoints(player.id)}
                   teamId={getPlayerTeamId(player.id)}
                   turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null}
@@ -987,6 +1001,7 @@ export default function GameTable({
       </div>
 
       {/* ── Card hand ─────────────────────────────────────────────────────── */}
+      {!(isMobile && isLandscape) && (
       <div
         className="shrink-0 z-10 pt-1 pb-3"
         style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)' }}
@@ -1063,6 +1078,7 @@ export default function GameTable({
           </>
         )}
       </div>
+      )}
 
       {/* ── Full-screen overlays ──────────────────────────────────────────── */}
       {showTrumpSelector && (
@@ -1081,6 +1097,54 @@ export default function GameTable({
         />
       )}
       </div>{/* end flex-1 game section */}
+
+      {/* ── Landscape card column ── */}
+      {isMobile && isLandscape && (
+        <div
+          className="shrink-0 flex flex-col justify-end overflow-hidden z-10"
+          style={{
+            width: '32vw',
+            background: 'linear-gradient(to left, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)',
+            borderLeft: '1px solid rgba(255,255,255,0.05)',
+          }}
+        >
+          {!showDealAnim && (
+            <div className="relative flex-1 min-h-0">
+              <CardHand
+                cards={myHand}
+                playableCardIds={playableCardIds}
+                selectedCardId={selectedCardId}
+                onCardSelect={(card) => setSelectedCardId(card.id)}
+                onCardPlay={(card) => {
+                  setSelectedCardId(null);
+                  onPlayCard(card);
+                }}
+                isMyTurn={isMyTurn && phase === 'playing'}
+                leadSuit={currentTrick?.leadSuit}
+                trumpSuit={trumpSuit}
+                expandedView={false}
+                compact={true}
+                dimIfNotPlayable={phase !== 'bidding'}
+                vertical={true}
+              />
+              {handHidden && (
+                <div
+                  className="absolute inset-0 z-10 flex flex-col items-center gap-2 overflow-y-auto px-1 py-2"
+                  style={{ background: 'rgba(0,0,0,0.92)' }}
+                >
+                  {myHand.map((_, i) => (
+                    <div key={i} style={{
+                      width: 40, height: 58, borderRadius: 6, flexShrink: 0,
+                      background: 'linear-gradient(145deg, #1a2850 0%, #1e3570 55%, #243f8a 100%)',
+                      border: '1px solid rgba(100,140,255,0.45)',
+                    }} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Desktop chat panel — always mounted, CSS width transition ── */}
       {!isMobile && (
