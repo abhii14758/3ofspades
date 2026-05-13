@@ -113,7 +113,7 @@ function DealAnimation({
 
   // Fire onComplete
   useEffect(() => {
-    const t = setTimeout(onComplete, totalDuration * 1000 + 600);
+    const t = setTimeout(onComplete, totalDuration * 1000 + 800);
     return () => clearTimeout(t);
   }, [totalDuration, onComplete]);
 
@@ -434,6 +434,7 @@ export default function GameTable({
     if (gameState.phase === 'dealing') {
       setDealAnimDone(false);
       setDealRevealedCount(0);
+      setHandHidden(false);
     }
   }, [gameState.phase]);
 
@@ -447,7 +448,7 @@ export default function GameTable({
   // Auto-end deal animation 1 second after the local player receives their last card
   useEffect(() => {
     if (dealRevealedCount > 0 && myHand.length > 0 && dealRevealedCount >= myHand.length) {
-      const t = setTimeout(() => setDealAnimDone(true), 1000);
+      const t = setTimeout(() => setDealAnimDone(true), 1200);
       return () => clearTimeout(t);
     }
   }, [dealRevealedCount, myHand.length]);
