@@ -66,7 +66,7 @@ export default function PartnerSelector({
   const myHandTypeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of myHand) {
-      const t = toTypeId(c.id);
+      const t = `${c.suit}_${c.rank}`;   // use struct fields, NOT toTypeId(c.id)
       counts[t] = (counts[t] ?? 0) + 1;
     }
     return counts;
@@ -82,7 +82,7 @@ export default function PartnerSelector({
         // First selection
         if (prev.length >= partnerCount) return [...prev.slice(1), cardId];
         return [...prev, cardId];
-      } else if (currentCount === 1 && deckCount === 2 && maxSelectable >= 2) {
+      } else if (currentCount === 1 && deckCount === 2 && maxSelectable >= 2 && prev.length < partnerCount) {
         // In double-deck, clicking again selects both copies
         if (prev.length >= partnerCount) return [...prev.slice(1), cardId];
         return [...prev, cardId];
@@ -223,7 +223,8 @@ export default function PartnerSelector({
           {/* Selected cards summary pills */}
           {selectedIds.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {selectedIds.map((id) => {
+              {[...new Set(selectedIds)].map((id) => {
+                const count = selectedIds.filter(x => x === id).length;
                 const [suit, rank] = id.split('_') as [Suit, Rank];
                 return (
                   <span
@@ -235,7 +236,7 @@ export default function PartnerSelector({
                         : 'bg-slate-800 border-slate-600 text-slate-200'
                     )}
                   >
-                    {rank}{SUIT_SYMBOLS[suit as Suit]}
+                    {rank}{SUIT_SYMBOLS[suit as Suit]}{count === 2 ? ' ×2' : ''}
                   </span>
                 );
               })}
