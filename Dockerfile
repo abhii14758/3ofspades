@@ -3,7 +3,7 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci --omit=dev=false
+RUN npm ci
 
 # ── Stage 2: Build Next.js ────────────────────────────────────────────────────
 FROM node:20-alpine AS builder

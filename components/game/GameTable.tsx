@@ -10,7 +10,7 @@ import BidPanel from './BidPanel';
 import TrumpSelector from './TrumpSelector';
 import PartnerSelector from './PartnerSelector';
 import Scoreboard from './Scoreboard';
-import ChatPanel from './ChatPanel';
+// import ChatPanel from './ChatPanel';
 import { useGameStore } from '@/store/gameStore';
 import CardHand from '@/components/cards/CardHand';
 import AvatarUpload from './AvatarUpload';
@@ -392,10 +392,10 @@ export default function GameTable({
   turnTimerTotalSeconds = 30,
 }: GameTableProps) {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
-  const handleUnread = useCallback(() => setUnread(n => n + 1), []);
-  useEffect(() => { if (chatOpen) setUnread(0); }, [chatOpen]);
+  // const [chatOpen, setChatOpen] = useState(false);
+  // const [unread, setUnread] = useState(0);
+  // const handleUnread = useCallback(() => setUnread(n => n + 1), []);
+  // useEffect(() => { if (chatOpen) setUnread(0); }, [chatOpen]);
   const [dealAnimDone, setDealAnimDone] = useState(false);
   const [dealRevealedCount, setDealRevealedCount] = useState(0);
   const [handHidden, setHandHidden] = useState(false);
@@ -576,7 +576,7 @@ export default function GameTable({
       className="flex overflow-hidden select-none"
       style={{
         height: '100dvh',
-        flexDirection: isMobile && isLandscape ? 'row' : 'column',
+        flexDirection: (isMobile && !isLandscape) ? 'column' : 'row',
         background: 'radial-gradient(ellipse 160% 120% at 50% 60%, #071507 0%, #020802 40%, #000000 100%)',
       }}
     >
@@ -634,7 +634,7 @@ export default function GameTable({
           />
         </div>
 
-        <div className="relative shrink-0">
+        {/* <div className="relative shrink-0">
           <button
             onClick={() => setChatOpen((v) => !v)}
             className={`relative flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg border transition-colors ${
@@ -650,7 +650,7 @@ export default function GameTable({
               </span>
             )}
           </button>
-        </div>
+        </div> */}
 
         <AvatarUpload roomId={gameState.roomId} className="shrink-0" />
         <button
@@ -1042,7 +1042,7 @@ export default function GameTable({
               </div>
             )}
             {/* CardHand is ALWAYS mounted to preserve sort order; placeholder overlays when hidden */}
-            <div className="relative" style={{ minHeight: '120px' }}>
+            <div className="relative overflow-hidden" style={{ minHeight: '120px' }}>
               <CardHand
                 cards={myHand}
                 playableCardIds={playableCardIds}
@@ -1146,8 +1146,8 @@ export default function GameTable({
         </div>
       )}
 
-      {/* ── Desktop chat panel — always mounted, CSS width transition ── */}
-      {!isMobile && (
+      {/* ── Desktop chat panel — DISABLED ── */}
+      {/* {!isMobile && (
         <div
           className="shrink-0 flex flex-col border-l border-slate-700/60 overflow-hidden"
           style={{
@@ -1172,10 +1172,10 @@ export default function GameTable({
             />
           </div>
         </div>
-      )}
+      )} */}
 
-      {/* ── Mobile bottom drawer ── */}
-      <AnimatePresence>
+      {/* ── Mobile bottom drawer — DISABLED ── */}
+      {/* <AnimatePresence>
         {chatOpen && isMobile && (
           <>
             <motion.div
@@ -1206,7 +1206,7 @@ export default function GameTable({
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
     </div>
   );
 }
