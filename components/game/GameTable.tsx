@@ -63,26 +63,57 @@ function TurnTimer({ endsAt, totalSeconds = 30 }: { endsAt: number | null; total
   );
 }
 
-// ── Player positioning around ellipse ─────────────────────────────────────────
-function getPlayerPositions(
-  players: Player[],
-  myPlayerId: string,
-): Array<{ player: Player; x: number; y: number; angle: number }> {
-  const N = players.length;
-  const rx = 37;
-  const ry = 32;
-  const cx = 50;
-  const cy = 50;
-  const myIndex = players.findIndex((p) => p.id === myPlayerId);
+// ── Absolute seat positioning ─────────────────────────────────────────────────
+/**
+ * Returns the absolute % position (left, top) for a seat at `seatIndex`
+ * given a table with `totalSeats` players.
+ *
+ * Seat 0 is always bottom-center. Remaining seats go clockwise.
+ * All players see the SAME layout regardless of who they are.
+ */
+function getSeatPosition(seatIndex: number, totalSeats: number): { x: number; y: number } {
+  const SEAT_MAPS: Record<number, Array<[number, number]>> = {
+    4: [
+      [50, 90], // 0 bottom-center
+      [10, 50], // 1 left
+      [50, 10], // 2 top-center
+      [90, 50], // 3 right
+    ],
+    6: [
+      [50, 90], // 0 bottom-center
+      [15, 72], // 1 bottom-left
+      [15, 28], // 2 top-left
+      [50, 10], // 3 top-center
+      [85, 28], // 4 top-right
+      [85, 72], // 5 bottom-right
+    ],
+    8: [
+      [50, 90], // 0 bottom-center
+      [18, 78], // 1 bottom-left
+      [8,  50], // 2 mid-left
+      [18, 22], // 3 top-left
+      [50, 10], // 4 top-center
+      [82, 22], // 5 top-right
+      [92, 50], // 6 mid-right
+      [82, 78], // 7 bottom-right
+    ],
+    10: [
+      [50, 92], // 0 bottom-center
+      [24, 86], // 1 bottom-left
+      [6,  68], // 2 mid-left
+      [6,  32], // 3 far-left
+      [24, 14], // 4 top-left
+      [50, 8],  // 5 top-center
+      [76, 14], // 6 top-right
+      [94, 32], // 7 far-right
+      [94, 68], // 8 mid-right
+      [76, 86], // 9 bottom-right
+    ],
+  };
 
-  return players.map((player, i) => {
-    const relIndex = (i - myIndex + N) % N;
-    const angleDeg = 90 + (360 * relIndex) / N;
-    const angleRad = (angleDeg * Math.PI) / 180;
-    const x = cx + rx * Math.cos(angleRad);
-    const y = cy + ry * Math.sin(angleRad);
-    return { player, x, y, angle: angleDeg };
-  });
+  const map = SEAT_MAPS[totalSeats] ?? SEAT_MAPS[6];
+  const [x, y] = map[seatIndex % map.length] ?? [50, 50];
+  return { x, y };
 }
 
 // ── Deal animation ─────────────────────────────────────────────────────────────
@@ -576,11 +607,6 @@ export default function GameTable({
   const showDealAnim = phase === 'dealing' && !dealAnimDone && players.length > 1;
   const cardsPerPlayer = myHand.length > 0 ? myHand.length : Math.ceil((gameState.hands ? Object.values(gameState.hands)[0]?.length ?? 8 : 8));
 
-  const playerPositions = useMemo(
-    () => getPlayerPositions(players, myPlayerId),
-    [players, myPlayerId]
-  );
-
   // effectivelyHidden: user preference, but auto-reveal during your turn in playing phase
   const effectivelyHidden = handHidden && !(isMyTurn && phase === 'playing');
 
@@ -906,8 +932,9 @@ export default function GameTable({
             />
           )}
 
-          {/* Player seats around ellipse */}
-          {playerPositions.map(({ player, x, y }) => {
+          {/* Player seats — absolute by seatIndex, same layout for all players */}
+          {players.map((player) => {
+            const { x, y } = getSeatPosition(player.seatIndex, players.length);
             const isCurrentTurn = player.id === currentTurnPlayerId;
             const isPartner = revealedPartnerIds.includes(player.id);
             const cardCount = hands[player.id]?.length ?? 0;
