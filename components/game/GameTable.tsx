@@ -1027,7 +1027,7 @@ export default function GameTable({
               </div>
             )}
             {/* CardHand is ALWAYS mounted to preserve sort order; placeholder overlays when hidden */}
-            <div className="relative">
+            <div className="relative" style={{ minHeight: '120px' }}>
               <CardHand
                 cards={myHand}
                 playableCardIds={playableCardIds}
