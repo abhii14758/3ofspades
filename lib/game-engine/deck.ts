@@ -27,23 +27,26 @@ export function getCardTypeId(card: Pick<Card, 'suit' | 'rank'>): string {
 
 /**
  * Creates the deck(s) based on config.deckCount.
- * - Single deck (deckCount=1): IDs are `suit_rank` (48 cards)
- * - Double deck (deckCount=2): IDs are `suit_rank_0` and `suit_rank_1` (96 cards)
+ * - Single deck (deckCount=1): IDs are `red_suit_rank` (48 cards, all deckColor="red")
+ * - Double deck (deckCount=2): IDs are `red_suit_rank` and `blue_suit_rank` (96 cards)
  */
 export function createDeck(config: GameConfig): Card[] {
   const count = config.deckCount ?? 1;
+  const COLOR: Array<'red' | 'blue'> = ['red', 'blue'];
   const deck: Card[] = [];
 
   for (let d = 0; d < count; d++) {
+    const deckColor = COLOR[d] ?? 'red';
     for (const suit of SUITS) {
       for (const rank of RANKS) {
         if (config.removedRanks.includes(rank)) continue;
-        // Single-deck cards keep the plain ID; multi-deck cards get a suffix.
-        const id = count === 1 ? `${suit}_${rank}` : `${suit}_${rank}_${d}`;
+        // Single-deck: id = "red_suit_rank"  Double-deck: "red_suit_rank" / "blue_suit_rank"
+        const id = count === 1 ? `red_${suit}_${rank}` : `${deckColor}_${suit}_${rank}`;
         deck.push({
           id,
           suit,
           rank,
+          deckColor: count === 1 ? 'red' : deckColor,
           points: getCardPoints({ suit, rank }, config),
         });
       }

@@ -20,6 +20,7 @@ export interface Card {
   suit: Suit;
   rank: Rank;
   points: number;
+  deckColor: 'red' | 'blue';
 }
 
 export interface Player {
