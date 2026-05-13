@@ -243,13 +243,11 @@ export function processCardPlay(
   if (
     isCalledCard &&
     playerId !== gameState.bidWinnerId &&
+    gameState.partnerIds.includes(playerId) && // only pre-assigned partners reveal
     !updatedRevealedPartnerIds.includes(playerId)
   ) {
     partnerRevealed = true;
     revealedPartnerId = playerId;
-    if (!updatedPartnerIds.includes(playerId)) {
-      updatedPartnerIds = [...updatedPartnerIds, playerId];
-    }
     updatedRevealedPartnerIds = [...updatedRevealedPartnerIds, playerId];
   }
 
