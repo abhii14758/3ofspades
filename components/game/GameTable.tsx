@@ -16,6 +16,7 @@ import CardHand from '@/components/cards/CardHand';
 import AvatarUpload from './AvatarUpload';
 import OpponentStrip from './OpponentStrip';
 import PartnerTracker from './PartnerTracker';
+import LandscapeCardColumn from './LandscapeCardColumn';
 import { socketEmit } from '@/lib/socket/socketClient';
 
 const SUIT_SYMBOLS: Record<Suit, string> = {
@@ -1183,38 +1184,30 @@ export default function GameTable({
       )}
       </div>{/* end flex-1 game section */}
 
-      {/* ── Landscape card column ── */}
+      {/* ── Landscape card column — overlapping fan fills full panel height ── */}
       {isMobile && isLandscape && (
         <div
-          className="shrink-0 flex flex-col justify-end overflow-hidden z-10"
+          className="shrink-0 flex flex-col overflow-hidden z-10"
           style={{
             width: '32vw',
-            background: 'linear-gradient(to left, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)',
-            borderLeft: '1px solid rgba(255,255,255,0.05)',
+            background: 'linear-gradient(to left, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.75) 100%)',
+            borderLeft: '1px solid rgba(255,255,255,0.07)',
           }}
         >
-          {!showDealAnim && (
-            <div className="relative flex-1 min-h-0">
-              <CardHand
-                cards={myHand}
-                playableCardIds={playableCardIds}
-                selectedCardId={selectedCardId}
-                onCardSelect={(card) => setSelectedCardId(card.id)}
-                onCardPlay={(card) => {
-                  setSelectedCardId(null);
-                  onPlayCard(card);
-                }}
-                isMyTurn={isMyTurn && phase === 'playing'}
-                leadSuit={currentTrick?.leadSuit}
-                trumpSuit={trumpSuit}
-                expandedView={false}
-                compact={true}
-                dimIfNotPlayable={phase !== 'bidding'}
-                vertical={true}
-                hidden={effectivelyHidden}
-              />
-            </div>
-          )}
+          <LandscapeCardColumn
+            cards={myHand}
+            selectedCardId={selectedCardId}
+            playableCardIds={playableCardIds}
+            isMyTurn={isMyTurn && phase === 'playing'}
+            phase={phase}
+            effectivelyHidden={effectivelyHidden}
+            handHidden={handHidden}
+            showDealAnim={showDealAnim}
+            onToggleHide={() => setHandHidden(v => !v)}
+            onCardSelect={(card) => setSelectedCardId(card.id)}
+            onCardPlay={(card) => { setSelectedCardId(null); onPlayCard(card); }}
+            onDeselect={() => setSelectedCardId(null)}
+          />
         </div>
       )}
 
