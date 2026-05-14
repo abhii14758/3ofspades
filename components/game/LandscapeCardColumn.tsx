@@ -65,29 +65,30 @@ export default function LandscapeCardColumn({
 
   return (
     <div className="flex flex-col w-full h-full">
-      {/* ── Top control bar ── */}
+      {/* ── Top control bar — stacked to fit 56px column ── */}
       <div
-        className="shrink-0 flex items-center justify-between gap-1 px-1.5 py-1"
+        className="shrink-0 flex flex-col items-center justify-center gap-1 py-1.5"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
       >
         <button
           onClick={() => setSorted(v => !v)}
-          className={`text-[9px] font-bold px-1.5 py-0.5 rounded border transition-colors ${
+          className={`text-[9px] font-bold w-8 py-0.5 rounded border transition-colors ${
             sorted
               ? 'bg-amber-900/60 border-amber-600 text-amber-300'
               : 'bg-slate-800/70 border-slate-600 text-slate-400 hover:text-white'
           }`}
+          title="Sort cards"
         >
-          ↕ Sort
+          ↕
         </button>
         <button
           onClick={onToggleHide}
-          className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-slate-800/70 border-slate-600 text-slate-400 hover:text-white transition-colors"
+          className="text-[10px] w-8 py-0.5 rounded border bg-slate-800/70 border-slate-600 text-slate-400 hover:text-white transition-colors"
           title={handHidden ? 'Show cards' : 'Hide cards'}
         >
           {handHidden ? '👁️' : '🙈'}
         </button>
-        <div className="text-[9px] text-slate-500 font-medium">{count}</div>
+        <div className="text-[8px] text-slate-600 font-medium leading-none">{count}</div>
       </div>
 
       {/* ── Overlapping card fan ── */}

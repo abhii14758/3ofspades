@@ -737,7 +737,7 @@ export default function GameTable({
           className="relative"
           style={{
             width: isMobile
-              ? (isLandscape ? '60vw' : '96vw')
+              ? (isLandscape ? 'calc(100vw - 62px)' : '96vw')
               : isTablet ? 'min(94vw, 760px)' : 'min(94vw, 920px)',
             height: isMobile
               ? (isLandscape ? 'min(85vh, 320px)' : 'auto')
@@ -1189,7 +1189,7 @@ export default function GameTable({
         <div
           className="shrink-0 flex flex-col overflow-hidden z-10"
           style={{
-            width: '32vw',
+            width: '56px',
             background: 'linear-gradient(to left, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.75) 100%)',
             borderLeft: '1px solid rgba(255,255,255,0.07)',
           }}
