@@ -1159,31 +1159,19 @@ export function setupSocketServer(io: Server): void {
 
     // ── game:terminate ────────────────────────────────────────────────────
     socket.on('game:terminate', (payload: { roomId: string }) => {
-      const info = socketToPlayer.get(socket.id);
-      if (!info || info.roomId !== payload.roomId) return;
-
-      const room = rooms.get(payload.roomId);
-      if (!room) return;
-
-      if (info.playerId !== room.hostId) {
-        socket.emit('room:error', { message: 'Only the host can terminate the game' });
-        return;
+      try {
+        const info = socketToPlayer.get(socket.id);
+        if (!info) return;
+        const room = rooms.get(payload.roomId);
+        if (!room) return;
+        const player = room.players.find((p) => p.id === info.playerId);
+        if (!player?.isHost) return;
+        cleanupRoomTimers(payload.roomId);
+        io.to(payload.roomId).emit('game:terminated', { message: 'Game terminated by host' });
+        rooms.delete(payload.roomId);
+      } catch (err) {
+        console.error('[game:terminate]', err);
       }
-
-      // Clear pending timers
-      const turnTimer = turnTimers.get(payload.roomId);
-      if (turnTimer) {
-        clearInterval(turnTimer);
-        turnTimers.delete(payload.roomId);
-      }
-      const roundTimer = roundStartTimers.get(payload.roomId);
-      if (roundTimer) {
-        clearTimeout(roundTimer);
-        roundStartTimers.delete(payload.roomId);
-      }
-
-      io.to(payload.roomId).emit('game:terminated', { message: 'Game terminated by host' });
-      rooms.delete(payload.roomId);
     });
 
     // ── player:setAvatar ─────────────────────────────────────────────────
@@ -1208,8 +1196,9 @@ export function setupSocketServer(io: Server): void {
 
     // ── player:reconnect ──────────────────────────────────────────────────
     socket.on('player:reconnect', (payload: ReconnectPayload) => {
-      const { roomId, playerId } = payload;
-      const room = rooms.get(roomId);
+      try {
+        const { roomId, playerId } = payload;
+        const room = rooms.get(roomId);
 
       if (!room) {
         socket.emit('room:error', { message: 'Room not found' });
@@ -1256,6 +1245,10 @@ export function setupSocketServer(io: Server): void {
           });
         }
       }
+      } catch (err) {
+        console.error('[player:reconnect]', err);
+        socket.emit('room:error', { message: 'Server error processing action' });
+      }
     });
 
     // ── disconnect ────────────────────────────────────────────────────────
@@ -1283,38 +1276,41 @@ export function setupSocketServer(io: Server): void {
       // 60-second window for reconnection before permanent removal
       const timer = setTimeout(() => {
         disconnectTimers.delete(playerId);
+        try {
+          const currentRoom = rooms.get(roomId);
+          if (!currentRoom) return;
 
-        const currentRoom = rooms.get(roomId);
-        if (!currentRoom) return;
+          const idx = currentRoom.players.findIndex((p) => p.id === playerId);
+          if (idx === -1) return;
 
-        const idx = currentRoom.players.findIndex((p) => p.id === playerId);
-        if (idx === -1) return;
+          if (currentRoom.gameState) {
+            // Game running — substitute with bot so game can continue seamlessly
+            currentRoom.players[idx].type = 'bot';
+            currentRoom.players[idx].isSubstitutedBot = true;
+            currentRoom.players[idx].status = 'playing';
+            currentRoom.players[idx].socketId = undefined;
+            // scheduleAutoPlayIfNeeded will handle their turn if it comes up
+          } else {
+            // Lobby — if host left, close the room entirely
+            if (currentRoom.hostId === playerId) {
+              rooms.delete(roomId);
+              io.to(roomId).emit('room:closed', { reason: 'Host has left the room' });
+              return;
+            }
 
-        if (currentRoom.gameState) {
-          // Game running — substitute with bot so game can continue seamlessly
-          currentRoom.players[idx].type = 'bot';
-          currentRoom.players[idx].isSubstitutedBot = true;
-          currentRoom.players[idx].status = 'playing';
-          currentRoom.players[idx].socketId = undefined;
-          // scheduleAutoPlayIfNeeded will handle their turn if it comes up
-        } else {
-          // Lobby — if host left, close the room entirely
-          if (currentRoom.hostId === playerId) {
-            rooms.delete(roomId);
-            io.to(roomId).emit('room:closed', { reason: 'Host has left the room' });
-            return;
+            currentRoom.players.splice(idx, 1);
+
+            if (currentRoom.players.length === 0) {
+              rooms.delete(roomId);
+              return;
+            }
           }
 
-          currentRoom.players.splice(idx, 1);
-
-          if (currentRoom.players.length === 0) {
-            rooms.delete(roomId);
-            return;
+          if (rooms.has(roomId)) {
+            io.to(roomId).emit('room:updated', { room: getSafeRoom(currentRoom) });
           }
-        }
-
-        if (rooms.has(roomId)) {
-          io.to(roomId).emit('room:updated', { room: getSafeRoom(currentRoom) });
+        } catch (err) {
+          console.error('[disconnectTimer]', err);
         }
       }, 60_000);
 
@@ -1323,53 +1319,58 @@ export function setupSocketServer(io: Server): void {
 
     // ── room:leave ────────────────────────────────────────────────────────
     socket.on('room:leave', ({ roomId }: { roomId: string }) => {
-      const info = socketToPlayer.get(socket.id);
-      if (!info || info.roomId !== roomId) return;
-      const { playerId } = info;
-      const room = rooms.get(roomId);
-      if (!room) return;
+      try {
+        const info = socketToPlayer.get(socket.id);
+        if (!info || info.roomId !== roomId) return;
+        const { playerId } = info;
+        const room = rooms.get(roomId);
+        if (!room) return;
 
-      // Cancel any pending disconnect timer
-      const existingTimer = disconnectTimers.get(playerId);
-      if (existingTimer) {
-        clearTimeout(existingTimer);
-        disconnectTimers.delete(playerId);
+        // Cancel any pending disconnect timer
+        const existingTimer = disconnectTimers.get(playerId);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+          disconnectTimers.delete(playerId);
+        }
+
+        const player = room.players.find((p) => p.id === playerId);
+        if (!player) return;
+
+        socketToPlayer.delete(socket.id);
+        socket.leave(roomId);
+
+        if (room.gameState) {
+          // Game running — substitute with bot immediately
+          player.type = 'bot';
+          player.isSubstitutedBot = true;
+          player.status = 'playing';
+          player.socketId = undefined;
+          if (room.gameState.currentTurnPlayerId === playerId) {
+            scheduleAutoPlayIfNeeded(io, room);
+          }
+          io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
+          syncStateToAll(io, room);
+        } else {
+          // Lobby — remove them; if host, close the room
+          if (room.hostId === playerId) {
+            rooms.delete(roomId);
+            io.to(roomId).emit('room:closed', { reason: 'Host has left the room' });
+            return;
+          }
+          const idx = room.players.findIndex((p) => p.id === playerId);
+          if (idx !== -1) room.players.splice(idx, 1);
+          if (room.players.length === 0) {
+            rooms.delete(roomId);
+            return;
+          }
+          io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
+        }
+
+        socket.emit('room:left', {});
+      } catch (err) {
+        console.error('[room:leave]', err);
+        socket.emit('room:error', { message: 'Server error processing action' });
       }
-
-      const player = room.players.find((p) => p.id === playerId);
-      if (!player) return;
-
-      socketToPlayer.delete(socket.id);
-      socket.leave(roomId);
-
-      if (room.gameState) {
-        // Game running — substitute with bot immediately
-        player.type = 'bot';
-        player.isSubstitutedBot = true;
-        player.status = 'playing';
-        player.socketId = undefined;
-        if (room.gameState.currentTurnPlayerId === playerId) {
-          scheduleAutoPlayIfNeeded(io, room);
-        }
-        io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
-        syncStateToAll(io, room);
-      } else {
-        // Lobby — remove them; if host, close the room
-        if (room.hostId === playerId) {
-          rooms.delete(roomId);
-          io.to(roomId).emit('room:closed', { reason: 'Host has left the room' });
-          return;
-        }
-        const idx = room.players.findIndex((p) => p.id === playerId);
-        if (idx !== -1) room.players.splice(idx, 1);
-        if (room.players.length === 0) {
-          rooms.delete(roomId);
-          return;
-        }
-        io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
-      }
-
-      socket.emit('room:left', {});
     });
 
     // ── player:rename ─────────────────────────────────────────────────────

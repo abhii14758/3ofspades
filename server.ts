@@ -11,6 +11,14 @@ const port = parseInt(process.env.PORT || '3000', 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+  // Don't crash — log and continue (game state stays in memory)
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
+});
+
 app.prepare().then(() => {
   const httpServer = createServer(async (req, res) => {
     try {
@@ -23,9 +31,23 @@ app.prepare().then(() => {
     }
   });
 
+  const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000').split(',').map(s => s.trim());
+
   const io = new SocketIOServer(httpServer, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
+    cors: {
+      origin: (origin, callback) => {
+        // Allow requests with no origin (server-to-server, curl, etc.)
+        if (!origin || ALLOWED_ORIGINS.includes('*') || ALLOWED_ORIGINS.some(o => origin.startsWith(o))) {
+          callback(null, true);
+        } else {
+          callback(new Error('CORS rejected'));
+        }
+      },
+      methods: ['GET', 'POST'],
+      credentials: true,
+    },
     transports: ['websocket', 'polling'],
+    maxHttpBufferSize: 1e6, // 1MB max message size
   });
 
   initSocketServer(io);
