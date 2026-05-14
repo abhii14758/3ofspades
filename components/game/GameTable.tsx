@@ -1034,8 +1034,9 @@ export default function GameTable({
           ))}
         </div>
         {showBidPanel && (
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 z-20 flex justify-center pointer-events-none px-4">
-            <div className="pointer-events-auto w-full max-w-sm">
+          // Mobile (<640px): fixed bottom sheet. Desktop: absolute centered in table.
+          <div className="fixed inset-x-0 bottom-0 z-20 pointer-events-none sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:flex sm:justify-center sm:px-4">
+            <div className="pointer-events-auto w-full sm:max-w-sm">
               <BidPanel
                 bidState={bidState!}
                 players={players}

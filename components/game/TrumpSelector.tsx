@@ -69,23 +69,28 @@ export default function TrumpSelector({ onSelect, bidAmount, myHand = [] }: Trum
         {myHand.length > 0 && (
           <div className="px-4 pb-3 shrink-0">
             <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold mb-2 text-center">Your Hand</p>
-            <div className="flex gap-1 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+            <div
+              className="flex gap-1 pb-1"
+              style={{ overflowX: 'auto', overflowY: 'visible', scrollbarWidth: 'none', paddingTop: '4px' }}
+            >
               {sortedHand.map((card) => {
                 const isCardRed = card.suit === 'hearts' || card.suit === 'diamonds';
                 const is3Spades = card.rank === '3' && card.suit === 'spades';
                 const highlighted = selected === card.suit;
+                const dimmed = selected !== null && selected !== card.suit && !is3Spades;
                 return (
                   <motion.div
                     key={card.id}
-                    animate={{ y: highlighted ? -8 : 0, scale: highlighted ? 1.08 : 1 }}
+                    animate={{ opacity: dimmed ? 0.3 : 1, scale: highlighted ? 1.06 : 1 }}
                     transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+                    style={{ transformOrigin: 'bottom center' }}
                     className={clsx(
                       'shrink-0 w-8 h-12 rounded-lg border-2 flex flex-col items-center justify-between p-0.5 bg-white select-none',
                       is3Spades
                         ? 'border-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]'
                         : highlighted
                           ? (isCardRed ? 'border-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]' : 'border-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.5)]')
-                          : 'border-slate-200 shadow-sm opacity-70'
+                          : 'border-slate-200 shadow-sm'
                     )}
                   >
                     <div className={clsx('self-start text-[8px] font-black leading-none', isCardRed ? 'text-red-500' : 'text-slate-800')}>
@@ -107,7 +112,7 @@ export default function TrumpSelector({ onSelect, bidAmount, myHand = [] }: Trum
         )}
 
         {/* Suit selection grid */}
-        <div className="grid grid-cols-2 gap-3 px-4 pb-4 overflow-y-auto">
+        <div className="grid grid-cols-2 gap-3 px-4 pb-4 flex-1 overflow-y-auto min-h-0">
           {SUITS.map((suit) => {
             const isSelected = selected === suit;
             const count = counts[suit];
