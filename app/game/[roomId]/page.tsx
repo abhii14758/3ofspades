@@ -7,6 +7,7 @@ import WinnerScreen from '@/components/game/WinnerScreen';
 import { useGame } from '@/hooks/useGame';
 import { connectSocket, socketEmit } from '@/lib/socket/socketClient';
 import { useLobbyStore } from '@/store/lobbyStore';
+import { usePlayerStore } from '@/store/playerStore';
 import { getConfigForPreset } from '@/config/gameConfig';
 import type { Card, Suit } from '@/types';
 
@@ -32,10 +33,21 @@ export default function GamePage() {
   const preset = currentRoom?.config?.preset ?? '6p1d';
   const roomGameConfig = getConfigForPreset(preset);
 
-  // Ensure socket is alive if the user navigated directly to this URL (e.g. refresh)
+  // ALL hooks must be declared before any conditional return (Rules of Hooks)
+  const handlePlayCard = useCallback((card: Card) => playCard(card.id), [playCard]);
+  const handleBid = useCallback((amount: number) => placeBid(amount), [placeBid]);
+  const handlePass = useCallback(() => placeBid('pass'), [placeBid]);
+  const handleSelectTrump = useCallback((suit: Suit) => selectTrump(suit), [selectTrump]);
+  const handleSelectPartners = useCallback((slots: Array<{ typeId: string; ordinal: 1 | 2 }>) => selectPartners(slots), [selectPartners]);
+
+  // Ensure socket is alive and attempt to rejoin if we have a stored playerId
   useEffect(() => {
-    connectSocket();
-  }, []);
+    const socket = connectSocket();
+    const { playerId: storedPlayerId } = usePlayerStore.getState();
+    if (storedPlayerId && roomId && socket.connected) {
+      socket.emit('player:reconnect', { roomId, playerId: storedPlayerId });
+    }
+  }, [roomId]);
 
   // Loading / reconnecting state
   if (!gameState) {
@@ -43,7 +55,7 @@ export default function GamePage() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center text-slate-400">
           <div className="text-6xl animate-pulse mb-4">♠</div>
-          <p className="text-base font-semibold">Loading game…</p>
+          <p className="text-base font-semibold">Reconnecting to game…</p>
           <p className="text-xs text-slate-600 mt-1 font-mono">room: {roomId}</p>
           <button
             onClick={() => router.push('/')}
@@ -55,12 +67,6 @@ export default function GamePage() {
       </div>
     );
   }
-
-  const handlePlayCard = useCallback((card: Card) => playCard(card.id), [playCard]);
-  const handleBid = useCallback((amount: number) => placeBid(amount), [placeBid]);
-  const handlePass = useCallback(() => placeBid('pass'), [placeBid]);
-  const handleSelectTrump = useCallback((suit: Suit) => selectTrump(suit), [selectTrump]);
-  const handleSelectPartners = useCallback((slots: Array<{ typeId: string; ordinal: 1 | 2 }>) => selectPartners(slots), [selectPartners]);
 
   const lastRoundHistory =
     gameState.roundHistory.length > 0
