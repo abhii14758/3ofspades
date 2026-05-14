@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Card as CardType, Suit } from '@/types';
 import Card from './Card';
@@ -80,9 +80,10 @@ export default function CardHand({
   }, [cards]);
 
   // Ordered cards by user arrangement (computed early for vertical path)
-  const orderedCards = cardOrder
-    .map(id => cards.find(c => c.id === id))
-    .filter(Boolean) as CardType[];
+  const orderedCards = useMemo(() => {
+    const cardById = new Map(cards.map(c => [c.id, c]));
+    return cardOrder.map(id => cardById.get(id)).filter(Boolean) as CardType[];
+  }, [cardOrder, cards]);
 
   if (cards.length === 0) return null;
 
@@ -292,20 +293,24 @@ export default function CardHand({
                 onDrop={handleDrop}
                 onDragEnd={handleDrop}
               >
-                {/* Suit highlight glow ring */}
+                {/* Suit highlight glow ring — CSS animation, no JS thread */}
                 {isSuitHighlighted && (
-                  <motion.div
-                    className="absolute inset-0 rounded-xl pointer-events-none"
-                    animate={{ boxShadow: glowColor }}
-                    transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.06 }}
+                  <div
+                    className="absolute inset-0 rounded-xl pointer-events-none glow-card-suit-anim"
+                    style={{
+                      boxShadow: glowColor[1],
+                      animationDelay: `${i * 0.06}s`,
+                    }}
                   />
                 )}
-                {/* Generic playable glow (subtle, no suit match) */}
+                {/* Generic playable glow — CSS animation */}
                 {isMyTurn && isPlayable && !isSelected && !isSuitHighlighted && (
-                  <motion.div
-                    className="absolute inset-0 rounded-xl pointer-events-none"
-                    animate={{ boxShadow: ['0 0 0px rgba(74,222,128,0)', '0 0 5px rgba(74,222,128,0.28)', '0 0 0px rgba(74,222,128,0)'] }}
-                    transition={{ duration: 2.5, repeat: Infinity, delay: i * 0.1 }}
+                  <div
+                    className="absolute inset-0 rounded-xl pointer-events-none glow-card-playable-anim"
+                    style={{
+                      boxShadow: '0 0 5px rgba(74,222,128,0.28)',
+                      animationDelay: `${i * 0.1}s`,
+                    }}
                   />
                 )}
                 {/* Drag-over indicator */}

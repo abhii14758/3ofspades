@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import GameTable from '@/components/game/GameTable';
 import RoundResult from '@/components/game/RoundResult';
@@ -56,11 +56,11 @@ export default function GamePage() {
     );
   }
 
-  const handlePlayCard = (card: Card) => playCard(card.id);
-  const handleBid = (amount: number) => placeBid(amount);
-  const handlePass = () => placeBid('pass');
-  const handleSelectTrump = (suit: Suit) => selectTrump(suit);
-  const handleSelectPartners = (slots: Array<{ typeId: string; ordinal: 1 | 2 }>) => selectPartners(slots);
+  const handlePlayCard = useCallback((card: Card) => playCard(card.id), [playCard]);
+  const handleBid = useCallback((amount: number) => placeBid(amount), [placeBid]);
+  const handlePass = useCallback(() => placeBid('pass'), [placeBid]);
+  const handleSelectTrump = useCallback((suit: Suit) => selectTrump(suit), [selectTrump]);
+  const handleSelectPartners = useCallback((slots: Array<{ typeId: string; ordinal: 1 | 2 }>) => selectPartners(slots), [selectPartners]);
 
   const lastRoundHistory =
     gameState.roundHistory.length > 0
@@ -107,7 +107,7 @@ export default function GamePage() {
           playerTotals={gameState.playerTotals ?? {}}
           winnerTeamId={gameState.winnerTeamId}
           myPlayerId={playerId ?? ''}
-          isHost={gameState.players.find((p) => p.id === playerId)?.isHost ?? false}
+          isHost={isHost}
           onStartNextRound={startNextRound}
           onDismiss={dismissRoundResult}
         />

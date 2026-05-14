@@ -95,13 +95,17 @@ function scheduleDealComplete(io: Server, roomId: string, cfg: GameConfig): void
   const timeout = computeDealTimeout(cfg);
   const t = setTimeout(() => {
     dealTimers.delete(roomId);
-    const currentRoom = rooms.get(roomId);
-    if (!currentRoom?.gameState) return;
-    if (currentRoom.gameState.phase !== 'dealing') return;
-    const biddingState = startBidding(currentRoom.gameState, cfg);
-    currentRoom.gameState = biddingState;
-    io.to(roomId).emit('game:dealComplete', { gameState: getSafeGameState(biddingState) });
-    scheduleAutoPlayIfNeeded(io, currentRoom);
+    try {
+      const currentRoom = rooms.get(roomId);
+      if (!currentRoom?.gameState) return;
+      if (currentRoom.gameState.phase !== 'dealing') return;
+      const biddingState = startBidding(currentRoom.gameState, cfg);
+      currentRoom.gameState = biddingState;
+      io.to(roomId).emit('game:dealComplete', { gameState: getSafeGameState(biddingState) });
+      scheduleAutoPlayIfNeeded(io, currentRoom);
+    } catch (err) {
+      console.error('[dealTimer]', err);
+    }
   }, timeout);
   dealTimers.set(roomId, t);
 }
@@ -112,10 +116,33 @@ function scheduleDealComplete(io: Server, roomId: string, cfg: GameConfig): void
  */
 const roomTeamTotals = new Map<string, { A: number; B: number }>();
 
+/** Cancel and delete ALL timers associated with a room. Call before rooms.delete(). */
+function cleanupRoomTimers(roomId: string): void {
+  const turn = turnTimers.get(roomId);
+  if (turn) { clearInterval(turn); turnTimers.delete(roomId); }
+
+  const round = roundStartTimers.get(roomId);
+  if (round) { clearTimeout(round); roundStartTimers.delete(roomId); }
+
+  const deal = dealTimers.get(roomId);
+  if (deal) { clearTimeout(deal); dealTimers.delete(roomId); }
+
+  const trickClear = trickClearTimers.get(roomId);
+  if (trickClear) { clearTimeout(trickClear); trickClearTimers.delete(roomId); }
+
+  roomTeamTotals.delete(roomId);
+}
+
 // ─── ID generators ────────────────────────────────────────────────────────────
 
 function generateRoomId(): string {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+  let id: string;
+  let attempts = 0;
+  do {
+    id = Math.random().toString(36).substring(2, 8).toUpperCase();
+    if (++attempts > 100) throw new Error('Could not generate unique room ID after 100 attempts');
+  } while (rooms.has(id));
+  return id;
 }
 
 function generatePlayerId(): string {
@@ -246,12 +273,18 @@ function scheduleAutoPlayIfNeeded(io: Server, room: Room): void {
 
   if (isBot || isDisconnected) {
     const delay = isBot ? cfg.botDelayMs : 2_000;
-    setTimeout(() => {
-      const currentRoom = rooms.get(roomId);
-      if (!currentRoom?.gameState) return;
-      if (currentRoom.gameState.currentTurnPlayerId !== playerId) return;
-      executeAutoPlay(io, roomId, playerId);
+    const t = setTimeout(() => {
+      turnTimers.delete(roomId);
+      try {
+        const currentRoom = rooms.get(roomId);
+        if (!currentRoom?.gameState) return;
+        if (currentRoom.gameState.currentTurnPlayerId !== playerId) return;
+        executeAutoPlay(io, roomId, playerId);
+      } catch (err) {
+        console.error(`[autoPlay] roomId=${roomId} playerId=${playerId}`, err);
+      }
     }, delay);
+    turnTimers.set(roomId, t);
     return;
   }
 
@@ -264,22 +297,26 @@ function scheduleAutoPlayIfNeeded(io: Server, room: Room): void {
 
     let remaining = timerSeconds;
     const interval = setInterval(() => {
-      remaining--;
-      if (remaining <= 0) {
-        clearInterval(interval);
-        turnTimers.delete(roomId);
-        const currentRoom = rooms.get(roomId);
-        if (!currentRoom?.gameState) return;
-        if (currentRoom.gameState.currentTurnPlayerId !== playerId) return;
-        currentRoom.gameState.turnTimerEndsAt = null;
-        const p = currentRoom.players.find((pl) => pl.id === playerId);
-        if (p?.status === 'disconnected') {
-          executeAutoPlay(io, roomId, playerId);
+      try {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(interval);
+          turnTimers.delete(roomId);
+          const currentRoom = rooms.get(roomId);
+          if (!currentRoom?.gameState) return;
+          if (currentRoom.gameState.currentTurnPlayerId !== playerId) return;
+          currentRoom.gameState.turnTimerEndsAt = null;
+          const p = currentRoom.players.find((pl) => pl.id === playerId);
+          if (p?.status === 'disconnected') {
+            executeAutoPlay(io, roomId, playerId);
+          } else {
+            io.to(roomId).emit('game:turnTimerExpired', { playerId });
+          }
         } else {
-          io.to(roomId).emit('game:turnTimerExpired', { playerId });
+          io.to(roomId).emit('game:turnTimerUpdate', { remainingSeconds: remaining });
         }
-      } else {
-        io.to(roomId).emit('game:turnTimerUpdate', { remainingSeconds: remaining });
+      } catch (err) {
+        console.error('[turnTimer]', err);
       }
     }, 1000);
     turnTimers.set(roomId, interval as unknown as NodeJS.Timeout);
@@ -680,10 +717,14 @@ function handlePlayCard(
       const trickClearDelay = 5000;
       const clearTimer = setTimeout(() => {
         trickClearTimers.delete(roomId);
-        const currentRoom = rooms.get(roomId);
-        if (!currentRoom?.gameState) return;
-        syncStateToAll(io, currentRoom);
-        scheduleAutoPlayIfNeeded(io, currentRoom);
+        try {
+          const currentRoom = rooms.get(roomId);
+          if (!currentRoom?.gameState) return;
+          syncStateToAll(io, currentRoom);
+          scheduleAutoPlayIfNeeded(io, currentRoom);
+        } catch (err) {
+          console.error('[trickClearTimer]', err);
+        }
       }, trickClearDelay);
       trickClearTimers.set(roomId, clearTimer);
     }
@@ -705,8 +746,9 @@ export function setupSocketServer(io: Server): void {
   io.on('connection', (socket: Socket) => {
     // ── room:create ───────────────────────────────────────────────────────
     socket.on('room:create', (payload: CreateRoomPayload) => {
-      const roomId = generateRoomId();
-      const playerId = generatePlayerId();
+      try {
+        const roomId = generateRoomId();
+        const playerId = generatePlayerId();
 
       const player: Player = {
         id: playerId,
@@ -740,6 +782,10 @@ export function setupSocketServer(io: Server): void {
       socket.join(roomId);
 
       socket.emit('room:created', { room: getSafeRoom(room), playerId });
+      } catch (err) {
+        console.error('[room:create]', err);
+        socket.emit('room:error', { message: 'Server error processing action' });
+      }
     });
 
     // ── room:join ─────────────────────────────────────────────────────────
@@ -889,8 +935,9 @@ export function setupSocketServer(io: Server): void {
 
     // ── game:start ────────────────────────────────────────────────────────
     socket.on('game:start', (payload: { roomId: string }) => {
-      const info = socketToPlayer.get(socket.id);
-      if (!info) return;
+      try {
+        const info = socketToPlayer.get(socket.id);
+        if (!info) return;
 
       const room = rooms.get(payload.roomId);
       if (!room) return;
@@ -932,6 +979,10 @@ export function setupSocketServer(io: Server): void {
 
       // Transition dealing → bidding after the deal animation
       scheduleDealComplete(io, payload.roomId, cfg);
+      } catch (err) {
+        console.error('[game:start]', err);
+        socket.emit('room:error', { message: 'Server error processing action' });
+      }
     });
 
     // ── game:skipDeal — host skips the deal animation early ───────────────
@@ -957,50 +1008,70 @@ export function setupSocketServer(io: Server): void {
 
     // ── game:placeBid ─────────────────────────────────────────────────────
     socket.on('game:placeBid', (payload: PlaceBidPayload) => {
-      const info = socketToPlayer.get(socket.id);
-      if (!info || info.roomId !== payload.roomId) {
-        socket.emit('room:error', { message: 'Invalid room' });
-        return;
-      }
-      if (!handlePlaceBid(io, payload.roomId, info.playerId, payload.amount)) {
-        socket.emit('room:error', { message: 'Invalid bid' });
+      try {
+        const info = socketToPlayer.get(socket.id);
+        if (!info || info.roomId !== payload.roomId) {
+          socket.emit('room:error', { message: 'Invalid room' });
+          return;
+        }
+        if (!handlePlaceBid(io, payload.roomId, info.playerId, payload.amount)) {
+          socket.emit('room:error', { message: 'Invalid bid' });
+        }
+      } catch (err) {
+        console.error('[game:placeBid]', err);
+        socket.emit('room:error', { message: 'Server error processing action' });
       }
     });
 
     // ── game:selectTrump ──────────────────────────────────────────────────
     socket.on('game:selectTrump', (payload: SelectTrumpPayload) => {
-      const info = socketToPlayer.get(socket.id);
-      if (!info || info.roomId !== payload.roomId) {
-        socket.emit('room:error', { message: 'Invalid room' });
-        return;
-      }
-      if (!handleSelectTrump(io, payload.roomId, info.playerId, payload.suit)) {
-        socket.emit('room:error', { message: 'Cannot select trump now' });
+      try {
+        const info = socketToPlayer.get(socket.id);
+        if (!info || info.roomId !== payload.roomId) {
+          socket.emit('room:error', { message: 'Invalid room' });
+          return;
+        }
+        if (!handleSelectTrump(io, payload.roomId, info.playerId, payload.suit)) {
+          socket.emit('room:error', { message: 'Cannot select trump now' });
+        }
+      } catch (err) {
+        console.error('[game:selectTrump]', err);
+        socket.emit('room:error', { message: 'Server error processing action' });
       }
     });
 
     // ── game:selectPartners ───────────────────────────────────────────────
     socket.on('game:selectPartners', (payload: SelectPartnersPayload) => {
-      const info = socketToPlayer.get(socket.id);
-      if (!info || info.roomId !== payload.roomId) {
-        socket.emit('room:error', { message: 'Invalid room' });
-        return;
-      }
-      const slots = payload.cardSlots ?? (payload.cardIds?.map(id => ({ typeId: id, ordinal: 1 as const })) ?? []);
-      if (!handleSelectPartners(io, payload.roomId, info.playerId, slots)) {
-        socket.emit('room:error', { message: 'Invalid partner selection' });
+      try {
+        const info = socketToPlayer.get(socket.id);
+        if (!info || info.roomId !== payload.roomId) {
+          socket.emit('room:error', { message: 'Invalid room' });
+          return;
+        }
+        const slots = payload.cardSlots ?? (payload.cardIds?.map(id => ({ typeId: id, ordinal: 1 as const })) ?? []);
+        if (!handleSelectPartners(io, payload.roomId, info.playerId, slots)) {
+          socket.emit('room:error', { message: 'Invalid partner selection' });
+        }
+      } catch (err) {
+        console.error('[game:selectPartners]', err);
+        socket.emit('room:error', { message: 'Server error processing action' });
       }
     });
 
     // ── game:playCard ─────────────────────────────────────────────────────
     socket.on('game:playCard', (payload: PlayCardPayload) => {
-      const info = socketToPlayer.get(socket.id);
-      if (!info || info.roomId !== payload.roomId) {
-        socket.emit('room:error', { message: 'Invalid room' });
-        return;
-      }
-      if (!handlePlayCard(io, payload.roomId, info.playerId, payload.cardId)) {
-        socket.emit('room:error', { message: 'Invalid card play' });
+      try {
+        const info = socketToPlayer.get(socket.id);
+        if (!info || info.roomId !== payload.roomId) {
+          socket.emit('room:error', { message: 'Invalid room' });
+          return;
+        }
+        if (!handlePlayCard(io, payload.roomId, info.playerId, payload.cardId)) {
+          socket.emit('room:error', { message: 'Invalid card play' });
+        }
+      } catch (err) {
+        console.error('[game:playCard]', err);
+        socket.emit('room:error', { message: 'Server error processing action' });
       }
     });
 
@@ -1077,8 +1148,12 @@ export function setupSocketServer(io: Server): void {
       });
 
       if (percentage >= 0.8) {
+        cleanupRoomTimers(roomId);
         io.to(roomId).emit('game:terminated', { reason: 'vote', roomId });
+        // Reset to lobby state
         room.gameState = null;
+        room.players.forEach(p => { p.status = 'waiting'; });
+        io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
       }
     });
 

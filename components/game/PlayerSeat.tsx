@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import type { Player, Card as CardType } from '@/types';
@@ -40,8 +40,7 @@ function nameHash(name: string): number {
   return h;
 }
 
-
-/** Shrinking SVG arc timer around the avatar */
+/** Shrinking SVG arc timer around the avatar — slowed to 1000ms to reduce re-renders */
 function TimerRing({
   endsAt,
   totalSeconds = 30,
@@ -56,7 +55,7 @@ function TimerRing({
   useEffect(() => {
     const update = () => setRemaining(Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
     update();
-    const id = setInterval(update, 250);
+    const id = setInterval(update, 1000); // reduced from 250ms → 1000ms
     return () => clearInterval(id);
   }, [endsAt]);
 
@@ -74,12 +73,10 @@ function TimerRing({
       style={{ pointerEvents: 'none' }}
       viewBox={`0 0 ${size} ${size}`}
     >
-      {/* Track */}
       <circle
         cx={size / 2} cy={size / 2} r={radius}
         fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3"
       />
-      {/* Progress arc */}
       <circle
         cx={size / 2} cy={size / 2} r={radius}
         fill="none"
@@ -89,13 +86,13 @@ function TimerRing({
         strokeDashoffset={dashOffset}
         strokeLinecap="round"
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ transition: 'stroke-dashoffset 0.25s linear, stroke 0.3s' }}
+        style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.3s' }}
       />
     </svg>
   );
 }
 
-export default function PlayerSeat({
+function PlayerSeat({
   player,
   cardCount,
   isCurrentTurn,
@@ -127,29 +124,23 @@ export default function PlayerSeat({
         isDisconnected && 'opacity-40'
       )}
     >
-      {/* Trick card played by this player — removed, shown centrally in TrickPile */}
-
       {/* Avatar with turn indicator and timer ring */}
       <div className="relative mt-1" style={{ width: extraCompact ? 32 : 48, height: extraCompact ? 32 : 48 }}>
-        {/* Turn glow */}
+        {/* Turn glow — CSS animations instead of Framer Motion boxShadow */}
         {isCurrentTurn && (
           <>
-            <motion.div
-              className="absolute rounded-full"
+            <div
+              className="absolute rounded-full glow-seat-pulse"
               style={{ inset: -10, background: 'radial-gradient(circle, rgba(74,222,128,0.4) 0%, transparent 70%)' }}
-              animate={{ opacity: [0.4, 0.9, 0.4], scale: [0.95, 1.05, 0.95] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
             />
-            <motion.div
-              className="absolute rounded-full"
+            <div
+              className="absolute rounded-full glow-seat-border"
               style={{ inset: -6, border: '2px solid rgba(74,222,128,0.8)', boxShadow: '0 0 12px rgba(74,222,128,0.5)' }}
-              animate={{ opacity: [0.8, 0.3, 0.8] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
             />
           </>
         )}
 
-        {/* Timer ring — shown when it's this player's turn and timer is active */}
+        {/* Timer ring */}
         {isCurrentTurn && turnTimerEndsAt && (
           <div className="absolute" style={{ inset: -7 }}>
             <TimerRing
@@ -160,7 +151,7 @@ export default function PlayerSeat({
           </div>
         )}
 
-        {/* Avatar circle */}
+        {/* Avatar circle — removed animate boxShadow, use static boxShadow */}
         <div style={{
           padding: '3px',
           borderRadius: '50%',
@@ -173,34 +164,29 @@ export default function PlayerSeat({
             ? '0 0 0 2px rgba(52,211,153,0.6), 0 4px 12px rgba(0,0,0,0.8)'
             : '0 0 0 1px rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.8)',
         }}>
-        <motion.div
-          className={clsx(
-            'rounded-full bg-gradient-to-br flex items-center justify-center font-bold uppercase shadow-md text-white relative overflow-hidden',
-            extraCompact ? 'w-8 h-8 text-xs' : 'w-12 h-12 text-sm',
-            gradient,
-            isCurrentTurn && 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900',
-            isPartner && isRevealed && !isCurrentTurn && 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-900'
-          )}
-          animate={
-            isCurrentTurn
-              ? { boxShadow: ['0 0 4px rgba(74,222,128,0.3)', '0 0 16px rgba(74,222,128,0.8)', '0 0 4px rgba(74,222,128,0.3)'] }
-              : isPartner && isRevealed
-                ? { boxShadow: '0 0 8px rgba(52,211,153,0.5)' }
-                : {}
-          }
-          transition={isCurrentTurn ? { duration: 1.3, repeat: Infinity } : {}}
-        >
-          {player.avatarUrl ? (
-            <img src={player.avatarUrl} alt={player.name} className="absolute inset-0 w-full h-full object-cover rounded-full" />
-          ) : (
-            <span className="relative z-10">{player.name.charAt(0)}</span>
-          )}
-          {player.type === 'bot' && (
-            <span className="absolute -bottom-0.5 -right-0.5 text-xs leading-none bg-slate-800 rounded-full px-0.5 z-20">
-              {player.isSubstitutedBot ? '🔄' : '🤖'}
-            </span>
-          )}
-        </motion.div>
+          <div
+            className={clsx(
+              'rounded-full bg-gradient-to-br flex items-center justify-center font-bold uppercase shadow-md text-white relative overflow-hidden',
+              extraCompact ? 'w-8 h-8 text-xs' : 'w-12 h-12 text-sm',
+              gradient,
+              isCurrentTurn && 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900',
+              isPartner && isRevealed && !isCurrentTurn && 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-900'
+            )}
+            style={{
+              boxShadow: isPartner && isRevealed && !isCurrentTurn ? '0 0 8px rgba(52,211,153,0.5)' : undefined,
+            }}
+          >
+            {player.avatarUrl ? (
+              <img src={player.avatarUrl} alt={player.name} className="absolute inset-0 w-full h-full object-cover rounded-full" />
+            ) : (
+              <span className="relative z-10">{player.name.charAt(0)}</span>
+            )}
+            {player.type === 'bot' && (
+              <span className="absolute -bottom-0.5 -right-0.5 text-xs leading-none bg-slate-800 rounded-full px-0.5 z-20">
+                {player.isSubstitutedBot ? '🔄' : '🤖'}
+              </span>
+            )}
+          </div>
         </div>
 
         {player.isHost && (
@@ -249,14 +235,14 @@ export default function PlayerSeat({
             </motion.span>
           )}
           {isPartner && isRevealed && !isBidWinner && (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="text-xs font-bold bg-emerald-600 text-white px-1 rounded"
-            title="Partner revealed"
-          >
-            🤝 Partner
-          </motion.span>
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className="text-xs font-bold bg-emerald-600 text-white px-1 rounded"
+              title="Partner revealed"
+            >
+              🤝 Partner
+            </motion.span>
           )}
           {showCombinedLabel && !isLocalPlayer && (
             <motion.span
@@ -270,7 +256,7 @@ export default function PlayerSeat({
           )}
         </div>
 
-        {/* Score (individual until partners revealed; combined for Team A after reveal) */}
+        {/* Score */}
         {displayPoints !== null && (
           <span className={clsx(
             'font-bold tabular-nums rounded px-1.5 py-0.5',
@@ -279,31 +265,19 @@ export default function PlayerSeat({
           )}
           style={{ border: '1px solid rgba(255,255,255,0.07)', lineHeight: 1.4 }}
           >
-            {displayPoints < 0 ? `−${Math.abs(displayPoints)}` : displayPoints} pts
-            {isTeamA && <span className="text-[8px] ml-0.5 opacity-70">(team A)</span>}
-            {showCombinedLabel && !isTeamA && <span className="text-[8px] ml-0.5 opacity-70">(team B)</span>}
+            {displayPoints > 0 ? '+' : ''}{displayPoints}
           </span>
         )}
 
-        {isDisconnected && (
-          <span className="text-[11px] text-yellow-500 font-medium">⚡ DC</span>
-        )}
-
+        {/* BOT label for substituted bots */}
         {player.isSubstitutedBot && (
-          <span className="text-[10px] text-violet-300 bg-violet-900/60 border border-violet-700/40 px-1.5 py-0.5 rounded font-bold">BOT</span>
-        )}
-
-        {isLocalPlayer && !isDisconnected && (
-          <span className="text-[11px] text-slate-500 font-medium">You</span>
-        )}
-
-        {/* Card count badge in normal mode */}
-        {!compact && !isLocalPlayer && cardCount > 0 && (
-          <span className="bg-slate-900/90 text-slate-300 text-xs font-bold px-1.5 py-0.5 rounded-full border border-slate-700">
-            {cardCount}
+          <span className="text-[9px] font-bold text-amber-400 bg-amber-950/60 border border-amber-700/40 rounded px-1 leading-tight">
+            BOT
           </span>
         )}
       </div>
     </div>
   );
 }
+
+export default memo(PlayerSeat);

@@ -58,11 +58,9 @@ export default function OpponentStrip({
         const gradient = AVATAR_GRADIENTS[nameHash(player.name) % AVATAR_GRADIENTS.length];
 
         return (
-          <motion.div
+          <div
             key={player.id}
-            className="flex flex-col items-center gap-0.5 shrink-0"
-            animate={isCurrentTurn ? { scale: [1, 1.06, 1] } : { scale: 1 }}
-            transition={isCurrentTurn ? { duration: 1.2, repeat: Infinity } : {}}
+            className={clsx('flex flex-col items-center gap-0.5 shrink-0', isCurrentTurn && 'opponent-active-pulse')}
           >
             {/* Trick card played — mini face-up */}
             <AnimatePresence>
@@ -144,7 +142,7 @@ export default function OpponentStrip({
             >
               {player.name}
             </span>
-          </motion.div>
+          </div>
         );
       })}
     </div>

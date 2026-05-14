@@ -610,8 +610,10 @@ export default function GameTable({
   const getTrickCard = (playerId: string): CardType | null =>
     currentTrick?.cards.find((c) => c.playerId === playerId)?.card ?? null;
 
-  const playableCardIds: Set<string> | undefined =
-    isMyTurn && phase === 'playing' ? new Set(myHand.map((c) => c.id)) : undefined;
+  const playableCardIds = useMemo<Set<string> | undefined>(
+    () => (isMyTurn && phase === 'playing' ? new Set(myHand.map((c) => c.id)) : undefined),
+    [isMyTurn, phase, myHand]
+  );
 
   const showBidPanel = phase === 'bidding' && bidState !== null;
   const showTrumpSelector = phase === 'trump_selection' && bidWinnerId === myPlayerId && onSelectTrump;
@@ -621,6 +623,11 @@ export default function GameTable({
 
   // effectivelyHidden: user preference, but auto-reveal during your turn in playing phase
   const effectivelyHidden = handHidden && !(isMyTurn && phase === 'playing');
+
+  const handleCardDealtToMe = useCallback(
+    () => setDealRevealedCount(n => n + 1),
+    []
+  );
 
   return (
     <div
@@ -753,7 +760,7 @@ export default function GameTable({
         <motion.div
           ref={tableRef}
           initial={{ scale: 0.88, opacity: 0, rotateX: 0 }}
-          animate={{ scale: 1, opacity: 1, rotateX: isMobile ? 10 : 18 }}
+          animate={{ scale: 1, opacity: 1, rotateX: isMobile ? 0 : 18 }}
           transition={{ type: 'spring', stiffness: 160, damping: 26, delay: 0.04 }}
           className="relative"
           style={{
@@ -765,8 +772,7 @@ export default function GameTable({
               : isTablet ? 'min(50vh, 380px)' : 'min(52vh, 480px)',
             aspectRatio: isMobile && !isLandscape ? '5/3' : undefined,
             minHeight: isMobile ? (isLandscape ? '180px' : '200px') : '260px',
-            perspective: isMobile ? '600px' : '900px',
-            transformStyle: 'preserve-3d',
+            ...(!isMobile ? { perspective: '900px', transformStyle: 'preserve-3d' as const } : {}),
           }}
         >
           {/* ── Table layers (bottom → top) ── */}
@@ -957,7 +963,7 @@ export default function GameTable({
               cardsPerPlayer={cardsPerPlayer}
               tableW={tableDims.w}
               tableH={tableDims.h}
-              onCardDealtToMe={() => setDealRevealedCount(n => n + 1)}
+              onCardDealtToMe={handleCardDealtToMe}
               onComplete={handleDealComplete}
             />
           )}
