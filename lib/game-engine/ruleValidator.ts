@@ -28,9 +28,10 @@ export function validateCardPlay(
   if (!player) {
     return { valid: false, error: 'Player not found.' };
   }
-  if (player.status === 'disconnected') {
-    return { valid: false, error: 'Disconnected players cannot play cards.' };
-  }
+  // Note: do NOT block on player.status === 'disconnected' here.
+  // The server's auto-play (executeAutoPlay) legitimately plays on behalf of
+  // disconnected players. Disconnected clients have no socket, so they
+  // cannot abuse this path. The turn-order check below is sufficient.
 
   if (gameState.currentTurnPlayerId !== playerId) {
     return { valid: false, error: 'It is not your turn.' };

@@ -1289,7 +1289,10 @@ export function setupSocketServer(io: Server): void {
             currentRoom.players[idx].isSubstitutedBot = true;
             currentRoom.players[idx].status = 'playing';
             currentRoom.players[idx].socketId = undefined;
-            // scheduleAutoPlayIfNeeded will handle their turn if it comes up
+            // If it's currently their turn, trigger auto-play now
+            if (currentRoom.gameState.currentTurnPlayerId === currentRoom.players[idx].id) {
+              scheduleAutoPlayIfNeeded(io, currentRoom);
+            }
           } else {
             // Lobby — if host left, close the room entirely
             if (currentRoom.hostId === playerId) {
