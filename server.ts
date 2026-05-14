@@ -31,7 +31,10 @@ app.prepare().then(() => {
     }
   });
 
-  const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:3000').split(',').map(s => s.trim());
+  // Default to '*' (open) unless ALLOWED_ORIGINS is explicitly set in env
+  const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
+    : ['*'];
 
   const io = new SocketIOServer(httpServer, {
     cors: {
@@ -47,7 +50,7 @@ app.prepare().then(() => {
       credentials: true,
     },
     transports: ['websocket', 'polling'],
-    maxHttpBufferSize: 1e6, // 1MB max message size
+    maxHttpBufferSize: 1e6,
   });
 
   initSocketServer(io);
