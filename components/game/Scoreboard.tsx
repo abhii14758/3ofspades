@@ -126,6 +126,31 @@ export default function Scoreboard({
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
+                {/* Top 3 leaderboard */}
+                {Object.keys(playerTotals).length > 0 && (() => {
+                  const top3 = [...players]
+                    .filter(p => playerTotals[p.id] !== undefined)
+                    .sort((a, b) => (playerTotals[b.id] ?? 0) - (playerTotals[a.id] ?? 0))
+                    .slice(0, 3);
+                  if (top3.length === 0) return null;
+                  return (
+                    <div className="rounded-xl bg-slate-800/50 border border-slate-700/40 p-3">
+                      <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-2">Top Players</p>
+                      <div className="space-y-1.5">
+                        {top3.map((p, i) => (
+                          <div key={p.id} className="flex items-center gap-2 text-xs">
+                            <span className="w-5 text-center shrink-0">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                            <span className="flex-1 truncate text-slate-300">{p.name}</span>
+                            <span className={clsx('font-black tabular-nums shrink-0', i === 0 ? 'text-amber-400' : 'text-slate-300')}>
+                              {playerTotals[p.id] ?? 0}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Trump + bid info */}
                 {(trumpSuit || (bidAmount && bidWinnerId)) && (
                   <div className="rounded-xl bg-slate-800/70 border border-amber-700/20 p-3 space-y-2">

@@ -197,7 +197,7 @@ export default function PlayerSeat({
           )}
           {player.type === 'bot' && (
             <span className="absolute -bottom-0.5 -right-0.5 text-xs leading-none bg-slate-800 rounded-full px-0.5 z-20">
-              🤖
+              {player.isSubstitutedBot ? '🔄' : '🤖'}
             </span>
           )}
         </motion.div>
@@ -287,6 +287,10 @@ export default function PlayerSeat({
 
         {isDisconnected && (
           <span className="text-[11px] text-yellow-500 font-medium">⚡ DC</span>
+        )}
+
+        {player.isSubstitutedBot && (
+          <span className="text-[10px] text-violet-300 bg-violet-900/60 border border-violet-700/40 px-1.5 py-0.5 rounded font-bold">BOT</span>
         )}
 
         {isLocalPlayer && !isDisconnected && (

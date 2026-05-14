@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -7,7 +7,7 @@ import { useLobbyStore } from '@/store/lobbyStore';
 import { usePlayerStore } from '@/store/playerStore';
 import { useGameStore } from '@/store/gameStore';
 import { socketEmit, connectSocket, getSocket } from '@/lib/socket/socketClient';
-import type { Player } from '@/types';
+import type { Player, RoomConfig, GamePreset } from '@/types';
 
 // ─── Clipboard helper (works on HTTP/LAN, not just HTTPS) ─────────────────────
 async function copyToClipboard(text: string): Promise<void> {
@@ -72,6 +72,11 @@ export default function RoomPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [joinName, setJoinName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState('');
+  const [showConfigEdit, setShowConfigEdit] = useState(false);
+  const [configDraft, setConfigDraft] = useState<Partial<RoomConfig>>({});
+  const editNameRef = useRef<HTMLInputElement>(null);
 
   const shareLink = typeof window !== 'undefined'
     ? `${window.location.origin}/room/${roomId}`
@@ -153,9 +158,37 @@ export default function RoomPage() {
   const handleReady = () => socketEmit.setReady(roomId);
   const handleAddBot = () => socketEmit.addBot(roomId);
   const handleStart = () => socketEmit.startGame(roomId);
-  const handleLeave = () => { clearRoom(); router.push('/'); };
+  const handleLeave = () => {
+    socketEmit.leaveRoom(roomId);
+    clearRoom();
+    router.push('/');
+  };
   const handleTerminate = () => socketEmit.terminateGame(roomId);
   const handleNextRound = () => socketEmit.startNextRound(roomId);
+
+  const startEditName = () => {
+    setEditNameValue(myPlayer?.name ?? '');
+    setEditingName(true);
+    setTimeout(() => editNameRef.current?.focus(), 50);
+  };
+
+  const saveEditName = () => {
+    const trimmed = editNameValue.trim();
+    if (trimmed && trimmed !== myPlayer?.name) {
+      socketEmit.renamePlayer(roomId, trimmed);
+    }
+    setEditingName(false);
+  };
+
+  const openConfigEdit = () => {
+    if (room?.config) setConfigDraft({ ...room.config });
+    setShowConfigEdit(true);
+  };
+
+  const saveConfig = () => {
+    socketEmit.updateRoomConfig(roomId, configDraft);
+    setShowConfigEdit(false);
+  };
 
   // ─── Loading state ──────────────────────────────────────────────────────────
   if (!room) {
@@ -312,42 +345,145 @@ export default function RoomPage() {
           </p>
         </motion.div>
 
-        {/* Config pills (if config present on room) */}
+        {/* Config section */}
         {'config' in room && room.config && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex flex-wrap gap-2 mb-5 justify-center"
+            className="mb-5"
           >
-            {(room as { config: { turnTimerSeconds?: number; targetScore?: number; maxRounds?: number; autoFillBots?: boolean } }).config.turnTimerSeconds !== undefined && (
-              <ConfigPill
-                icon="⏱"
-                label={
-                  (room as { config: { turnTimerSeconds: number } }).config.turnTimerSeconds === 0
-                    ? 'No Timer'
-                    : `${(room as { config: { turnTimerSeconds: number } }).config.turnTimerSeconds}s Turn`
-                }
-              />
+            <div className="flex flex-wrap gap-2 justify-center">
+              {(room as { config: { turnTimerSeconds?: number } }).config.turnTimerSeconds !== undefined && (
+                <ConfigPill
+                  icon="⏱"
+                  label={
+                    (room as { config: { turnTimerSeconds: number } }).config.turnTimerSeconds === 0
+                      ? 'No Timer'
+                      : `${(room as { config: { turnTimerSeconds: number } }).config.turnTimerSeconds}s Turn`
+                  }
+                />
+              )}
+              {(room as { config: { targetScore?: number } }).config.targetScore !== undefined && (
+                <ConfigPill
+                  icon="🏆"
+                  label={`${(room as { config: { targetScore: number } }).config.targetScore} pts`}
+                />
+              )}
+              {(room as { config: { maxRounds?: number } }).config.maxRounds !== undefined && (
+                <ConfigPill
+                  icon="🔄"
+                  label={
+                    (room as { config: { maxRounds: number } }).config.maxRounds === 0
+                      ? 'Unlimited Rounds'
+                      : `${(room as { config: { maxRounds: number } }).config.maxRounds} Rounds`
+                  }
+                />
+              )}
+              {(room as { config: { autoFillBots?: boolean } }).config.autoFillBots && (
+                <ConfigPill icon="🤖" label="Auto Bots" />
+              )}
+              {(room as { config: { preset?: string } }).config.preset && (
+                <ConfigPill icon="🎮" label={(room as { config: { preset: string } }).config.preset.toUpperCase()} />
+              )}
+            </div>
+            {isHost && !gameState && (
+              <div className="flex justify-center mt-2">
+                <button
+                  onClick={openConfigEdit}
+                  className="text-xs text-amber-400 hover:text-amber-300 transition-colors border border-amber-700/30 px-3 py-1 rounded-full bg-amber-900/10 hover:bg-amber-900/20"
+                >
+                  ✎ Edit Room Config
+                </button>
+              </div>
             )}
-            {(room as { config: { targetScore?: number } }).config.targetScore !== undefined && (
-              <ConfigPill
-                icon="🏆"
-                label={`${(room as { config: { targetScore: number } }).config.targetScore} pts`}
-              />
-            )}
-            {(room as { config: { maxRounds?: number } }).config.maxRounds !== undefined && (
-              <ConfigPill
-                icon="🔄"
-                label={
-                  (room as { config: { maxRounds: number } }).config.maxRounds === 0
-                    ? 'Unlimited Rounds'
-                    : `${(room as { config: { maxRounds: number } }).config.maxRounds} Rounds`
-                }
-              />
-            )}
-            {(room as { config: { autoFillBots?: boolean } }).config.autoFillBots && (
-              <ConfigPill icon="🤖" label="Auto Bots" />
-            )}
+
+            {/* Config Editor */}
+            <AnimatePresence>
+              {showConfigEdit && isHost && !gameState && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+                  className="mt-3 bg-slate-900/95 border border-amber-700/30 rounded-2xl p-4 shadow-xl"
+                >
+                  <h4 className="text-amber-300 font-bold text-sm mb-3">Room Configuration</h4>
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Game Mode</label>
+                      <select
+                        value={configDraft.preset ?? room.config.preset}
+                        onChange={(e) => setConfigDraft((d) => ({ ...d, preset: e.target.value as GamePreset }))}
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm outline-none focus:border-amber-500"
+                      >
+                        <option value="4p1d">4 Players · 1 Deck</option>
+                        <option value="6p1d">6 Players · 1 Deck</option>
+                        <option value="6p2d">6 Players · 2 Decks</option>
+                        <option value="8p2d">8 Players · 2 Decks</option>
+                        <option value="10p2d">10 Players · 2 Decks</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Turn Timer (seconds, 0 = off)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={120}
+                        value={configDraft.turnTimerSeconds ?? room.config.turnTimerSeconds}
+                        onChange={(e) => setConfigDraft((d) => ({ ...d, turnTimerSeconds: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Target Score (pts)</label>
+                      <input
+                        type="number"
+                        min={100}
+                        max={5000}
+                        step={100}
+                        value={configDraft.targetScore ?? room.config.targetScore}
+                        onChange={(e) => setConfigDraft((d) => ({ ...d, targetScore: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">Max Rounds (0 = unlimited)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={50}
+                        value={configDraft.maxRounds ?? room.config.maxRounds}
+                        onChange={(e) => setConfigDraft((d) => ({ ...d, maxRounds: Number(e.target.value) }))}
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-slate-100 text-sm outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={configDraft.autoFillBots ?? room.config.autoFillBots}
+                        onChange={(e) => setConfigDraft((d) => ({ ...d, autoFillBots: e.target.checked }))}
+                        className="w-4 h-4 accent-amber-500"
+                      />
+                      <span className="text-sm text-slate-300">Auto-fill bots when game starts</span>
+                    </label>
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <button
+                      onClick={saveConfig}
+                      className="flex-1 py-2 rounded-xl text-sm font-bold bg-amber-600 hover:bg-amber-500 text-white transition-colors"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setShowConfigEdit(false)}
+                      className="px-4 py-2 rounded-xl text-sm text-slate-400 hover:text-slate-200 bg-slate-800 hover:bg-slate-700 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
 
@@ -401,13 +537,41 @@ export default function RoomPage() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span
-                          className={`font-semibold text-sm truncate ${
-                            isLocal ? 'text-indigo-200' : 'text-slate-200'
-                          }`}
-                        >
-                          {player.name}
-                        </span>
+                        {isLocal && editingName ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              ref={editNameRef}
+                              value={editNameValue}
+                              onChange={(e) => setEditNameValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') saveEditName();
+                                if (e.key === 'Escape') setEditingName(false);
+                              }}
+                              onBlur={saveEditName}
+                              maxLength={20}
+                              className="w-28 px-2 py-0.5 bg-slate-700 border border-indigo-500 rounded text-sm text-slate-100 outline-none font-semibold"
+                            />
+                            <button onClick={saveEditName} className="text-xs text-green-400 hover:text-green-300 px-1">✓</button>
+                            <button onClick={() => setEditingName(false)} className="text-xs text-slate-500 hover:text-slate-300 px-1">✕</button>
+                          </div>
+                        ) : (
+                          <span
+                            className={`font-semibold text-sm truncate ${
+                              isLocal ? 'text-indigo-200' : 'text-slate-200'
+                            }`}
+                          >
+                            {player.name}
+                          </span>
+                        )}
+                        {isLocal && !editingName && (
+                          <button
+                            onClick={startEditName}
+                            title="Edit name"
+                            className="text-slate-500 hover:text-indigo-300 transition-colors text-xs leading-none"
+                          >
+                            ✎
+                          </button>
+                        )}
                         {isLocal && (
                           <span className="text-[10px] bg-indigo-700/60 text-indigo-300 px-1.5 py-0.5 rounded font-medium">
                             You
@@ -555,6 +719,16 @@ export default function RoomPage() {
             <p className="text-center text-slate-500 text-xs py-1">
               All ready! Waiting for host to start…
             </p>
+          )}
+
+          {/* Leave Room */}
+          {!isHost && (
+            <button
+              onClick={handleLeave}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold bg-slate-800/60 hover:bg-slate-700/80 text-slate-400 hover:text-slate-200 border border-slate-700/50 hover:border-slate-600 transition-all"
+            >
+              ← Leave Room
+            </button>
           )}
         </div>
       </div>

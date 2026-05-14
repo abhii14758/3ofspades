@@ -1,5 +1,6 @@
 'use client';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import type { Team, Player, RoundHistory, Suit } from '@/types';
 
@@ -20,24 +21,29 @@ interface WinnerScreenProps {
 }
 
 const CONFETTI_COLORS = [
-  'bg-yellow-400', 'bg-sky-400', 'bg-green-400', 'bg-pink-400',
-  'bg-purple-400', 'bg-orange-400', 'bg-red-400', 'bg-teal-400',
+  '#facc15', '#38bdf8', '#4ade80', '#f472b6',
+  '#a78bfa', '#fb923c', '#f87171', '#2dd4bf',
 ];
 
-function Confetto({ index }: { index: number }) {
+function ConfettiPiece({ index }: { index: number }) {
   const color = CONFETTI_COLORS[index % CONFETTI_COLORS.length];
   const left = `${(index * 7.3 + 5) % 98}%`;
-  const delay = (index * 0.11) % 2;
-  const duration = 2.2 + (index % 5) * 0.4;
-  const shape = index % 3 === 0 ? 'rounded-full' : index % 3 === 1 ? 'rounded-none rotate-45' : 'rounded-sm';
+  const delay = `${(index * 0.17) % 2.5}s`;
+  const duration = `${2.2 + (index % 5) * 0.4}s`;
+  const borderRadius = index % 3 === 0 ? '50%' : index % 3 === 1 ? '0' : '2px';
+  const rotation = index % 3 === 1 ? 'rotate(45deg)' : undefined;
 
   return (
-    <motion.div
-      className={clsx('absolute top-0 w-2.5 h-2.5', color, shape)}
-      style={{ left }}
-      initial={{ y: -20, opacity: 1, rotate: 0 }}
-      animate={{ y: '110vh', opacity: [1, 1, 0], rotate: 720 }}
-      transition={{ duration, delay, ease: 'linear', repeat: Infinity, repeatDelay: delay }}
+    <div
+      className="confetti-piece"
+      style={{
+        left,
+        backgroundColor: color,
+        animationDuration: duration,
+        animationDelay: delay,
+        borderRadius,
+        transform: rotation,
+      }}
     />
   );
 }
@@ -64,16 +70,22 @@ export default function WinnerScreen({
     winnerTeam.playerIds.includes(r.bidWinnerId)
   ).length;
 
+  const sortedPlayers = useMemo(
+    () => [...players].sort((a, b) => (playerTotals[b.id] ?? 0) - (playerTotals[a.id] ?? 0)),
+    [players, playerTotals]
+  );
+
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center overflow-y-auto">
-      {/* Confetti */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {Array.from({ length: 40 }).map((_, i) => (
-          <Confetto key={i} index={i} />
+    <div className="fixed inset-0 z-50 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 overflow-y-auto">
+      {/* Confetti — CSS-only, no framer-motion per piece */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {Array.from({ length: 20 }).map((_, i) => (
+          <ConfettiPiece key={i} index={i} />
         ))}
       </div>
 
-      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-2xl w-full my-8">
+      <div className="relative z-10 flex flex-col items-center text-center px-4 sm:px-6 max-w-2xl mx-auto py-8"
+           style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>
         {/* Gold radial glow behind trophy */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full bg-amber-500/8 blur-3xl pointer-events-none" />
 
@@ -82,7 +94,7 @@ export default function WinnerScreen({
           initial={{ scale: 0, rotate: -20 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: 'spring', stiffness: 280, damping: 18, delay: 0.1 }}
-          className="text-8xl mb-4 drop-shadow-2xl relative z-10"
+          className="text-7xl sm:text-8xl mb-4 drop-shadow-2xl relative z-10"
           style={{ filter: 'drop-shadow(0 0 24px rgba(212,160,23,0.5))' }}
         >
           🏆
@@ -93,7 +105,7 @@ export default function WinnerScreen({
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="text-4xl sm:text-5xl font-black mb-2 tracking-tight bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent"
+          className="text-3xl sm:text-5xl font-black mb-2 tracking-tight bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent"
         >
           Team {winnerTeamId} Wins!
         </motion.h1>
@@ -102,7 +114,7 @@ export default function WinnerScreen({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.45 }}
-          className="text-slate-400 text-base mb-8"
+          className="text-slate-400 text-sm sm:text-base mb-6"
         >
           {getTeamNames(winnerTeam)}
         </motion.p>
@@ -112,51 +124,49 @@ export default function WinnerScreen({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="w-full bg-slate-900/80 border border-slate-700 rounded-2xl overflow-hidden mb-6 shadow-2xl"
+          className="w-full bg-slate-900/80 border border-slate-700 rounded-2xl overflow-hidden mb-4 shadow-2xl"
         >
-          <div className="px-5 py-3 bg-slate-800/60 border-b border-slate-700 text-left">
+          <div className="px-4 sm:px-5 py-3 bg-slate-800/60 border-b border-slate-700 text-left">
             <p className="text-slate-300 font-bold text-sm">Final Scores</p>
           </div>
           <div className="divide-y divide-slate-700/50">
-            {[...players]
-              .sort((a, b) => (playerTotals[b.id] ?? 0) - (playerTotals[a.id] ?? 0))
-              .map((p, rank) => {
-                const onTeamA = teams.A.playerIds.includes(p.id);
-                const teamId = onTeamA ? 'A' : 'B';
-                const isWinnerPlayer = teamId === winnerTeamId;
-                const total = playerTotals[p.id] ?? 0;
-                return (
-                  <div
-                    key={p.id}
-                    className={clsx(
-                      'flex items-center gap-3 px-5 py-3',
-                      isWinnerPlayer ? 'bg-amber-900/15' : 'bg-slate-800/30'
-                    )}
-                  >
+            {sortedPlayers.map((p, rank) => {
+              const onTeamA = teams.A.playerIds.includes(p.id);
+              const teamId = onTeamA ? 'A' : 'B';
+              const isWinnerPlayer = teamId === winnerTeamId;
+              const total = playerTotals[p.id] ?? 0;
+              return (
+                <div
+                  key={p.id}
+                  className={clsx(
+                    'flex items-center gap-3 px-4 sm:px-5 py-3',
+                    isWinnerPlayer ? 'bg-amber-900/15' : 'bg-slate-800/30'
+                  )}
+                >
+                  <span className={clsx(
+                    'w-6 text-center font-black text-sm shrink-0',
+                    rank === 0 ? 'text-amber-400' : rank === 1 ? 'text-slate-300' : 'text-slate-500'
+                  )}>
+                    {rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `#${rank + 1}`}
+                  </span>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="font-bold text-slate-100 truncate text-sm">{p.name}</p>
                     <span className={clsx(
-                      'w-6 text-center font-black text-sm',
-                      rank === 0 ? 'text-amber-400' : rank === 1 ? 'text-slate-300' : 'text-slate-500'
+                      'text-[10px] font-semibold px-1.5 py-0.5 rounded',
+                      teamId === 'A' ? 'text-sky-300 bg-sky-900/50' : 'text-orange-300 bg-orange-900/50'
                     )}>
-                      {rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `#${rank + 1}`}
+                      Team {teamId} {isWinnerPlayer ? '🏆' : ''}
                     </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-slate-100 truncate text-sm">{p.name}</p>
-                      <span className={clsx(
-                        'text-[10px] font-semibold px-1.5 py-0.5 rounded',
-                        teamId === 'A' ? 'text-sky-300 bg-sky-900/50' : 'text-orange-300 bg-orange-900/50'
-                      )}>
-                        Team {teamId} {isWinnerPlayer ? '🏆' : ''}
-                      </span>
-                    </div>
-                    <p className={clsx(
-                      'font-black text-xl tabular-nums',
-                      total > 0 ? (isWinnerPlayer ? 'text-amber-300' : 'text-slate-200') : 'text-red-400'
-                    )}>
-                      {total}
-                    </p>
                   </div>
-                );
-              })}
+                  <p className={clsx(
+                    'font-black text-xl tabular-nums shrink-0',
+                    total > 0 ? (isWinnerPlayer ? 'text-amber-300' : 'text-slate-200') : 'text-red-400'
+                  )}>
+                    {total}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </motion.div>
 
@@ -165,27 +175,27 @@ export default function WinnerScreen({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="w-full bg-slate-900/60 border border-slate-700/50 rounded-xl overflow-hidden mb-6"
+          className="w-full bg-slate-900/60 border border-slate-700/50 rounded-xl overflow-hidden mb-5"
         >
           <div className="px-4 py-2.5 bg-slate-800/40 border-b border-slate-700/50">
             <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide">
               {roundHistory.length} Round{roundHistory.length !== 1 ? 's' : ''} Played
             </p>
           </div>
-          <div className="max-h-40 overflow-y-auto divide-y divide-slate-700/30">
+          <div className="max-h-36 overflow-y-auto divide-y divide-slate-700/30">
             {roundHistory.map((rh) => (
               <div key={rh.roundNumber} className="flex items-center justify-between px-4 py-2 text-xs">
-                <span className="text-slate-500">R{rh.roundNumber}</span>
-                <span className="text-slate-300 font-medium">{getPlayerName(rh.bidWinnerId)}</span>
-                <span className="text-yellow-400 font-bold">{rh.bidAmount}</span>
+                <span className="text-slate-500 shrink-0">R{rh.roundNumber}</span>
+                <span className="text-slate-300 font-medium truncate mx-2">{getPlayerName(rh.bidWinnerId)}</span>
+                <span className="text-yellow-400 font-bold shrink-0">{rh.bidAmount}</span>
                 <span className={clsx(
-                  'font-bold',
+                  'font-bold shrink-0 ml-1',
                   isRed(rh.trumpSuit) ? 'text-red-400' : 'text-slate-200'
                 )}>
                   {SUIT_SYMBOLS[rh.trumpSuit]}
                 </span>
                 <span className={clsx(
-                  'font-bold',
+                  'font-bold shrink-0 ml-1',
                   rh.bidMade ? 'text-green-400' : 'text-red-400'
                 )}>
                   {rh.bidMade ? '✅' : '❌'}
@@ -218,10 +228,12 @@ export default function WinnerScreen({
                 : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
             )}
           >
-            {isHost ? '🎮 Play Again' : '⏳ Waiting for host...'}
+            {isHost ? '🎮 Play Again' : '⏳ Host starts…'}
           </button>
         </motion.div>
       </div>
     </div>
   );
 }
+
+

@@ -32,6 +32,8 @@ export interface Player {
   seatIndex: number;
   socketId?: string;
   avatarUrl?: string; // base64 data URL or empty string
+  /** True when this was a human player who disconnected and was auto-converted to a bot mid-game. */
+  isSubstitutedBot?: boolean;
 }
 
 export interface BidState {

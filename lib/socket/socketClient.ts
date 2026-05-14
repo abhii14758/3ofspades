@@ -99,6 +99,15 @@ export const socketEmit = {
   skipDeal: (roomId: string) =>
     getSocket().emit('game:skipDeal', { roomId }),
 
+  leaveRoom: (roomId: string) =>
+    getSocket().emit('room:leave', { roomId }),
+
+  renamePlayer: (roomId: string, name: string) =>
+    getSocket().emit('player:rename', { roomId, name }),
+
+  updateRoomConfig: (roomId: string, config: Partial<RoomConfig>) =>
+    getSocket().emit('room:updateConfig', { roomId, config }),
+
   voteEnd: (roomId: string) =>
     getSocket().emit('game:voteEnd', { roomId } satisfies VoteEndPayload),
 };

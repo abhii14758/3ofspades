@@ -10,6 +10,7 @@ import BidPanel from './BidPanel';
 import TrumpSelector from './TrumpSelector';
 import PartnerSelector from './PartnerSelector';
 import Scoreboard from './Scoreboard';
+import VotePanel from './VotePanel';
 // import ChatPanel from './ChatPanel';
 import { useGameStore } from '@/store/gameStore';
 import CardHand from '@/components/cards/CardHand';
@@ -398,6 +399,7 @@ interface GameTableProps {
   onSelectPartners?: (slots: Array<{ typeId: string; ordinal: 1 | 2 }>) => void;
   isHost?: boolean;
   onTerminate?: () => void;
+  onLeave?: () => void;
   partnerCount?: number;
   maxBid?: number;
   totalTricks?: number;
@@ -416,6 +418,7 @@ export default function GameTable({
   onSelectPartners,
   isHost = false,
   onTerminate,
+  onLeave,
   partnerCount = 2,
   maxBid = 250,
   totalTricks = 8,
@@ -647,6 +650,24 @@ export default function GameTable({
             🔴 End
           </motion.button>
         )}
+
+        {!isHost && onLeave && (
+          <motion.button
+            whileTap={{ scale: 0.93 }}
+            onClick={onLeave}
+            className="shrink-0 px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-slate-200 text-xs rounded-lg font-bold transition-colors"
+          >
+            ← Leave
+          </motion.button>
+        )}
+
+        {/* Vote to end game */}
+        <VotePanel
+          roomId={gameState.roomId}
+          myPlayerId={myPlayerId}
+          voteEndVotes={gameState.voteEndVotes ?? {}}
+          totalPlayers={players.length}
+        />
 
         {/* Skip deal animation — host only */}
         <AnimatePresence>

@@ -72,6 +72,11 @@ export default function GamePage() {
   const handleTerminate = () => {
     if (roomId) socketEmit.terminateGame(roomId);
   };
+  const handleLeave = () => {
+    if (roomId) socketEmit.leaveRoom(roomId);
+    useLobbyStore.getState().clearRoom();
+    router.push('/');
+  };
 
   return (
     <>
@@ -86,6 +91,7 @@ export default function GamePage() {
         onSelectPartners={handleSelectPartners}
         isHost={isHost}
         onTerminate={handleTerminate}
+        onLeave={handleLeave}
         partnerCount={roomGameConfig.partnerCount}
         maxBid={roomGameConfig.totalRoundPoints}
         totalTricks={roomGameConfig.totalTricks}
