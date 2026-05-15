@@ -279,6 +279,9 @@ function scheduleAutoPlayIfNeeded(io: Server, room: Room): void {
         const currentRoom = rooms.get(roomId);
         if (!currentRoom?.gameState) return;
         if (currentRoom.gameState.currentTurnPlayerId !== playerId) return;
+        // Re-check: if player has reconnected as human, let them play themselves
+        const currentPlayer = currentRoom.players.find((pl) => pl.id === playerId);
+        if (!currentPlayer || (currentPlayer.type !== 'bot' && currentPlayer.status !== 'disconnected')) return;
         executeAutoPlay(io, roomId, playerId);
       } catch (err) {
         console.error(`[autoPlay] roomId=${roomId} playerId=${playerId}`, err);
@@ -1244,6 +1247,11 @@ export function setupSocketServer(io: Server): void {
             slots: room.gameState.calledCardSlots ?? [],
           });
         }
+
+        // If it's this player's turn, reset the turn timer from bot-mode to human-mode
+        if (room.gameState.currentTurnPlayerId === playerId) {
+          scheduleAutoPlayIfNeeded(io, room);
+        }
       }
       } catch (err) {
         console.error('[player:reconnect]', err);
@@ -1266,14 +1274,24 @@ export function setupSocketServer(io: Server): void {
       if (!player) return;
 
       player.status = 'disconnected';
-      io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
+      player.socketId = undefined;
 
-      // If it's this player's turn, trigger auto-play immediately
-      if (room.gameState?.currentTurnPlayerId === playerId) {
-        scheduleAutoPlayIfNeeded(io, room);
+      if (room.gameState) {
+        // Game is running — immediately substitute with bot so game never stalls.
+        // Keep status='disconnected' so the UI shows the greyed-out indicator.
+        // The player can still reconnect within 60 s and reclaim their seat.
+        player.type = 'bot';
+        player.isSubstitutedBot = true;
+        io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
+        // If it's their turn right now, schedule the bot play immediately.
+        if (room.gameState.currentTurnPlayerId === playerId) {
+          scheduleAutoPlayIfNeeded(io, room);
+        }
+      } else {
+        io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
       }
 
-      // 60-second window for reconnection before permanent removal
+      // 60-second window for reconnection before permanent removal / confirmation
       const timer = setTimeout(() => {
         disconnectTimers.delete(playerId);
         try {
@@ -1284,12 +1302,10 @@ export function setupSocketServer(io: Server): void {
           if (idx === -1) return;
 
           if (currentRoom.gameState) {
-            // Game running — substitute with bot so game can continue seamlessly
-            currentRoom.players[idx].type = 'bot';
-            currentRoom.players[idx].isSubstitutedBot = true;
+            // Substitution is now permanent — update status to 'playing' so
+            // the UI no longer shows the player as disconnected.
             currentRoom.players[idx].status = 'playing';
-            currentRoom.players[idx].socketId = undefined;
-            // If it's currently their turn, trigger auto-play now
+            // If it happens to be their turn right now, ensure bot plays.
             if (currentRoom.gameState.currentTurnPlayerId === currentRoom.players[idx].id) {
               scheduleAutoPlayIfNeeded(io, currentRoom);
             }
