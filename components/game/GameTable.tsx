@@ -744,8 +744,8 @@ export default function GameTable({
       )}
 
       {/* ── Table area ────────────────────────────────────────────────────── */}
-      <div className="flex-1 relative flex items-center justify-center overflow-hidden min-h-0 p-1"
-           style={{ background: 'radial-gradient(ellipse 80% 70% at 50% 40%, #0a0f0a 0%, #050808 60%, #020404 100%)' }}>
+      <div className="flex-1 relative flex items-center justify-center min-h-0 p-1"
+           style={{ background: 'radial-gradient(ellipse 80% 70% at 50% 40%, #0a0f0a 0%, #050808 60%, #020404 100%)', overflow: 'visible' }}>
 
         {/* Overhead casino lamp glow — strong warm cone from top */}
         <div className="absolute inset-0 pointer-events-none" style={{
@@ -765,13 +765,14 @@ export default function GameTable({
           className="relative"
           style={{
             width: isMobile
-              ? (isLandscape ? 'calc(100vw - 62px)' : '96vw')
+              ? (isLandscape ? '96vw' : '96vw')
               : isTablet ? 'min(94vw, 760px)' : 'min(94vw, 920px)',
             height: isMobile
               ? (isLandscape ? 'min(85vh, 320px)' : 'auto')
               : isTablet ? 'min(50vh, 380px)' : 'min(52vh, 480px)',
             aspectRatio: isMobile && !isLandscape ? '5/3' : undefined,
             minHeight: isMobile ? (isLandscape ? '180px' : '200px') : '260px',
+            overflow: 'visible',
             ...(!isMobile ? { perspective: '900px', transformStyle: 'preserve-3d' as const } : {}),
           }}
         >
@@ -1080,10 +1081,12 @@ export default function GameTable({
       </div>
 
       {/* ── Card hand ─────────────────────────────────────────────────────── */}
-      {!(isMobile && isLandscape) && (
       <div
-        className="shrink-0 z-10 pt-1 pb-3"
-        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)' }}
+        className="shrink-0 z-10 pt-1"
+        style={{
+          background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)',
+          paddingBottom: isMobile && isLandscape ? '4px' : '12px',
+        }}
       >
         {/* During deal animation — show cards arriving one by one */}
         {showDealAnim && (
@@ -1169,7 +1172,7 @@ export default function GameTable({
               </div>
             )}
             {/* CardHand is ALWAYS mounted to preserve sort order; placeholder overlays when hidden */}
-            <div className="relative overflow-hidden" style={{ minHeight: '120px' }}>
+            <div className="relative overflow-hidden" style={{ minHeight: isMobile && isLandscape ? '80px' : '120px' }}>
               <CardHand
                 cards={myHand}
                 playableCardIds={playableCardIds}
@@ -1191,7 +1194,6 @@ export default function GameTable({
           </>
         )}
       </div>
-      )}
 
       {/* ── Full-screen overlays ──────────────────────────────────────────── */}
       {showTrumpSelector && (
@@ -1211,33 +1213,6 @@ export default function GameTable({
         />
       )}
       </div>{/* end flex-1 game section */}
-
-      {/* ── Landscape card column — overlapping fan fills full panel height ── */}
-      {isMobile && isLandscape && (
-        <div
-          className="shrink-0 flex flex-col overflow-hidden z-10"
-          style={{
-            width: '56px',
-            background: 'linear-gradient(to left, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.75) 100%)',
-            borderLeft: '1px solid rgba(255,255,255,0.07)',
-          }}
-        >
-          <LandscapeCardColumn
-            cards={myHand}
-            selectedCardId={selectedCardId}
-            playableCardIds={playableCardIds}
-            isMyTurn={isMyTurn && phase === 'playing'}
-            phase={phase}
-            effectivelyHidden={effectivelyHidden}
-            handHidden={handHidden}
-            showDealAnim={showDealAnim}
-            onToggleHide={() => setHandHidden(v => !v)}
-            onCardSelect={(card) => setSelectedCardId(card.id)}
-            onCardPlay={(card) => { setSelectedCardId(null); onPlayCard(card); }}
-            onDeselect={() => setSelectedCardId(null)}
-          />
-        </div>
-      )}
 
       {/* ── Desktop chat panel — DISABLED ── */}
       {/* {!isMobile && (

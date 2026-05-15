@@ -168,9 +168,7 @@ function PlayerSeat({
             className={clsx(
               'rounded-full bg-gradient-to-br flex items-center justify-center font-bold uppercase shadow-md text-white relative overflow-hidden',
               extraCompact ? 'w-8 h-8 text-xs' : 'w-12 h-12 text-sm',
-              gradient,
-              isCurrentTurn && 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900',
-              isPartner && isRevealed && !isCurrentTurn && 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-900'
+              gradient
             )}
             style={{
               boxShadow: isPartner && isRevealed && !isCurrentTurn ? '0 0 8px rgba(52,211,153,0.5)' : undefined,
@@ -206,7 +204,7 @@ function PlayerSeat({
         <div className="flex items-center gap-1 flex-wrap justify-center">
           <span
             className={clsx(
-              'rounded px-2 py-0.5 font-bold truncate',
+              'rounded-full px-2.5 py-0.5 font-bold truncate',
               extraCompact ? 'text-[10px] max-w-[60px]' : 'text-[11px] max-w-[72px]',
               isLocalPlayer
                 ? 'bg-sky-900/80 border border-sky-600/50 text-sky-200'
@@ -228,30 +226,30 @@ function PlayerSeat({
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="text-xs font-bold bg-amber-600 text-white px-1 rounded"
+              className="text-[9px] font-bold bg-amber-600 text-white px-1.5 py-0.5 rounded-full"
               title="Bid winner – Team A lead"
             >
-              👑 Lead
+              Lead
             </motion.span>
           )}
           {isPartner && isRevealed && !isBidWinner && (
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="text-xs font-bold bg-emerald-600 text-white px-1 rounded"
+              className="text-[9px] font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded-full"
               title="Partner revealed"
             >
-              🤝 Partner
+              Partner
             </motion.span>
           )}
           {showCombinedLabel && !isLocalPlayer && (
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="text-xs font-bold bg-orange-700 text-white px-1 rounded"
+              className="text-[9px] font-bold bg-orange-700 text-white px-1.5 py-0.5 rounded-full"
               title="Team B ally"
             >
-              🤝 Ally
+              Ally
             </motion.span>
           )}
         </div>
