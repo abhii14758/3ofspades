@@ -538,7 +538,7 @@ export default function RoomPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {isLocal && editingName ? (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <input
                               ref={editNameRef}
                               value={editNameValue}
@@ -549,27 +549,40 @@ export default function RoomPage() {
                               }}
                               onBlur={saveEditName}
                               maxLength={20}
-                              className="w-28 px-2 py-0.5 bg-slate-700 border border-indigo-500 rounded text-sm text-slate-100 outline-none font-semibold"
+                              className="w-36 px-2.5 py-1 bg-slate-800 border-2 border-indigo-500 rounded-lg text-sm text-slate-100 outline-none font-semibold focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                              placeholder="Enter name…"
                             />
-                            <button onClick={saveEditName} className="text-xs text-green-400 hover:text-green-300 px-1">✓</button>
-                            <button onClick={() => setEditingName(false)} className="text-xs text-slate-500 hover:text-slate-300 px-1">✕</button>
+                            <button
+                              onClick={saveEditName}
+                              className="w-6 h-6 flex items-center justify-center rounded-md bg-green-700/70 hover:bg-green-600 text-green-300 hover:text-white text-xs transition-colors"
+                            >✓</button>
+                            <button
+                              onClick={() => setEditingName(false)}
+                              className="w-6 h-6 flex items-center justify-center rounded-md bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-slate-200 text-xs transition-colors"
+                            >✕</button>
                           </div>
                         ) : (
-                          <span
-                            className={`font-semibold text-sm truncate ${
-                              isLocal ? 'text-indigo-200' : 'text-slate-200'
-                            }`}
-                          >
-                            {player.name}
-                          </span>
-                        )}
-                        {isLocal && !editingName && (
                           <button
-                            onClick={startEditName}
-                            title="Edit name"
-                            className="text-slate-500 hover:text-indigo-300 transition-colors text-xs leading-none"
+                            onClick={isLocal ? startEditName : undefined}
+                            className={`group flex items-center gap-1.5 rounded-md transition-all ${
+                              isLocal
+                                ? 'cursor-pointer hover:bg-indigo-900/30 px-1.5 py-0.5 -mx-1.5 -my-0.5'
+                                : 'cursor-default'
+                            }`}
+                            title={isLocal ? 'Tap to edit your name' : undefined}
                           >
-                            ✎
+                            <span
+                              className={`font-semibold text-sm truncate ${
+                                isLocal ? 'text-indigo-200 group-hover:text-indigo-100' : 'text-slate-200'
+                              }`}
+                            >
+                              {player.name}
+                            </span>
+                            {isLocal && (
+                              <svg className="w-3 h-3 text-indigo-500 group-hover:text-indigo-300 shrink-0 transition-colors" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M11.013 1.427a1.75 1.75 0 0 1 2.474 0l1.086 1.086a1.75 1.75 0 0 1 0 2.474l-8.61 8.61c-.21.21-.47.364-.756.445l-3.251.93a.75.75 0 0 1-.927-.928l.929-3.25c.081-.286.235-.547.445-.758l8.61-8.61Zm.176 4.823L9.75 4.81l-6.286 6.287a.253.253 0 0 0-.064.108l-.558 1.953 1.953-.558a.253.253 0 0 0 .108-.064Zm1.238-3.763a.25.25 0 0 0-.354 0L10.811 3.75l1.439 1.44 1.263-1.263a.25.25 0 0 0 0-.354Z"/>
+                              </svg>
+                            )}
                           </button>
                         )}
                         {isLocal && (
