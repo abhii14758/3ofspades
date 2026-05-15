@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import type { Suit, Team, Player } from '@/types';
@@ -30,6 +31,9 @@ export default function Scoreboard({
   playerTotals = {},
 }: ScoreboardProps) {
   const [open, setOpen] = useState(false);
+  // SSR-safe portal mounting
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   // Detect mobile portrait for bottom-sheet vs side-panel
   const [isMobileSheet, setIsMobileSheet] = useState(false);
@@ -74,35 +78,36 @@ export default function Scoreboard({
         <span className="ml-0.5 text-slate-500">R{roundNumber}</span>
       </button>
 
-      {/* Slide-in panel */}
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              key="backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setOpen(false)}
-              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-            />
+      {/* Slide-in panel — rendered via portal to escape parent transform stacking context */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {open && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                key="backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setOpen(false)}
+                className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+              />
 
-            {/* Panel — bottom sheet on mobile, right panel on desktop */}
-            <motion.div
-              key="panel"
-              initial={isMobileSheet ? { y: '100%' } : { x: '100%' }}
-              animate={isMobileSheet ? { y: 0 } : { x: 0 }}
-              exit={isMobileSheet ? { y: '100%' } : { x: '100%' }}
-              transition={{ type: 'spring', stiffness: 340, damping: 32 }}
-              className={clsx(
-                'fixed z-50 bg-slate-900 border-slate-700 shadow-2xl flex flex-col overflow-hidden',
-                // Mobile: bottom sheet
-                'inset-x-0 bottom-0 max-h-[80vh] rounded-t-2xl border-t',
-                // Desktop: right side panel
-                'sm:inset-x-auto sm:bottom-auto sm:top-0 sm:right-0 sm:h-screen sm:max-h-full sm:w-80 sm:rounded-none sm:border-t-0 sm:border-l',
-              )}
-            >
+              {/* Panel — bottom sheet on mobile, right panel on desktop */}
+              <motion.div
+                key="panel"
+                initial={isMobileSheet ? { y: '100%' } : { x: '100%' }}
+                animate={isMobileSheet ? { y: 0 } : { x: 0 }}
+                exit={isMobileSheet ? { y: '100%' } : { x: '100%' }}
+                transition={{ type: 'spring', stiffness: 340, damping: 32 }}
+                className={clsx(
+                  'fixed z-50 bg-slate-900 border-slate-700 shadow-2xl flex flex-col overflow-hidden',
+                  // Mobile: bottom sheet
+                  'inset-x-0 bottom-0 max-h-[80vh] rounded-t-2xl border-t',
+                  // Desktop: right side panel
+                  'sm:inset-x-auto sm:bottom-auto sm:top-0 sm:right-0 sm:h-screen sm:max-h-full sm:w-80 sm:rounded-none sm:border-t-0 sm:border-l',
+                )}
+              >
               {/* Gold accent */}
               <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-amber-500/60 to-transparent" />
 
@@ -260,9 +265,11 @@ export default function Scoreboard({
                 )}
               </div>
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }

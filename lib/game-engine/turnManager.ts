@@ -6,18 +6,37 @@ function sortedByseat(players: Player[]): Player[] {
 }
 
 /**
- * Returns the ID of the next active (non-disconnected) player in seat order
- * after `currentPlayerId`, wrapping around circularly.
+ * Returns the ID of the next player in seat order after `currentPlayerId`,
+ * wrapping around circularly.
+ *
+ * All players — including substituted bots that carry status='disconnected' —
+ * stay in the rotation so that bot auto-play can cover their turns.
+ * Only truly disconnected *humans* (not yet substituted) are skipped.
  */
 export function getNextPlayer(
   currentPlayerId: string,
   players: Player[],
 ): string {
   const seated = sortedByseat(players);
-  const activeSeated = seated.filter((p) => p.status !== 'disconnected');
+  // Bots (including substituted-disconnected bots) are always active.
+  // Only skip human players that are disconnected without a bot substitution.
+  const activeSeated = seated.filter(
+    (p) => p.type === 'bot' || p.status !== 'disconnected',
+  );
   const currentIdx = activeSeated.findIndex((p) => p.id === currentPlayerId);
 
   if (currentIdx === -1 || activeSeated.length === 0) {
+    // Fallback: if current player isn't in activeSeated (shouldn't happen
+    // post-substitution), try to find them in full seated list and advance.
+    const allIdx = seated.findIndex((p) => p.id === currentPlayerId);
+    if (allIdx !== -1 && seated.length > 1) {
+      for (let i = 1; i <= seated.length; i++) {
+        const candidate = seated[(allIdx + i) % seated.length];
+        if (candidate.type === 'bot' || candidate.status !== 'disconnected') {
+          return candidate.id;
+        }
+      }
+    }
     return players[0]?.id ?? currentPlayerId;
   }
 
