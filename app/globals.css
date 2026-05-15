@@ -78,6 +78,12 @@
   }
 }
 
+@keyframes avPulse {
+  0%,100% { box-shadow: 0 0 0 4px rgba(0,255,204,0.25), 0 0 14px rgba(0,255,204,0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(0,255,204,0.4), 0 0 22px rgba(0,255,204,0.7); }
+}
+.av-pulse { animation: avPulse 1.3s ease-in-out infinite; }
+
 @keyframes confetti-fall {
   0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
   80%  { opacity: 1; }

@@ -83,12 +83,12 @@ function getSeatPosition(seatIndex: number, totalSeats: number): { x: number; y:
       [90, 50], // 3 right
     ],
     6: [
-      [50, 90], // 0 bottom-center
-      [15, 72], // 1 bottom-left
-      [15, 28], // 2 top-left
+      [50, 89], // 0 bottom-center
+      [11, 70], // 1 bottom-left
+      [11, 30], // 2 top-left
       [50, 10], // 3 top-center
-      [85, 28], // 4 top-right
-      [85, 72], // 5 bottom-right
+      [89, 30], // 4 top-right
+      [89, 70], // 5 bottom-right
     ],
     8: [
       [50, 90], // 0 bottom-center
@@ -102,15 +102,15 @@ function getSeatPosition(seatIndex: number, totalSeats: number): { x: number; y:
     ],
     10: [
       [50, 92], // 0 bottom-center
-      [24, 86], // 1 bottom-left
-      [6,  68], // 2 mid-left
-      [6,  32], // 3 far-left
-      [24, 14], // 4 top-left
-      [50, 8],  // 5 top-center
-      [76, 14], // 6 top-right
-      [94, 32], // 7 far-right
-      [94, 68], // 8 mid-right
-      [76, 86], // 9 bottom-right
+      [24, 87], // 1 bottom-left
+      [8,  68], // 2 mid-left
+      [7,  32], // 3 far-left
+      [24, 13], // 4 top-left
+      [50, 7],  // 5 top-center
+      [76, 13], // 6 top-right
+      [93, 32], // 7 far-right
+      [92, 68], // 8 mid-right
+      [76, 87], // 9 bottom-right
     ],
   };
 
@@ -387,6 +387,16 @@ function DealHandReveal({ cards, revealedCount }: { cards: CardType[]; revealedC
   );
 }
 
+// ── HUD pill ──────────────────────────────────────────────────────────────────
+function HudPill({ label, value, valueColor }: { label: string; value: string | number; valueColor?: string }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(0,0,0,0.72)', border:'1px solid rgba(212,175,55,0.4)', borderRadius:20, padding:'4px 10px', fontSize:10, fontWeight:700, whiteSpace:'nowrap' }}>
+      <span style={{ color:'rgba(255,255,255,0.42)', fontSize:9 }}>{label}</span>
+      <span style={{ color: valueColor ?? '#fff' }}>{value}</span>
+    </div>
+  );
+}
+
 // ── Props ─────────────────────────────────────────────────────────────────────
 interface GameTableProps {
   gameState: GameState;
@@ -639,642 +649,310 @@ export default function GameTable({
       }}
     >
       {/* ── Game section ── */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-      {/* ── Top bar ───────────────────────────────────────────────────────── */}
-      <motion.div
-        initial={{ y: -44, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-        className="shrink-0 flex items-center gap-2 z-20 bg-black/50 backdrop-blur-sm border-b border-white/5"
-        style={{ padding: isMobile && isLandscape ? '2px 8px' : '8px 12px' }}
-      >
-        {isHost && onTerminate && (
-          <motion.button
-            whileTap={{ scale: 0.93 }}
-            onClick={onTerminate}
-            className="shrink-0 px-2 py-1 bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 text-xs rounded-lg font-bold transition-colors"
-          >
-            🔴 End
-          </motion.button>
-        )}
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ position: 'relative' }}>
 
-        {!isHost && onLeave && (
-          <motion.button
-            whileTap={{ scale: 0.93 }}
-            onClick={onLeave}
-            className="shrink-0 px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-slate-200 text-xs rounded-lg font-bold transition-colors"
-          >
-            ← Leave
-          </motion.button>
-        )}
-
-        {/* Vote to end game */}
-        <VotePanel
-          roomId={gameState.roomId}
-          myPlayerId={myPlayerId}
-          voteEndVotes={gameState.voteEndVotes ?? {}}
-          totalPlayers={players.length}
-        />
-
-        {/* Skip deal animation — host only */}
-        <AnimatePresence>
-          {isHost && showDealAnim && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.85 }}
-              whileTap={{ scale: 0.93 }}
-              onClick={handleSkipDeal}
-              className="shrink-0 px-2.5 py-1 bg-amber-900/80 hover:bg-amber-800 border border-amber-600/60 text-amber-300 text-xs rounded-lg font-bold transition-colors"
-            >
-              ⏭ Skip Deal
+        {/* ── TOP BAR (all layouts) ── */}
+        <motion.div
+          initial={{ y: -44, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+          className="shrink-0 flex items-center gap-2 z-20 bg-black/50 backdrop-blur-sm border-b border-white/5"
+          style={{ padding: isMobile && isLandscape ? '2px 8px' : '8px 12px' }}
+        >
+          {isHost && onTerminate && (
+            <motion.button whileTap={{ scale: 0.93 }} onClick={onTerminate}
+              className="shrink-0 px-2 py-1 bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 text-xs rounded-lg font-bold transition-colors">
+              🔴 End
             </motion.button>
           )}
-        </AnimatePresence>
-
-        <div className="flex-1 min-w-0">
-          <TurnIndicator currentPlayer={currentTurnPlayer} isMyTurn={isMyTurn} />
-        </div>
-
-        {turnTimerEndsAt && <TurnTimer endsAt={turnTimerEndsAt} />}
-
-        <div className="shrink-0">
-          <Scoreboard
-            teams={teams}
-            players={players}
-            bidWinnerId={bidWinnerId}
-            bidAmount={bidState?.currentBid ?? null}
-            trumpSuit={trumpSuit}
-            roundNumber={roundNumber}
-            revealedPartnerIds={revealedPartnerIds}
-            playerTotals={gameState.playerTotals ?? {}}
-          />
-        </div>
-
-        {/* <div className="relative shrink-0">
-          <button
-            onClick={() => setChatOpen((v) => !v)}
-            className={`relative flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg border transition-colors ${
-              chatOpen
-                ? 'bg-sky-700/60 border-sky-600/50 text-sky-300'
-                : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border-slate-700/50'
-            }`}
-          >
-            💬 Chat
-            {unread > 0 && !chatOpen && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                {unread > 9 ? '9+' : unread}
-              </span>
-            )}
-          </button>
-        </div> */}
-
-        <AvatarUpload roomId={gameState.roomId} className="shrink-0" />
-      </motion.div>
-
-      {/* ── Opponent strip — mobile portrait only (hidden in landscape, space too tight) ── */}
-      {isMobile && !isLandscape && (
-        <OpponentStrip
-          opponents={players.filter((p) => p.id !== myPlayerId)}
-          currentTurnPlayerId={currentTurnPlayerId}
-          trickCards={currentTrick?.cards ?? []}
-          handCounts={Object.fromEntries(Object.entries(hands).map(([id, cards]) => [id, cards.length]))}
-          revealedPartnerIds={revealedPartnerIds}
-        />
-      )}
-
-      {/* ── Table area ────────────────────────────────────────────────────── */}
-      <div className="flex-1 relative flex items-center justify-center min-h-0 p-1"
-           style={{ background: 'radial-gradient(ellipse 80% 70% at 50% 40%, #0a0f0a 0%, #050808 60%, #020404 100%)', overflow: 'visible' }}>
-
-        {/* Overhead casino lamp glow — strong warm cone from top */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255,230,120,0.16) 0%, rgba(255,200,60,0.07) 40%, transparent 70%)',
-        }} />
-        {/* Side ambient bounce */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'radial-gradient(ellipse 30% 60% at 0% 50%, rgba(20,80,20,0.08) 0%, transparent 70%), radial-gradient(ellipse 30% 60% at 100% 50%, rgba(20,80,20,0.08) 0%, transparent 70%)',
-        }} />
-
-        {/* ── Casino Table ── */}
-        <motion.div
-          ref={tableRef}
-          initial={{ scale: 0.88, opacity: 0, rotateX: 0 }}
-          animate={{ scale: 1, opacity: 1, rotateX: isMobile ? 0 : 18 }}
-          transition={{ type: 'spring', stiffness: 160, damping: 26, delay: 0.04 }}
-          className="relative"
-          style={{
-            width: isMobile
-              ? (isLandscape ? '96vw' : '96vw')
-              : isTablet ? 'min(94vw, 760px)' : 'min(94vw, 920px)',
-            height: isMobile
-              ? (isLandscape ? 'min(85vh, 320px)' : 'auto')
-              : isTablet ? 'min(50vh, 380px)' : 'min(52vh, 480px)',
-            aspectRatio: isMobile && !isLandscape ? '5/3' : undefined,
-            minHeight: isMobile ? (isLandscape ? '180px' : '200px') : '260px',
-            overflow: 'visible',
-            ...(!isMobile ? { perspective: '900px', transformStyle: 'preserve-3d' as const } : {}),
-          }}
-        >
-          {/* ── Table layers (bottom → top) ── */}
-
-          {/* Table physical body */}
-          <div className="absolute rounded-[50%]" style={{
-            inset: 0,
-            background: 'linear-gradient(175deg, #4a1e08 0%, #1a0a02 45%, #0a0300 100%)',
-            boxShadow: [
-              '0 50px 100px rgba(0,0,0,0.98)',
-              '0 20px 60px rgba(0,0,0,0.95)',
-              '0 0 0 1px rgba(0,0,0,0.8)',
-              'inset 0 -30px 60px rgba(0,0,0,0.7)',
-            ].join(', '),
-            transform: 'translateY(12px) scaleX(0.96)',
-          }} />
-
-          {/* Wood/mahogany rail base */}
-          <div className="absolute rounded-[50%]" style={{
-            inset: 0,
-            background: 'radial-gradient(ellipse at 50% 40%, #7a3510 0%, #4a1e08 40%, #2a0e04 70%, #0f0401 100%)',
-            boxShadow: '0 0 80px rgba(0,0,0,0.9), 0 30px 60px rgba(0,0,0,0.8)',
-          }} />
-
-          {/* Gold bead rail */}
-          <div className="absolute rounded-[50%]" style={{
-            inset: '4px',
-            background: 'transparent',
-            boxShadow: [
-              '0 0 0 10px rgba(180,130,10,0.95)',
-              '0 0 0 11px rgba(230,175,20,0.7)',
-              '0 0 0 13px rgba(150,100,5,0.5)',
-              '0 0 40px rgba(212,160,23,0.6)',
-              '0 0 80px rgba(212,160,23,0.25)',
-              'inset 0 0 0 10px rgba(180,130,10,0.3)',
-            ].join(', '),
-          }} />
-
-          {/* Wood channel between rail and felt */}
-          <div className="absolute rounded-[50%]" style={{
-            inset: '18px',
-            background: 'linear-gradient(160deg, #3d1a06 0%, #1e0b02 60%, #0f0501 100%)',
-            boxShadow: 'inset 0 4px 16px rgba(0,0,0,0.8)',
-          }} />
-
-          {/* Felt surface */}
-          <div className="absolute rounded-[50%]" style={{
-            inset: '26px',
-            background: [
-              'radial-gradient(ellipse at 50% 35%,',
-              '#2db84d 0%,',
-              '#23943e 20%,',
-              '#1a7a32 45%,',
-              '#125928 70%,',
-              '#0a3a1a 100%)',
-            ].join(' '),
-            boxShadow: [
-              'inset 0 30px 80px rgba(0,0,0,0.5)',
-              'inset 0 -20px 50px rgba(0,0,0,0.4)',
-              'inset 30px 0 60px rgba(0,0,0,0.25)',
-              'inset -30px 0 60px rgba(0,0,0,0.25)',
-            ].join(', '),
-          }} />
-
-          {/* Felt weave texture */}
-          <div className="absolute rounded-[50%] pointer-events-none" style={{
-            inset: '26px',
-            opacity: 0.035,
-            backgroundImage: [
-              'repeating-linear-gradient(0deg, transparent, transparent 5px,',
-              'rgba(255,255,255,1) 5px, rgba(255,255,255,1) 6px),',
-              'repeating-linear-gradient(90deg, transparent, transparent 5px,',
-              'rgba(255,255,255,1) 5px, rgba(255,255,255,1) 6px)',
-            ].join(' '),
-          }} />
-
-          {/* Top highlight */}
-          <div className="absolute rounded-[50%] pointer-events-none" style={{
-            inset: '26px',
-            background: 'radial-gradient(ellipse 55% 30% at 50% 25%, rgba(255,255,255,0.07) 0%, transparent 100%)',
-          }} />
-
-          {/* Gold inner felt edge ring */}
-          <div className="absolute rounded-[50%] pointer-events-none" style={{
-            inset: '26px',
-            boxShadow: 'inset 0 0 0 2px rgba(212,160,23,0.15), inset 0 0 20px rgba(0,0,0,0.3)',
-          }} />
-
-          {/* Subtle gold zone lines on felt */}
-          <div className="absolute rounded-[50%] pointer-events-none" style={{
-            inset: '52px',
-            border: '1px solid rgba(212,160,23,0.18)',
-            boxShadow: 'inset 0 0 0 1px rgba(212,160,23,0.08)',
-          }} />
-
-          {/* Decorative chip stacks at corners */}
-          {[
-            { left: '12%', top: '22%', colors: ['#c0392b','#e74c3c','#c0392b','#922b21'] },
-            { left: '88%', top: '22%', colors: ['#1a6b2a','#27ae60','#1a6b2a','#117a32'] },
-            { left: '12%', top: '78%', colors: ['#d4a017','#f1c40f','#d4a017','#b8860b'] },
-            { left: '88%', top: '78%', colors: ['#2471a3','#3498db','#2471a3','#1a5276'] },
-          ].map((stack, si) => (
-            <div
-              key={si}
-              className="absolute pointer-events-none"
-              style={{ left: stack.left, top: stack.top, transform: 'translate(-50%,-50%)' }}
-            >
-              {stack.colors.map((color, ci) => (
-                <div
-                  key={ci}
-                  style={{
-                    position: 'absolute',
-                    width: 18, height: 5,
-                    borderRadius: 3,
-                    background: color,
-                    top: ci * -4,
-                    left: 0,
-                    border: '0.5px solid rgba(255,255,255,0.15)',
-                    boxShadow: ci === 0 ? '0 2px 6px rgba(0,0,0,0.5)' : 'none',
-                  }}
-                />
-              ))}
-            </div>
-          ))}
-
-          {/* Trump badge + trick counter — center of table */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            {/* 8. Center emblem — double-ring gold circle with ♠ */}
-            {(!currentTrick || currentTrick.cards.length === 0) && phase !== 'playing' && (
-              <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 0 }}>
-                {/* Outer dim ring */}
-                <div style={{
-                  position: 'absolute',
-                  width: 120, height: 120, borderRadius: '50%',
-                  border: '1px solid rgba(212,160,23,0.15)',
-                  boxShadow: '0 0 40px rgba(212,160,23,0.1)',
-                }} />
-                {/* Main emblem ring */}
-                <div style={{
-                  width: 110, height: 110, borderRadius: '50%',
-                  border: '2px solid rgba(212,160,23,0.5)',
-                  background: 'radial-gradient(circle, rgba(212,160,23,0.1) 0%, rgba(212,160,23,0.03) 60%, transparent 100%)',
-                  boxShadow: '0 0 0 1px rgba(212,160,23,0.15), 0 0 40px rgba(212,160,23,0.18), inset 0 0 30px rgba(0,0,0,0.4)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
-                }}>
-                  <span style={{ fontSize: 28, opacity: 0.5, color: '#d4a017', lineHeight: 1 }}>♠</span>
-                  <span style={{ fontSize: 8, opacity: 0.45, color: '#d4a017', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase' }}>3 of Spades</span>
-                </div>
-              </div>
-            )}
-            <div className="flex flex-col items-center gap-2" style={{ position: 'relative', zIndex: 1 }}>
-              <AnimatePresence>
-                {trumpSuit && (
-                  <motion.div
-                    key={trumpSuit}
-                    initial={{ scale: 0.7, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.7, opacity: 0 }}
-                    className={clsx(
-                      'flex items-center gap-1.5 px-3 py-1 rounded-full text-base font-bold border backdrop-blur-sm',
-                      trumpSuit === 'hearts' || trumpSuit === 'diamonds'
-                        ? 'text-red-300 border-red-700/50 bg-red-950/70'
-                        : 'text-slate-200 border-slate-500/40 bg-slate-900/70'
-                    )}
-                    style={{ boxShadow: '0 2px 12px rgba(0,0,0,0.5)' }}
-                  >
-                    <span className="text-xl">{SUIT_SYMBOLS[trumpSuit]}</span>
-                    <span className="text-xs uppercase tracking-widest opacity-80">Trump</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <TrickPile
-                trick={currentTrick ?? heldTrick}
-                players={players}
-                trumpSuit={trumpSuit}
-                completedTricksCount={completedTricks.length}
-                totalTricks={totalTricks}
-              />
-            </div>
-          </div>
-
-          {/* Deal animation overlay */}
-          {showDealAnim && (
-            <DealAnimation
-              players={players}
-              myPlayerId={myPlayerId}
-              cardsPerPlayer={cardsPerPlayer}
-              tableW={tableDims.w}
-              tableH={tableDims.h}
-              onCardDealtToMe={handleCardDealtToMe}
-              onComplete={handleDealComplete}
-            />
+          {!isHost && onLeave && (
+            <motion.button whileTap={{ scale: 0.93 }} onClick={onLeave}
+              className="shrink-0 px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-slate-200 text-xs rounded-lg font-bold transition-colors">
+              ← Leave
+            </motion.button>
           )}
-
-          {/* Player seats — positioned relative to current viewer (viewer always at bottom, seat 0) */}
-          {players.map((player) => {
-            const myPlayer = players.find((p) => p.id === myPlayerId);
-            const mySeatIdx = myPlayer?.seatIndex ?? 0;
-            const relativeSeatIdx = (player.seatIndex - mySeatIdx + players.length) % players.length;
-            const { x, y } = getSeatPosition(relativeSeatIdx, players.length);
-            const isCurrentTurn = player.id === currentTurnPlayerId;
-            const isPartner = revealedPartnerIds.includes(player.id);
-            const cardCount = hands[player.id]?.length ?? 0;
-            const trickCard = getTrickCard(player.id);
-            const isLocalPlayer = player.id === myPlayerId;
-
-            return (
-              <div
-                key={player.id}
-                className="absolute"
-                style={{
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  zIndex: isLocalPlayer ? 2 : 1,
-                }}
-              >
-                <PlayerSeat
-                  player={player}
-                  cardCount={isLocalPlayer ? myHand.length : cardCount}
-                  isCurrentTurn={isCurrentTurn}
-                  isLocalPlayer={isLocalPlayer}
-                  isPartner={isPartner}
-                  isRevealed={isPartner}
-                  isBidWinner={player.id === bidWinnerId && !!bidWinnerId}
-                  trickCard={trickCard}
-                  position="bottom"
-                  compact={isMobile}
-                  extraCompact={isMobile && isLandscape}
-                  displayPoints={getDisplayPoints(player.id)}
-                  teamId={getPlayerTeamId(player.id)}
-                  turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null}
-                  turnTimerTotalSeconds={turnTimerTotalSeconds}
-                  showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)}
-                />
-              </div>
-            );
-          })}
+          <VotePanel roomId={gameState.roomId} myPlayerId={myPlayerId} voteEndVotes={gameState.voteEndVotes ?? {}} totalPlayers={players.length} />
+          <AnimatePresence>
+            {isHost && showDealAnim && (
+              <motion.button initial={{ opacity:0, scale:0.85 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0, scale:0.85 }} whileTap={{ scale:0.93 }}
+                onClick={handleSkipDeal}
+                className="shrink-0 px-2.5 py-1 bg-amber-900/80 hover:bg-amber-800 border border-amber-600/60 text-amber-300 text-xs rounded-lg font-bold transition-colors">
+                ⏭ Skip Deal
+              </motion.button>
+            )}
+          </AnimatePresence>
+          <div className="flex-1 min-w-0">
+            <TurnIndicator currentPlayer={currentTurnPlayer} isMyTurn={isMyTurn} />
+          </div>
+          {turnTimerEndsAt && <TurnTimer endsAt={turnTimerEndsAt} />}
+          <div className="shrink-0">
+            <Scoreboard teams={teams} players={players} bidWinnerId={bidWinnerId} bidAmount={bidState?.currentBid ?? null} trumpSuit={trumpSuit} roundNumber={roundNumber} revealedPartnerIds={revealedPartnerIds} playerTotals={gameState.playerTotals ?? {}} />
+          </div>
+          <AvatarUpload roomId={gameState.roomId} className="shrink-0" />
         </motion.div>
 
-        {/* Partner slot tracker — outside 3D transform, no perspective skew */}
-        {phase === 'playing' && myPlayerId === bidWinnerId && myCalledCardSlots.length > 0 && (
-          <PartnerTracker
-            slots={myCalledCardSlots}
-            players={players}
-            bidWinnerId={bidWinnerId!}
-          />
-        )}
-
-        {/* ── Table legs + underside amber glow ── */}
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            left: '50%',
-            transform: 'translateX(-50%)',
-            bottom: 'calc(50% - min(26vh, 240px) - 30px)',
-            width: 'min(80vw, 780px)',
-            zIndex: 0,
-          }}
-        >
-          <div style={{
-            position: 'absolute',
-            left: '10%', right: '10%',
-            top: 8,
-            height: 40,
-            borderRadius: '50%',
-            background: 'radial-gradient(ellipse at 50% 0%, rgba(200,120,10,0.55) 0%, rgba(160,80,5,0.25) 40%, transparent 75%)',
-            filter: 'blur(6px)',
-          }} />
-          {[{ left: '18%' }, { left: '36%' }, { left: '64%' }, { left: '82%' }].map((pos, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: pos.left,
-                width: 18,
-                height: 48,
-                transform: 'translateX(-50%)',
-                background: 'linear-gradient(180deg, #5a2008 0%, #2a0e04 50%, #0f0501 100%)',
-                borderRadius: '0 0 4px 4px',
-                boxShadow: '2px 0 6px rgba(0,0,0,0.7), -2px 0 6px rgba(0,0,0,0.5), inset 2px 0 4px rgba(255,160,60,0.07)',
-              }}
-            />
-          ))}
-        </div>
-        {showBidPanel && (
-          // Mobile (<640px): fixed bottom sheet. Desktop: absolute centered in table.
-          <div className="fixed inset-x-0 bottom-0 z-20 pointer-events-none sm:absolute sm:inset-x-0 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 sm:flex sm:justify-center sm:px-4">
-            <div className="pointer-events-auto w-full sm:max-w-sm">
-              <BidPanel
-                bidState={bidState!}
-                players={players}
-                myPlayerId={myPlayerId}
-                isMyTurn={bidState?.currentBidderId === myPlayerId}
-                onBid={onBid ?? (() => {})}
-                onPass={onPass ?? (() => {})}
-                maxBid={maxBid}
-              />
-            </div>
+        {/* ── LEFT HUD (desktop only, position:absolute) ── */}
+        {!isMobile && (
+          <div style={{ position:'absolute', top:52, left:16, zIndex:50, display:'flex', flexDirection:'column', gap:5 }}>
+            <HudPill label="Round" value={`${roundNumber ?? 1} / ∞`} />
+            <HudPill label="Team A" value={teamACombinedPoints} valueColor="#6ee7b7" />
+            <HudPill label="Team B" value={teamBCombinedPoints} valueColor="#fca5a5" />
           </div>
         )}
 
-      </div>
-
-      {/* ── Card hand ─────────────────────────────────────────────────────── */}
-      <div
-        className="shrink-0 z-10 pt-1"
-        style={{
-          background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)',
-          paddingBottom: isMobile && isLandscape ? '4px' : '12px',
-        }}
-      >
-        {/* During deal animation — show cards arriving one by one */}
-        {showDealAnim && (
-          <DealHandReveal cards={myHand} revealedCount={dealRevealedCount} />
+        {/* ── RIGHT HUD (desktop only, position:absolute) ── */}
+        {!isMobile && (
+          <div style={{ position:'absolute', top:52, right:16, zIndex:50, display:'flex', flexDirection:'column', gap:5, alignItems:'flex-end' }}>
+            <HudPill label="Target" value="500 pts" />
+            {phase === 'playing' && (
+              <HudPill label="Trick" value={`${completedTricks.length + 1}/${totalTricks}`} />
+            )}
+          </div>
         )}
 
-        {/* Normal play — partner cards bar + full hand */}
-        {!showDealAnim && (
-          <>
-            {/* Hide/show button — above cards, easy to reach */}
-            <div className="flex items-center justify-center pt-1 pb-0.5">
-              <button
-                onClick={() => setHandHidden(v => !v)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border font-semibold transition-all ${
-                  handHidden
-                    ? 'bg-amber-900/70 border-amber-600/70 text-amber-300 shadow-[0_0_8px_rgba(217,119,6,0.3)]'
-                    : 'bg-slate-800/80 border-slate-700/50 text-slate-400 hover:text-slate-200 hover:border-slate-500/70'
-                }`}
-                title={`${handHidden ? 'Show' : 'Hide'} cards (H)`}
-              >
-                <span>{handHidden ? '👁️' : '🙈'}</span>
-                <span>{handHidden ? 'Show' : 'Hide'}</span>
-                <kbd className="ml-1 text-[9px] px-1 py-0.5 rounded bg-slate-700/60 border border-slate-600/50 text-slate-500 font-mono">H</kbd>
-              </button>
+        {/* ── MIDDLE: table area ── */}
+        <div className="flex-1 relative flex items-center justify-center min-h-0 p-1"
+             style={{ background: 'radial-gradient(ellipse 80% 70% at 50% 40%, #0a0f0a 0%, #050808 60%, #020404 100%)', overflow: 'visible' }}>
+
+          {/* Overhead casino lamp glow */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: 'radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255,230,120,0.16) 0%, rgba(255,200,60,0.07) 40%, transparent 70%)',
+          }} />
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: 'radial-gradient(ellipse 30% 60% at 0% 50%, rgba(20,80,20,0.08) 0%, transparent 70%), radial-gradient(ellipse 30% 60% at 100% 50%, rgba(20,80,20,0.08) 0%, transparent 70%)',
+          }} />
+
+          {/* ── Casino Table oval ── */}
+          <motion.div
+            ref={tableRef}
+            initial={{ scale: 0.88, opacity: 0, rotateX: 0 }}
+            animate={{ scale: 1, opacity: 1, rotateX: isMobile ? 0 : 18 }}
+            transition={{ type: 'spring', stiffness: 160, damping: 26, delay: 0.04 }}
+            className="relative"
+            style={{
+              width: isMobile ? (isLandscape ? '96vw' : '96vw') : isTablet ? 'min(94vw, 760px)' : 'min(94vw, 920px)',
+              height: isMobile ? (isLandscape ? 'min(85vh, 320px)' : 'auto') : isTablet ? 'min(50vh, 380px)' : 'min(52vh, 480px)',
+              aspectRatio: isMobile && !isLandscape ? '5/3' : undefined,
+              minHeight: isMobile ? (isLandscape ? '180px' : '200px') : '260px',
+              overflow: 'visible',
+              ...(!isMobile ? { perspective: '900px', transformStyle: 'preserve-3d' as const } : {}),
+            }}
+          >
+            {/* Table physical body */}
+            <div className="absolute rounded-[50%]" style={{
+              inset: 0,
+              background: 'linear-gradient(175deg, #4a1e08 0%, #1a0a02 45%, #0a0300 100%)',
+              boxShadow: ['0 50px 100px rgba(0,0,0,0.98)','0 20px 60px rgba(0,0,0,0.95)','0 0 0 1px rgba(0,0,0,0.8)','inset 0 -30px 60px rgba(0,0,0,0.7)'].join(', '),
+              transform: 'translateY(12px) scaleX(0.96)',
+            }} />
+            {/* Wood/mahogany rail base */}
+            <div className="absolute rounded-[50%]" style={{
+              inset: 0,
+              background: 'radial-gradient(ellipse at 50% 40%, #7a3510 0%, #4a1e08 40%, #2a0e04 70%, #0f0401 100%)',
+              boxShadow: '0 0 80px rgba(0,0,0,0.9), 0 30px 60px rgba(0,0,0,0.8)',
+            }} />
+            {/* Gold bead rail */}
+            <div className="absolute rounded-[50%]" style={{
+              inset: '4px',
+              background: 'transparent',
+              boxShadow: ['0 0 0 10px rgba(180,130,10,0.95)','0 0 0 11px rgba(230,175,20,0.7)','0 0 0 13px rgba(150,100,5,0.5)','0 0 40px rgba(212,160,23,0.6)','0 0 80px rgba(212,160,23,0.25)','inset 0 0 0 10px rgba(180,130,10,0.3)'].join(', '),
+            }} />
+            {/* Wood channel between rail and felt */}
+            <div className="absolute rounded-[50%]" style={{
+              inset: '18px',
+              background: 'linear-gradient(160deg, #3d1a06 0%, #1e0b02 60%, #0f0501 100%)',
+              boxShadow: 'inset 0 4px 16px rgba(0,0,0,0.8)',
+            }} />
+            {/* Felt surface */}
+            <div className="absolute rounded-[50%]" style={{
+              inset: '26px',
+              background: ['radial-gradient(ellipse at 50% 35%,','#2db84d 0%,','#23943e 20%,','#1a7a32 45%,','#125928 70%,','#0a3a1a 100%)'].join(' '),
+              boxShadow: ['inset 0 30px 80px rgba(0,0,0,0.5)','inset 0 -20px 50px rgba(0,0,0,0.4)','inset 30px 0 60px rgba(0,0,0,0.25)','inset -30px 0 60px rgba(0,0,0,0.25)'].join(', '),
+            }} />
+            {/* Felt weave texture */}
+            <div className="absolute rounded-[50%] pointer-events-none" style={{
+              inset: '26px', opacity: 0.035,
+              backgroundImage: ['repeating-linear-gradient(0deg, transparent, transparent 5px,','rgba(255,255,255,1) 5px, rgba(255,255,255,1) 6px),','repeating-linear-gradient(90deg, transparent, transparent 5px,','rgba(255,255,255,1) 5px, rgba(255,255,255,1) 6px)'].join(' '),
+            }} />
+            {/* Top highlight */}
+            <div className="absolute rounded-[50%] pointer-events-none" style={{
+              inset: '26px',
+              background: 'radial-gradient(ellipse 55% 30% at 50% 25%, rgba(255,255,255,0.07) 0%, transparent 100%)',
+            }} />
+            {/* Gold inner felt edge ring */}
+            <div className="absolute rounded-[50%] pointer-events-none" style={{
+              inset: '26px',
+              boxShadow: 'inset 0 0 0 2px rgba(212,160,23,0.15), inset 0 0 20px rgba(0,0,0,0.3)',
+            }} />
+            {/* Subtle gold zone lines on felt */}
+            <div className="absolute rounded-[50%] pointer-events-none" style={{
+              inset: '52px',
+              border: '1px solid rgba(212,160,23,0.18)',
+              boxShadow: 'inset 0 0 0 1px rgba(212,160,23,0.08)',
+            }} />
+
+            {/* ── NEW TABLE CENTER ── */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap: isMobile ? 3 : 5, position:'relative', zIndex:1 }}>
+                <div style={{ fontSize: isMobile ? 9 : 13, fontWeight:900, letterSpacing: isMobile ? '1.5px' : '2px', background:'linear-gradient(135deg,#fffdf0 0%,#f9d976 30%,#e9b646 70%,#9a6b1f 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
+                  3 ♠ SPADES
+                </div>
+                {trumpSuit && (
+                  <div style={{ display:'flex', alignItems:'center', gap:5, background:'rgba(0,0,0,0.72)', border:'1px solid rgba(212,175,55,0.4)', borderRadius:20, padding: isMobile ? '2px 8px' : '3px 10px', fontSize: isMobile ? 8 : 10, fontWeight:700 }}>
+                    <span style={{ color:'rgba(255,255,255,0.42)', fontSize: isMobile ? 7 : 9 }}>TRUMP</span>
+                    <span style={{ color:'#e2d88b', fontSize: isMobile ? 11 : 14 }}>{SUIT_SYMBOLS[trumpSuit]}</span>
+                    <span>{trumpSuit.toUpperCase()}</span>
+                  </div>
+                )}
+                {(phase === 'bidding' || phase === 'playing') && bidState && bidState.currentBid > 0 && (
+                  <div style={{ background:'rgba(0,0,0,0.6)', border:'1px solid rgba(212,175,55,0.25)', borderRadius:8, padding: isMobile ? '1px 6px' : '2px 9px', fontSize: isMobile ? 8 : 9, color:'#e2d88b', fontWeight:700, whiteSpace:'nowrap' }}>
+                    {phase === 'playing' ? `Bid Won: ${bidState.currentBid} pts` : `Current Bid: ${bidState.currentBid}`}
+                    {phase === 'playing' && ` · Trick ${completedTricks.length + (currentTrick?.cards.length === players.length ? 1 : 0)}/${totalTricks}`}
+                  </div>
+                )}
+                {(phase === 'playing' || (currentTrick && currentTrick.cards.length > 0)) && (
+                  <TrickPile trick={currentTrick ?? heldTrick} players={players} trumpSuit={trumpSuit} completedTricksCount={completedTricks.length} totalTricks={totalTricks} />
+                )}
+                {phase === 'playing' && (
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
+                    <div style={{ fontSize: isMobile ? 7 : 8, letterSpacing:'1px', textTransform:'uppercase', color:'rgba(255,255,255,0.4)', fontWeight:600 }}>Collected Pts</div>
+                    <div style={{ fontSize: isMobile ? 16 : 22, fontWeight:900, color:'#f9d976', textShadow:'0 0 14px rgba(212,175,55,0.65)', letterSpacing:'1px' }}>
+                      {Object.values(playerIndividualPoints).reduce((a, b) => a + Math.max(0, b), 0)}
+                    </div>
+                  </div>
+                )}
+                {!trumpSuit && phase !== 'playing' && (
+                  <div style={{ opacity:0.35, fontSize:28, color:'#d4a017', lineHeight:1 }}>♠</div>
+                )}
+              </div>
             </div>
-            {(calledCardSlots.length > 0 ? calledCardSlots.length : calledCards.length) > 0 && phase === 'playing' && (
-              <div className="flex items-center justify-center gap-1.5 mb-1.5 px-3 flex-wrap">
-                <span className="text-xs text-slate-400 shrink-0 font-medium">
-                  {bidWinnerId === myPlayerId ? '🤝 Your partner cards:' : '🤝 Partner cards:'}
-                </span>
-                {calledCardSlots.length > 0
-                  ? (() => {
-                      const SUIT_SYM: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
-                      const showOrdinal = deckCount > 1;
-                      return calledCardSlots.map((slot, idx) => {
-                        const parts = slot.typeId.split('_');
-                        const suit = parts[0] as import('@/types').Suit;
-                        const rank = parts.slice(1).join('_') as import('@/types').Card['rank'];
-                        const isRed = suit === 'hearts' || suit === 'diamonds';
-                        const isMyCard = myHand.some((c) => c.suit === suit && c.rank === rank);
-                        const ordinalLabel = slot.ordinal === 1 ? '1st' : '2nd';
+
+            {/* Deal animation overlay */}
+            {showDealAnim && (
+              <DealAnimation players={players} myPlayerId={myPlayerId} cardsPerPlayer={cardsPerPlayer} tableW={tableDims.w} tableH={tableDims.h} onCardDealtToMe={handleCardDealtToMe} onComplete={handleDealComplete} />
+            )}
+
+            {/* Player seats */}
+            {players.map((player) => {
+              const myPlayerLocal = players.find((p) => p.id === myPlayerId);
+              const mySeatIdx = myPlayerLocal?.seatIndex ?? 0;
+              const relativeSeatIdx = (player.seatIndex - mySeatIdx + players.length) % players.length;
+              const { x, y } = getSeatPosition(relativeSeatIdx, players.length);
+              const isCurrentTurn = player.id === currentTurnPlayerId;
+              const isPartner = revealedPartnerIds.includes(player.id);
+              const cardCount = hands[player.id]?.length ?? 0;
+              const trickCard = getTrickCard(player.id);
+              const isLocalPlayer = player.id === myPlayerId;
+              return (
+                <div key={player.id} className="absolute" style={{ left:`${x}%`, top:`${y}%`, transform:'translate(-50%, -50%)', zIndex: isLocalPlayer ? 2 : 1 }}>
+                  <PlayerSeat player={player} cardCount={isLocalPlayer ? myHand.length : cardCount} isCurrentTurn={isCurrentTurn} isLocalPlayer={isLocalPlayer} isPartner={isPartner} isRevealed={isPartner} isBidWinner={player.id === bidWinnerId && !!bidWinnerId} trickCard={trickCard} position="bottom" compact={isMobile} extraCompact={isMobile && isLandscape} displayPoints={getDisplayPoints(player.id)} teamId={getPlayerTeamId(player.id)} turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null} turnTimerTotalSeconds={turnTimerTotalSeconds} showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)} />
+                </div>
+              );
+            })}
+          </motion.div>
+
+          {/* Partner slot tracker */}
+          {phase === 'playing' && myPlayerId === bidWinnerId && myCalledCardSlots.length > 0 && (
+            <PartnerTracker slots={myCalledCardSlots} players={players} bidWinnerId={bidWinnerId!} />
+          )}
+
+          {/* Table legs */}
+          <div className="absolute pointer-events-none" style={{ left:'50%', transform:'translateX(-50%)', bottom:'calc(50% - min(26vh, 240px) - 30px)', width:'min(80vw, 780px)', zIndex:0 }}>
+            <div style={{ position:'absolute', left:'10%', right:'10%', top:8, height:40, borderRadius:'50%', background:'radial-gradient(ellipse at 50% 0%, rgba(200,120,10,0.55) 0%, rgba(160,80,5,0.25) 40%, transparent 75%)', filter:'blur(6px)' }} />
+            {[{ left:'18%' },{ left:'36%' },{ left:'64%' },{ left:'82%' }].map((pos, i) => (
+              <div key={i} style={{ position:'absolute', top:0, left:pos.left, width:18, height:48, transform:'translateX(-50%)', background:'linear-gradient(180deg, #5a2008 0%, #2a0e04 50%, #0f0501 100%)', borderRadius:'0 0 4px 4px', boxShadow:'2px 0 6px rgba(0,0,0,0.7), -2px 0 6px rgba(0,0,0,0.5), inset 2px 0 4px rgba(255,160,60,0.07)' }} />
+            ))}
+          </div>
+
+        </div>{/* end table area */}
+
+        {/* ── BOTTOM ZONE (card hand + bid actions) ── */}
+        <div className="shrink-0 z-10" style={{ background:'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)', paddingBottom: isMobile && isLandscape ? '4px' : '12px', position:'relative' }}>
+
+          {/* BidPanel — inline above hand */}
+          {showBidPanel && (
+            <div style={{ position:'relative', width:'100%', display:'flex', justifyContent:'center', paddingTop:6, paddingBottom:4 }}>
+              <div style={{ width:'min(400px, 90vw)' }}>
+                <BidPanel bidState={bidState!} players={players} myPlayerId={myPlayerId} isMyTurn={bidState?.currentBidderId === myPlayerId} onBid={onBid ?? (() => {})} onPass={onPass ?? (() => {})} maxBid={maxBid} />
+              </div>
+            </div>
+          )}
+
+          {/* Deal animation hand reveal */}
+          {showDealAnim && (
+            <DealHandReveal cards={myHand} revealedCount={dealRevealedCount} />
+          )}
+
+          {/* Normal hand */}
+          {!showDealAnim && (
+            <>
+              <div className="flex items-center justify-center pt-1 pb-0.5">
+                <button onClick={() => setHandHidden(v => !v)}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border font-semibold transition-all ${handHidden ? 'bg-amber-900/70 border-amber-600/70 text-amber-300 shadow-[0_0_8px_rgba(217,119,6,0.3)]' : 'bg-slate-800/80 border-slate-700/50 text-slate-400 hover:text-slate-200 hover:border-slate-500/70'}`}
+                  title={`${handHidden ? 'Show' : 'Hide'} cards (H)`}
+                >
+                  <span>{handHidden ? '👁️' : '🙈'}</span>
+                  <span>{handHidden ? 'Show' : 'Hide'}</span>
+                  <kbd className="ml-1 text-[9px] px-1 py-0.5 rounded bg-slate-700/60 border border-slate-600/50 text-slate-500 font-mono">H</kbd>
+                </button>
+              </div>
+              {(calledCardSlots.length > 0 ? calledCardSlots.length : calledCards.length) > 0 && phase === 'playing' && (
+                <div className="flex items-center justify-center gap-1.5 mb-1.5 px-3 flex-wrap">
+                  <span className="text-xs text-slate-400 shrink-0 font-medium">
+                    {bidWinnerId === myPlayerId ? '🤝 Your partner cards:' : '🤝 Partner cards:'}
+                  </span>
+                  {calledCardSlots.length > 0
+                    ? (() => {
+                        const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+                        const showOrdinal = deckCount > 1;
+                        return calledCardSlots.map((slot, idx) => {
+                          const parts = slot.typeId.split('_');
+                          const suit = parts[0] as import('@/types').Suit;
+                          const rank = parts.slice(1).join('_') as import('@/types').Card['rank'];
+                          const isRed = suit === 'hearts' || suit === 'diamonds';
+                          const isMyCard = myHand.some((c) => c.suit === suit && c.rank === rank);
+                          const ordinalLabel = slot.ordinal === 1 ? '1st' : '2nd';
+                          return (
+                            <span key={`${slot.typeId}-${slot.ordinal}-${idx}`}
+                              className={`inline-flex items-center gap-0.5 text-sm font-bold px-1.5 py-0.5 rounded border ${isMyCard ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40' : isRed ? 'text-red-400 border-red-700/50 bg-red-950/40' : 'text-slate-200 border-slate-600/50 bg-slate-800/60'}`}
+                              title={isMyCard ? 'You hold this partner card!' : undefined}>
+                              {showOrdinal && <span className="text-[9px] font-semibold opacity-70 leading-none">{ordinalLabel}</span>}
+                              {rank}{SUIT_SYM2[suit]}{isMyCard ? ' 🤝' : ''}
+                            </span>
+                          );
+                        });
+                      })()
+                    : calledCards.map((card) => {
+                        const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
+                        const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+                        const isMyCard = myHand.some((c) => c.suit === card.suit && c.rank === card.rank);
                         return (
-                          <span
-                            key={`${slot.typeId}-${slot.ordinal}-${idx}`}
-                            className={`inline-flex items-center gap-0.5 text-sm font-bold px-1.5 py-0.5 rounded border ${
-                              isMyCard
-                                ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40'
-                                : isRed
-                                ? 'text-red-400 border-red-700/50 bg-red-950/40'
-                                : 'text-slate-200 border-slate-600/50 bg-slate-800/60'
-                            }`}
-                            title={isMyCard ? 'You hold this partner card!' : undefined}
-                          >
-                            {showOrdinal && (
-                              <span className="text-[9px] font-semibold opacity-70 leading-none">{ordinalLabel}</span>
-                            )}
-                            {rank}{SUIT_SYM[suit]}{isMyCard ? ' 🤝' : ''}
+                          <span key={card.id}
+                            className={`text-sm font-bold px-1.5 py-0.5 rounded border ${isMyCard ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40' : isRed ? 'text-red-400 border-red-700/50 bg-red-950/40' : 'text-slate-200 border-slate-600/50 bg-slate-800/60'}`}
+                            title={isMyCard ? 'You hold this partner card!' : undefined}>
+                            {card.rank}{SUIT_SYM2[card.suit]}{isMyCard ? ' 🤝' : ''}
                           </span>
                         );
-                      });
-                    })()
-                  : calledCards.map((card) => {
-                      const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
-                      const SUIT_SYM: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
-                      const isMyCard = myHand.some((c) => c.suit === card.suit && c.rank === card.rank);
-                      return (
-                        <span
-                          key={card.id}
-                          className={`text-sm font-bold px-1.5 py-0.5 rounded border ${
-                            isMyCard
-                              ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40'
-                              : isRed
-                              ? 'text-red-400 border-red-700/50 bg-red-950/40'
-                              : 'text-slate-200 border-slate-600/50 bg-slate-800/60'
-                          }`}
-                          title={isMyCard ? 'You hold this partner card!' : undefined}
-                        >
-                          {card.rank}{SUIT_SYM[card.suit]}{isMyCard ? ' 🤝' : ''}
-                        </span>
-                      );
-                    })
-                }
+                      })
+                  }
+                </div>
+              )}
+              <div className="relative overflow-hidden" style={{ minHeight: isMobile && isLandscape ? '80px' : '120px' }}>
+                <CardHand cards={myHand} playableCardIds={playableCardIds} selectedCardId={selectedCardId} onCardSelect={(card) => setSelectedCardId(card.id)} onCardPlay={(card) => { setSelectedCardId(null); onPlayCard(card); }} isMyTurn={isMyTurn && phase === 'playing'} leadSuit={currentTrick?.leadSuit} trumpSuit={trumpSuit} expandedView={phase === 'bidding'} compact={isMobile} dimIfNotPlayable={phase !== 'bidding'} hidden={effectivelyHidden} />
               </div>
-            )}
-            {/* CardHand is ALWAYS mounted to preserve sort order; placeholder overlays when hidden */}
-            <div className="relative overflow-hidden" style={{ minHeight: isMobile && isLandscape ? '80px' : '120px' }}>
-              <CardHand
-                cards={myHand}
-                playableCardIds={playableCardIds}
-                selectedCardId={selectedCardId}
-                onCardSelect={(card) => setSelectedCardId(card.id)}
-                onCardPlay={(card) => {
-                  setSelectedCardId(null);
-                  onPlayCard(card);
-                }}
-                isMyTurn={isMyTurn && phase === 'playing'}
-                leadSuit={currentTrick?.leadSuit}
-                trumpSuit={trumpSuit}
-                expandedView={phase === 'bidding'}
-                compact={isMobile}
-                dimIfNotPlayable={phase !== 'bidding'}
-                hidden={effectivelyHidden}
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* ── Full-screen overlays ──────────────────────────────────────────── */}
-      {showTrumpSelector && (
-        <TrumpSelector
-          bidAmount={bidState?.currentBid ?? 0}
-          myHand={myHand}
-          onSelect={(suit) => onSelectTrump!(suit)}
-        />
-      )}
-      {showPartnerSelector && (
-        <PartnerSelector
-          trumpSuit={trumpSuit!}
-          myHand={myHand}
-          partnerCount={partnerCount}
-          deckCount={deckCount}
-          onSelect={(slots) => onSelectPartners!(slots)}
-        />
-      )}
-      </div>{/* end flex-1 game section */}
-
-      {/* ── Desktop chat panel — DISABLED ── */}
-      {/* {!isMobile && (
-        <div
-          className="shrink-0 flex flex-col border-l border-slate-700/60 overflow-hidden"
-          style={{
-            width: chatOpen ? 280 : 0,
-            transition: 'width 0.32s cubic-bezier(0.4,0,0.2,1)',
-            minWidth: 0,
-          }}
-        >
-          <div
-            className="flex items-center justify-between px-3 py-2 bg-slate-800/80 border-b border-slate-700 shrink-0"
-            style={{ width: 280 }}
-          >
-            <span className="text-sm font-semibold text-slate-200">💬 Chat</span>
-            <button onClick={() => setChatOpen(false)} className="text-slate-400 hover:text-white text-lg leading-none">&times;</button>
-          </div>
-          <div className="flex-1 min-h-0" style={{ width: 280 }}>
-            <ChatPanel
-              roomId={gameState.roomId}
-              myPlayerId={myPlayerId}
-              myPlayerName={myPlayer?.name ?? ''}
-              onUnreadChange={handleUnread}
-            />
-          </div>
+            </>
+          )}
         </div>
-      )} */}
 
-      {/* ── Mobile bottom drawer — DISABLED ── */}
-      {/* <AnimatePresence>
-        {chatOpen && isMobile && (
-          <>
-            <motion.div
-              key="chat-backdrop"
-              className="fixed inset-0 bg-black/50 z-40"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setChatOpen(false)}
-            />
-            <motion.div
-              key="chat-mobile"
-              className="fixed bottom-0 inset-x-0 z-50 rounded-t-2xl border-t border-slate-700 flex flex-col"
-              style={{ height: '55vh' }}
-              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-            >
-              <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700 shrink-0">
-                <span className="text-sm font-semibold text-slate-200">💬 Chat</span>
-                <button onClick={() => setChatOpen(false)} className="text-slate-400 hover:text-white text-lg leading-none">&times;</button>
-              </div>
-              <div className="flex-1 min-h-0">
-                <ChatPanel
-                  roomId={gameState.roomId}
-                  myPlayerId={myPlayerId}
-                  myPlayerName={myPlayer?.name ?? ''}
-                  onUnreadChange={handleUnread}
-                />
-              </div>
-            </motion.div>
-          </>
+        {/* ── Full-screen overlays ── */}
+        {showTrumpSelector && (
+          <TrumpSelector bidAmount={bidState?.currentBid ?? 0} myHand={myHand} onSelect={(suit) => onSelectTrump!(suit)} />
         )}
-      </AnimatePresence> */}
+        {showPartnerSelector && (
+          <PartnerSelector trumpSuit={trumpSuit!} myHand={myHand} partnerCount={partnerCount} deckCount={deckCount} onSelect={(slots) => onSelectPartners!(slots)} />
+        )}
+
+      </div>{/* end flex-1 game section */}
     </div>
   );
 }
