@@ -33,7 +33,7 @@ export default function PartnerTracker({ slots, players, bidWinnerId }: PartnerT
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="absolute top-2 right-2 z-20 bg-slate-900/90 border border-slate-700 rounded-xl p-2 shadow-xl min-w-[140px] max-w-[180px]"
+      className="absolute top-2 right-2 z-30 bg-slate-900/90 border border-slate-700 rounded-xl p-2 shadow-xl min-w-[120px] max-w-[160px]"
     >
       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-0.5">
         Partner Slots

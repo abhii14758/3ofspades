@@ -390,9 +390,9 @@ function DealHandReveal({ cards, revealedCount }: { cards: CardType[]; revealedC
 // ── HUD pill ──────────────────────────────────────────────────────────────────
 function HudPill({ label, value, valueColor }: { label: string; value: string | number; valueColor?: string }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(0,0,0,0.72)', border:'1px solid rgba(212,175,55,0.4)', borderRadius:20, padding:'4px 10px', fontSize:10, fontWeight:700, whiteSpace:'nowrap' }}>
-      <span style={{ color:'rgba(255,255,255,0.42)', fontSize:9 }}>{label}</span>
-      <span style={{ color: valueColor ?? '#fff' }}>{value}</span>
+    <div style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(0,0,0,0.72)', border:'1px solid rgba(212,175,55,0.4)', borderRadius:20, padding:'4px 10px', fontWeight:700, whiteSpace:'nowrap' }}>
+      <span style={{ color:'rgba(255,255,255,0.42)', fontSize:11 }}>{label}</span>
+      <span style={{ color: valueColor ?? '#fff', fontSize:14 }}>{value}</span>
     </div>
   );
 }
@@ -443,11 +443,13 @@ export default function GameTable({
   const [dealAnimDone, setDealAnimDone] = useState(false);
   const [dealRevealedCount, setDealRevealedCount] = useState(0);
   const [handHidden, setHandHidden] = useState(false);
+  const [sortTrigger, setSortTrigger] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
   // Held trick — keeps last full trick visible for 5s after it completes
   const [heldTrick, setHeldTrick] = useState<typeof gameState.currentTrick>(null);
+  const [bidAmount, setBidAmount] = useState(0);
   const myCalledCards = useGameStore((s) => s.myCalledCards);
   const myCalledCardSlots = useGameStore((s) => s.myCalledCardSlots);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -639,105 +641,68 @@ export default function GameTable({
     []
   );
 
+  useEffect(() => {
+    if (bidState) {
+      const nextMin = Math.max((bidState.currentBid > 0 ? bidState.currentBid : 0) + 10, bidState.minBid);
+      setBidAmount(nextMin);
+    }
+  }, [bidState?.currentBid, bidState?.minBid]);
+
+  const nextMinBid = bidState
+    ? Math.max((bidState.currentBid > 0 ? bidState.currentBid : 0) + 10, bidState.minBid)
+    : 100;
+
   return (
     <div
-      className="flex overflow-hidden select-none"
+      className="select-none"
       style={{
         height: '100dvh',
-        flexDirection: (isMobile && !isLandscape) ? 'column' : 'row',
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
         background: 'radial-gradient(ellipse 160% 120% at 50% 60%, #071507 0%, #020802 40%, #000000 100%)',
       }}
     >
-      {/* ── Game section ── */}
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ position: 'relative' }}>
+      {/* ── MIDDLE: table area ── */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          paddingBottom: isMobile && isLandscape ? 100 : isMobile ? 130 : 160,
+          position: 'relative',
+          overflow: 'visible',
+          background: 'radial-gradient(ellipse 80% 70% at 50% 40%, #0a0f0a 0%, #050808 60%, #020404 100%)',
+        }}
+      >
 
-        {/* ── TOP BAR (all layouts) ── */}
+        {/* Overhead casino lamp glow */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255,230,120,0.16) 0%, rgba(255,200,60,0.07) 40%, transparent 70%)',
+        }} />
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse 30% 60% at 0% 50%, rgba(20,80,20,0.08) 0%, transparent 70%), radial-gradient(ellipse 30% 60% at 100% 50%, rgba(20,80,20,0.08) 0%, transparent 70%)',
+        }} />
+
+        {/* ── Casino Table oval ── */}
         <motion.div
-          initial={{ y: -44, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 28 }}
-          className="shrink-0 flex items-center gap-2 z-20 bg-black/50 backdrop-blur-sm border-b border-white/5"
-          style={{ padding: isMobile && isLandscape ? '2px 8px' : '8px 12px' }}
+          ref={tableRef}
+          initial={{ scale: 0.88, opacity: 0, rotateX: 0 }}
+          animate={{ scale: 1, opacity: 1, rotateX: isMobile ? 0 : 18 }}
+          transition={{ type: 'spring', stiffness: 160, damping: 26, delay: 0.04 }}
+          className="relative"
+          style={{
+            width: isMobile && isLandscape ? 'min(68vw, 540px)' : isMobile ? '96vw' : 'min(96vw, 1100px)',
+            height: isMobile && isLandscape ? 'min(88vh, 360px)' : isMobile ? 'auto' : 'min(56vh, 580px)',
+            minHeight: isMobile ? (isLandscape ? '200px' : '160px') : '260px',
+            aspectRatio: isMobile && !isLandscape ? '2/1' : undefined,
+            overflow: 'visible',
+            perspective: '900px',
+            transformStyle: 'preserve-3d' as const,
+          }}
         >
-          {isHost && onTerminate && (
-            <motion.button whileTap={{ scale: 0.93 }} onClick={onTerminate}
-              className="shrink-0 px-2 py-1 bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 text-xs rounded-lg font-bold transition-colors">
-              🔴 End
-            </motion.button>
-          )}
-          {!isHost && onLeave && (
-            <motion.button whileTap={{ scale: 0.93 }} onClick={onLeave}
-              className="shrink-0 px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-slate-200 text-xs rounded-lg font-bold transition-colors">
-              ← Leave
-            </motion.button>
-          )}
-          <VotePanel roomId={gameState.roomId} myPlayerId={myPlayerId} voteEndVotes={gameState.voteEndVotes ?? {}} totalPlayers={players.length} />
-          <AnimatePresence>
-            {isHost && showDealAnim && (
-              <motion.button initial={{ opacity:0, scale:0.85 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0, scale:0.85 }} whileTap={{ scale:0.93 }}
-                onClick={handleSkipDeal}
-                className="shrink-0 px-2.5 py-1 bg-amber-900/80 hover:bg-amber-800 border border-amber-600/60 text-amber-300 text-xs rounded-lg font-bold transition-colors">
-                ⏭ Skip Deal
-              </motion.button>
-            )}
-          </AnimatePresence>
-          <div className="flex-1 min-w-0">
-            <TurnIndicator currentPlayer={currentTurnPlayer} isMyTurn={isMyTurn} />
-          </div>
-          {turnTimerEndsAt && <TurnTimer endsAt={turnTimerEndsAt} />}
-          <div className="shrink-0">
-            <Scoreboard teams={teams} players={players} bidWinnerId={bidWinnerId} bidAmount={bidState?.currentBid ?? null} trumpSuit={trumpSuit} roundNumber={roundNumber} revealedPartnerIds={revealedPartnerIds} playerTotals={gameState.playerTotals ?? {}} />
-          </div>
-          <AvatarUpload roomId={gameState.roomId} className="shrink-0" />
-        </motion.div>
-
-        {/* ── LEFT HUD (desktop only, position:absolute) ── */}
-        {!isMobile && (
-          <div style={{ position:'absolute', top:52, left:16, zIndex:50, display:'flex', flexDirection:'column', gap:5 }}>
-            <HudPill label="Round" value={`${roundNumber ?? 1} / ∞`} />
-            <HudPill label="Team A" value={teamACombinedPoints} valueColor="#6ee7b7" />
-            <HudPill label="Team B" value={teamBCombinedPoints} valueColor="#fca5a5" />
-          </div>
-        )}
-
-        {/* ── RIGHT HUD (desktop only, position:absolute) ── */}
-        {!isMobile && (
-          <div style={{ position:'absolute', top:52, right:16, zIndex:50, display:'flex', flexDirection:'column', gap:5, alignItems:'flex-end' }}>
-            <HudPill label="Target" value="500 pts" />
-            {phase === 'playing' && (
-              <HudPill label="Trick" value={`${completedTricks.length + 1}/${totalTricks}`} />
-            )}
-          </div>
-        )}
-
-        {/* ── MIDDLE: table area ── */}
-        <div className="flex-1 relative flex items-center justify-center min-h-0 p-1"
-             style={{ background: 'radial-gradient(ellipse 80% 70% at 50% 40%, #0a0f0a 0%, #050808 60%, #020404 100%)', overflow: 'visible' }}>
-
-          {/* Overhead casino lamp glow */}
-          <div className="absolute inset-0 pointer-events-none" style={{
-            background: 'radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255,230,120,0.16) 0%, rgba(255,200,60,0.07) 40%, transparent 70%)',
-          }} />
-          <div className="absolute inset-0 pointer-events-none" style={{
-            background: 'radial-gradient(ellipse 30% 60% at 0% 50%, rgba(20,80,20,0.08) 0%, transparent 70%), radial-gradient(ellipse 30% 60% at 100% 50%, rgba(20,80,20,0.08) 0%, transparent 70%)',
-          }} />
-
-          {/* ── Casino Table oval ── */}
-          <motion.div
-            ref={tableRef}
-            initial={{ scale: 0.88, opacity: 0, rotateX: 0 }}
-            animate={{ scale: 1, opacity: 1, rotateX: isMobile ? 0 : 18 }}
-            transition={{ type: 'spring', stiffness: 160, damping: 26, delay: 0.04 }}
-            className="relative"
-            style={{
-              width: isMobile ? (isLandscape ? '96vw' : '96vw') : isTablet ? 'min(94vw, 760px)' : 'min(94vw, 920px)',
-              height: isMobile ? (isLandscape ? 'min(85vh, 320px)' : 'auto') : isTablet ? 'min(50vh, 380px)' : 'min(52vh, 480px)',
-              aspectRatio: isMobile && !isLandscape ? '5/3' : undefined,
-              minHeight: isMobile ? (isLandscape ? '180px' : '200px') : '260px',
-              overflow: 'visible',
-              ...(!isMobile ? { perspective: '900px', transformStyle: 'preserve-3d' as const } : {}),
-            }}
-          >
             {/* Table physical body */}
             <div className="absolute rounded-[50%]" style={{
               inset: 0,
@@ -810,13 +775,31 @@ export default function GameTable({
                     {phase === 'playing' && ` · Trick ${completedTricks.length + (currentTrick?.cards.length === players.length ? 1 : 0)}/${totalTricks}`}
                   </div>
                 )}
+                {phase === 'bidding' && bidState && bidState.bids.length > 0 && (
+                  <div style={{
+                    maxHeight:72, overflowY:'auto', display:'flex', flexDirection:'column', gap:2,
+                    background:'rgba(0,0,0,0.5)', borderRadius:8, padding:'4px 8px',
+                    border:'1px solid rgba(212,175,55,.15)', minWidth:120,
+                  }}>
+                    {[...bidState.bids].slice(-5).reverse().map((b, i) => (
+                      <div key={i} style={{ display:'flex', justifyContent:'space-between', gap:8, fontSize:9 }}>
+                        <span style={{ color: b.playerId === myPlayerId ? '#f9d976' : 'rgba(255,255,255,.6)', fontWeight:700 }}>
+                          {players.find(p => p.id === b.playerId)?.name ?? '?'}
+                        </span>
+                        <span style={{ color: b.amount === 'pass' ? 'rgba(255,255,255,.4)' : '#f9d976', fontStyle: b.amount === 'pass' ? 'italic' : 'normal' }}>
+                          {b.amount === 'pass' ? 'pass' : b.amount}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {(phase === 'playing' || (currentTrick && currentTrick.cards.length > 0)) && (
                   <TrickPile trick={currentTrick ?? heldTrick} players={players} trumpSuit={trumpSuit} completedTricksCount={completedTricks.length} totalTricks={totalTricks} />
                 )}
                 {phase === 'playing' && (
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
-                    <div style={{ fontSize: isMobile ? 7 : 8, letterSpacing:'1px', textTransform:'uppercase', color:'rgba(255,255,255,0.4)', fontWeight:600 }}>Collected Pts</div>
-                    <div style={{ fontSize: isMobile ? 16 : 22, fontWeight:900, color:'#f9d976', textShadow:'0 0 14px rgba(212,175,55,0.65)', letterSpacing:'1px' }}>
+                    <div style={{ fontSize: isMobile ? 9 : 11, letterSpacing:'1px', textTransform:'uppercase', color:'rgba(255,255,255,0.4)', fontWeight:600 }}>Collected Pts</div>
+                    <div style={{ fontSize: isMobile ? 22 : 32, fontWeight:900, color:'#f9d976', textShadow:'0 0 14px rgba(212,175,55,0.65)', letterSpacing:'1px' }}>
                       {Object.values(playerIndividualPoints).reduce((a, b) => a + Math.max(0, b), 0)}
                     </div>
                   </div>
@@ -843,116 +826,345 @@ export default function GameTable({
               const cardCount = hands[player.id]?.length ?? 0;
               const trickCard = getTrickCard(player.id);
               const isLocalPlayer = player.id === myPlayerId;
+              if (isLocalPlayer) return null;
               return (
                 <div key={player.id} className="absolute" style={{ left:`${x}%`, top:`${y}%`, transform:'translate(-50%, -50%)', zIndex: isLocalPlayer ? 2 : 1 }}>
-                  <PlayerSeat player={player} cardCount={isLocalPlayer ? myHand.length : cardCount} isCurrentTurn={isCurrentTurn} isLocalPlayer={isLocalPlayer} isPartner={isPartner} isRevealed={isPartner} isBidWinner={player.id === bidWinnerId && !!bidWinnerId} trickCard={trickCard} position="bottom" compact={isMobile} extraCompact={isMobile && isLandscape} displayPoints={getDisplayPoints(player.id)} teamId={getPlayerTeamId(player.id)} turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null} turnTimerTotalSeconds={turnTimerTotalSeconds} showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)} />
+                  <PlayerSeat player={player} cardCount={isLocalPlayer ? myHand.length : cardCount} isCurrentTurn={isCurrentTurn} isLocalPlayer={isLocalPlayer} isPartner={isPartner} isRevealed={isPartner} isBidWinner={player.id === bidWinnerId && !!bidWinnerId} trickCard={trickCard} position="bottom" compact={isMobile} extraCompact={isMobile && isLandscape} displayPoints={getDisplayPoints(player.id)} teamId={getPlayerTeamId(player.id)} turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null} turnTimerTotalSeconds={turnTimerTotalSeconds} showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)} miniCardCount={isLocalPlayer ? 0 : (hands[player.id]?.length ?? 0)} />
                 </div>
               );
             })}
+
+            {/* Partner slot tracker */}
+            {phase === 'playing' && myPlayerId === bidWinnerId && myCalledCardSlots.length > 0 && (
+              <PartnerTracker slots={myCalledCardSlots} players={players} bidWinnerId={bidWinnerId!} />
+            )}
           </motion.div>
 
-          {/* Partner slot tracker */}
-          {phase === 'playing' && myPlayerId === bidWinnerId && myCalledCardSlots.length > 0 && (
-            <PartnerTracker slots={myCalledCardSlots} players={players} bidWinnerId={bidWinnerId!} />
-          )}
-
-          {/* Table legs */}
-          <div className="absolute pointer-events-none" style={{ left:'50%', transform:'translateX(-50%)', bottom:'calc(50% - min(26vh, 240px) - 30px)', width:'min(80vw, 780px)', zIndex:0 }}>
-            <div style={{ position:'absolute', left:'10%', right:'10%', top:8, height:40, borderRadius:'50%', background:'radial-gradient(ellipse at 50% 0%, rgba(200,120,10,0.55) 0%, rgba(160,80,5,0.25) 40%, transparent 75%)', filter:'blur(6px)' }} />
-            {[{ left:'18%' },{ left:'36%' },{ left:'64%' },{ left:'82%' }].map((pos, i) => (
-              <div key={i} style={{ position:'absolute', top:0, left:pos.left, width:18, height:48, transform:'translateX(-50%)', background:'linear-gradient(180deg, #5a2008 0%, #2a0e04 50%, #0f0501 100%)', borderRadius:'0 0 4px 4px', boxShadow:'2px 0 6px rgba(0,0,0,0.7), -2px 0 6px rgba(0,0,0,0.5), inset 2px 0 4px rgba(255,160,60,0.07)' }} />
-            ))}
-          </div>
-
-        </div>{/* end table area */}
-
-        {/* ── BOTTOM ZONE (card hand + bid actions) ── */}
-        <div className="shrink-0 z-10" style={{ background:'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 100%)', paddingBottom: isMobile && isLandscape ? '4px' : '12px', position:'relative' }}>
-
-          {/* BidPanel — inline above hand */}
-          {showBidPanel && (
-            <div style={{ position:'relative', width:'100%', display:'flex', justifyContent:'center', paddingTop:6, paddingBottom:4 }}>
-              <div style={{ width:'min(400px, 90vw)' }}>
-                <BidPanel bidState={bidState!} players={players} myPlayerId={myPlayerId} isMyTurn={bidState?.currentBidderId === myPlayerId} onBid={onBid ?? (() => {})} onPass={onPass ?? (() => {})} maxBid={maxBid} />
-              </div>
-            </div>
-          )}
-
-          {/* Deal animation hand reveal */}
-          {showDealAnim && (
-            <DealHandReveal cards={myHand} revealedCount={dealRevealedCount} />
-          )}
-
-          {/* Normal hand */}
-          {!showDealAnim && (
-            <>
-              <div className="flex items-center justify-center pt-1 pb-0.5">
-                <button onClick={() => setHandHidden(v => !v)}
-                  className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border font-semibold transition-all ${handHidden ? 'bg-amber-900/70 border-amber-600/70 text-amber-300 shadow-[0_0_8px_rgba(217,119,6,0.3)]' : 'bg-slate-800/80 border-slate-700/50 text-slate-400 hover:text-slate-200 hover:border-slate-500/70'}`}
-                  title={`${handHidden ? 'Show' : 'Hide'} cards (H)`}
-                >
-                  <span>{handHidden ? '👁️' : '🙈'}</span>
-                  <span>{handHidden ? 'Show' : 'Hide'}</span>
-                  <kbd className="ml-1 text-[9px] px-1 py-0.5 rounded bg-slate-700/60 border border-slate-600/50 text-slate-500 font-mono">H</kbd>
-                </button>
-              </div>
-              {(calledCardSlots.length > 0 ? calledCardSlots.length : calledCards.length) > 0 && phase === 'playing' && (
-                <div className="flex items-center justify-center gap-1.5 mb-1.5 px-3 flex-wrap">
-                  <span className="text-xs text-slate-400 shrink-0 font-medium">
-                    {bidWinnerId === myPlayerId ? '🤝 Your partner cards:' : '🤝 Partner cards:'}
-                  </span>
-                  {calledCardSlots.length > 0
-                    ? (() => {
-                        const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
-                        const showOrdinal = deckCount > 1;
-                        return calledCardSlots.map((slot, idx) => {
-                          const parts = slot.typeId.split('_');
-                          const suit = parts[0] as import('@/types').Suit;
-                          const rank = parts.slice(1).join('_') as import('@/types').Card['rank'];
-                          const isRed = suit === 'hearts' || suit === 'diamonds';
-                          const isMyCard = myHand.some((c) => c.suit === suit && c.rank === rank);
-                          const ordinalLabel = slot.ordinal === 1 ? '1st' : '2nd';
-                          return (
-                            <span key={`${slot.typeId}-${slot.ordinal}-${idx}`}
-                              className={`inline-flex items-center gap-0.5 text-sm font-bold px-1.5 py-0.5 rounded border ${isMyCard ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40' : isRed ? 'text-red-400 border-red-700/50 bg-red-950/40' : 'text-slate-200 border-slate-600/50 bg-slate-800/60'}`}
-                              title={isMyCard ? 'You hold this partner card!' : undefined}>
-                              {showOrdinal && <span className="text-[9px] font-semibold opacity-70 leading-none">{ordinalLabel}</span>}
-                              {rank}{SUIT_SYM2[suit]}{isMyCard ? ' 🤝' : ''}
-                            </span>
-                          );
-                        });
-                      })()
-                    : calledCards.map((card) => {
-                        const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
-                        const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
-                        const isMyCard = myHand.some((c) => c.suit === card.suit && c.rank === card.rank);
-                        return (
-                          <span key={card.id}
-                            className={`text-sm font-bold px-1.5 py-0.5 rounded border ${isMyCard ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40' : isRed ? 'text-red-400 border-red-700/50 bg-red-950/40' : 'text-slate-200 border-slate-600/50 bg-slate-800/60'}`}
-                            title={isMyCard ? 'You hold this partner card!' : undefined}>
-                            {card.rank}{SUIT_SYM2[card.suit]}{isMyCard ? ' 🤝' : ''}
-                          </span>
-                        );
-                      })
-                  }
-                </div>
-              )}
-              <div className="relative overflow-hidden" style={{ minHeight: isMobile && isLandscape ? '80px' : '120px' }}>
-                <CardHand cards={myHand} playableCardIds={playableCardIds} selectedCardId={selectedCardId} onCardSelect={(card) => setSelectedCardId(card.id)} onCardPlay={(card) => { setSelectedCardId(null); onPlayCard(card); }} isMyTurn={isMyTurn && phase === 'playing'} leadSuit={currentTrick?.leadSuit} trumpSuit={trumpSuit} expandedView={phase === 'bidding'} compact={isMobile} dimIfNotPlayable={phase !== 'bidding'} hidden={effectivelyHidden} />
-              </div>
-            </>
-          )}
+        {/* Table legs */}
+        <div className="absolute pointer-events-none" style={{ left:'50%', transform:'translateX(-50%)', bottom:'calc(50% - min(26vh, 240px) - 30px)', width:'min(80vw, 780px)', zIndex:0 }}>
+          <div style={{ position:'absolute', left:'10%', right:'10%', top:8, height:40, borderRadius:'50%', background:'radial-gradient(ellipse at 50% 0%, rgba(200,120,10,0.55) 0%, rgba(160,80,5,0.25) 40%, transparent 75%)', filter:'blur(6px)' }} />
+          {[{ left:'18%' },{ left:'36%' },{ left:'64%' },{ left:'82%' }].map((pos, i) => (
+            <div key={i} style={{ position:'absolute', top:0, left:pos.left, width:18, height:48, transform:'translateX(-50%)', background:'linear-gradient(180deg, #5a2008 0%, #2a0e04 50%, #0f0501 100%)', borderRadius:'0 0 4px 4px', boxShadow:'2px 0 6px rgba(0,0,0,0.7), -2px 0 6px rgba(0,0,0,0.5), inset 2px 0 4px rgba(255,160,60,0.07)' }} />
+          ))}
         </div>
 
-        {/* ── Full-screen overlays ── */}
-        {showTrumpSelector && (
-          <TrumpSelector bidAmount={bidState?.currentBid ?? 0} myHand={myHand} onSelect={(suit) => onSelectTrump!(suit)} />
+      </div>{/* end table area */}
+
+      {/* ── FLOATING TOP-LEFT ── */}
+      <div style={{ position:'absolute', top:8, left:16, zIndex:200, display:'flex', flexDirection:'column', gap:5, alignItems:'flex-start' }}>
+        <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+          {isHost && onTerminate && (
+            <motion.button whileTap={{ scale: 0.93 }} onClick={onTerminate}
+              style={{ padding:'4px 10px', background:'#450a0a', border:'1px solid #991b1b', color:'#fca5a5', fontSize:11, borderRadius:8, fontWeight:700, cursor:'pointer' }}>
+              🔴 End
+            </motion.button>
+          )}
+          {!isHost && onLeave && (
+            <motion.button whileTap={{ scale: 0.93 }} onClick={onLeave}
+              style={{ padding:'4px 10px', background:'rgba(30,30,30,.9)', border:'1px solid rgba(255,255,255,.1)', color:'rgba(255,255,255,.6)', fontSize:11, borderRadius:8, fontWeight:700, cursor:'pointer' }}>
+              ← Leave
+            </motion.button>
+          )}
+          <VotePanel roomId={gameState.roomId} myPlayerId={myPlayerId} voteEndVotes={gameState.voteEndVotes ?? {}} totalPlayers={players.length} />
+          <AnimatePresence>
+            {isHost && showDealAnim && (
+              <motion.button initial={{ opacity:0, scale:0.85 }} animate={{ opacity:1, scale:1 }} exit={{ opacity:0, scale:0.85 }} whileTap={{ scale:0.93 }}
+                onClick={handleSkipDeal}
+                style={{ padding:'4px 10px', background:'rgba(120,60,0,.8)', border:'1px solid rgba(217,119,6,.6)', color:'#fbbf24', fontSize:11, borderRadius:8, fontWeight:700, cursor:'pointer' }}>
+                ⏭ Skip Deal
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* ── TURN INDICATOR (centered top) ── */}
+      <div style={{ position:'absolute', top:10, left:'50%', transform:'translateX(-50%)', zIndex:200, pointerEvents:'none' }}>
+        <TurnIndicator currentPlayer={currentTurnPlayer} isMyTurn={isMyTurn} />
+      </div>
+
+      {/* ── LEFT HUD ── */}
+      <div style={{ position:'absolute', top:60, left:16, zIndex:50, display:'flex', flexDirection:'column', gap:5 }}>
+        <HudPill label="Round" value={`${roundNumber ?? 1} / ∞`} />
+        <HudPill label="Team A" value={teamACombinedPoints >= 0 ? `+${teamACombinedPoints}` : teamACombinedPoints} valueColor="#6ee7b7" />
+        <HudPill label="Team B" value={teamBCombinedPoints >= 0 ? `+${teamBCombinedPoints}` : teamBCombinedPoints} valueColor="#fca5a5" />
+      </div>
+
+      {/* ── RIGHT HUD ── */}
+      <div style={{ position:'absolute', top:8, right:16, zIndex:50, display:'flex', flexDirection:'column', gap:5, alignItems:'flex-end' }}>
+        <HudPill label="Target" value="500 pts" />
+        {phase === 'playing' && (
+          <HudPill label="Trick" value={`${completedTricks.length + 1}/${totalTricks}`} />
         )}
-        {showPartnerSelector && (
-          <PartnerSelector trumpSuit={trumpSuit!} myHand={myHand} partnerCount={partnerCount} deckCount={deckCount} onSelect={(slots) => onSelectPartners!(slots)} />
+        {turnTimerEndsAt && (
+          <div style={{ display:'flex', alignItems:'center', gap:6, background:'rgba(0,0,0,.72)', border:'1px solid rgba(212,175,55,0.4)', borderRadius:20, padding:'4px 10px' }}>
+            <TurnTimer endsAt={turnTimerEndsAt} totalSeconds={turnTimerTotalSeconds} />
+            <span style={{ color:'rgba(255,255,255,.42)', fontSize:9 }}>sec</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── BOTTOM ZONE (absolute overlay) ── */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100,
+        background: 'linear-gradient(to top, rgba(0,0,0,.96) 55%, transparent 100%)',
+        paddingLeft: isMobile ? 8 : 20,
+        paddingRight: isMobile ? 8 : 20,
+        paddingBottom: isMobile ? 6 : 12,
+        paddingTop: 0,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+      }}>
+        {/* Deal reveal */}
+        {showDealAnim && <DealHandReveal cards={myHand} revealedCount={dealRevealedCount} />}
+
+        {/* d-hand: card strip */}
+        {!showDealAnim && (
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, paddingTop:8, width:'100%' }}>
+            {(calledCardSlots.length > 0 ? calledCardSlots.length : calledCards.length) > 0 && phase === 'playing' && (
+              <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                <span className="text-sm text-slate-300 shrink-0 font-semibold">
+                  {bidWinnerId === myPlayerId ? '🤝 Your partner cards:' : '🤝 Partner cards:'}
+                </span>
+                {calledCardSlots.length > 0
+                  ? (() => {
+                      const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+                      const showOrdinal = deckCount > 1;
+                      return calledCardSlots.map((slot, idx) => {
+                        const parts = slot.typeId.split('_');
+                        const suit = parts[0] as import('@/types').Suit;
+                        const rank = parts.slice(1).join('_') as import('@/types').Card['rank'];
+                        const isRed = suit === 'hearts' || suit === 'diamonds';
+                        const isMyCard = myHand.some((c) => c.suit === suit && c.rank === rank);
+                        const ordinalLabel = slot.ordinal === 1 ? '1st' : '2nd';
+                        return (
+                          <span key={`${slot.typeId}-${slot.ordinal}-${idx}`}
+                            className={`inline-flex items-center gap-0.5 text-base font-bold px-2 py-1 rounded-lg border ${isMyCard ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40' : isRed ? 'text-red-400 border-red-700/50 bg-red-950/40' : 'text-slate-200 border-slate-600/50 bg-slate-800/60'}`}
+                            title={isMyCard ? 'You hold this partner card!' : undefined}>
+                            {showOrdinal && <span className="text-[9px] font-semibold opacity-70 leading-none">{ordinalLabel}</span>}
+                            {rank}{SUIT_SYM2[suit]}{isMyCard ? ' 🤝' : ''}
+                          </span>
+                        );
+                      });
+                    })()
+                  : calledCards.map((card) => {
+                      const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
+                      const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+                      const isMyCard = myHand.some((c) => c.suit === card.suit && c.rank === card.rank);
+                      return (
+                        <span key={card.id}
+                          className={`text-base font-bold px-2 py-1 rounded-lg border ${isMyCard ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40' : isRed ? 'text-red-400 border-red-700/50 bg-red-950/40' : 'text-slate-200 border-slate-600/50 bg-slate-800/60'}`}
+                          title={isMyCard ? 'You hold this partner card!' : undefined}>
+                          {card.rank}{SUIT_SYM2[card.suit]}{isMyCard ? ' 🤝' : ''}
+                        </span>
+                      );
+                    })
+                }
+              </div>
+            )}
+            {!(isMobile && isLandscape) && (
+              <CardHand
+                cards={myHand}
+                playableCardIds={playableCardIds}
+                selectedCardId={selectedCardId}
+                onCardSelect={(card) => setSelectedCardId(card.id)}
+                onCardPlay={(card) => { setSelectedCardId(null); onPlayCard(card); }}
+                isMyTurn={isMyTurn && phase === 'playing'}
+                leadSuit={currentTrick?.leadSuit}
+                trumpSuit={trumpSuit}
+                expandedView={phase === 'bidding'}
+                compact={false}
+                dimIfNotPlayable={phase !== 'bidding'}
+                hidden={effectivelyHidden}
+                hideSortButton
+                sortTrigger={sortTrigger}
+              />
+            )}
+          </div>
         )}
 
-      </div>{/* end flex-1 game section */}
+        {/* d-actions: action row */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          alignSelf: 'stretch', gap: 10,
+        }}>
+          {/* LEFT: your pts */}
+          <div style={{
+            display:'flex', alignItems:'center', gap:6, flexShrink:0,
+            background:'rgba(0,0,0,.72)', border:'1px solid rgba(212,175,55,0.4)',
+            borderRadius:20, padding:'4px 12px', fontSize:12, fontWeight:700,
+            whiteSpace:'nowrap',
+          }}>
+            <span style={{ color:'rgba(255,255,255,.42)', fontSize:11 }}>Your pts</span>
+            <span style={{
+              color: getDisplayPoints(myPlayerId) < 0 ? '#f87171' : '#6ee7b7',
+              fontSize:17, fontWeight:900,
+            }}>
+              {getDisplayPoints(myPlayerId) > 0 ? '+' : ''}{getDisplayPoints(myPlayerId)}
+            </span>
+          </div>
+
+          {/* CENTER: bid controls or status */}
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, flex:1, justifyContent:'center' }}>
+            {showBidPanel && bidState?.currentBidderId === myPlayerId && (
+              <>
+                {/* Quick bid chips */}
+                {(() => {
+                  const quickBids: number[] = [];
+                  for (let v = nextMinBid; v <= maxBid && quickBids.length < 5; v += 10) quickBids.push(v);
+                  return quickBids.length > 0 ? (
+                    <div style={{ display:'flex', gap:5, alignItems:'center', flexWrap:'wrap', justifyContent:'center' }}>
+                      {quickBids.map(amount => (
+                        <button key={amount} onClick={() => setBidAmount(amount)}
+                          style={{
+                            padding:'3px 12px', fontSize:12, fontWeight:700,
+                            borderRadius:20,
+                            border: bidAmount === amount ? '1px solid #d4af37' : '1px solid rgba(212,175,55,0.25)',
+                            background: bidAmount === amount ? 'rgba(212,175,55,0.22)' : 'rgba(0,0,0,.5)',
+                            color: bidAmount === amount ? '#f9d976' : 'rgba(255,255,255,0.6)',
+                            cursor:'pointer', transition:'all .15s',
+                          }}
+                        >{amount}{amount === maxBid ? ' MAX' : ''}</button>
+                      ))}
+                    </div>
+                  ) : null;
+                })()}
+                {/* Pass / Stepper / Confirm row */}
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <button
+                  onClick={() => onPass?.()}
+                  style={{
+                    padding:'0 20px', fontSize:13, fontWeight:800, letterSpacing:'.6px',
+                    borderRadius:8, border:'1px solid #991b1b', cursor:'pointer',
+                    textTransform:'uppercase', minHeight:44, display:'flex', alignItems:'center',
+                    background:'#7f1d1d', color:'#fca5a5',
+                  }}
+                >Pass</button>
+                <div style={{
+                  display:'flex', alignItems:'center', gap:3,
+                  background:'rgba(0,0,0,.7)', border:'1px solid rgba(212,175,55,0.4)',
+                  borderRadius:8, padding:'3px 6px',
+                }}>
+                  <button
+                    onClick={() => setBidAmount(n => Math.max(nextMinBid, n - 10))}
+                    style={{ background:'rgba(255,255,255,.1)', border:'none', color:'#fff', fontSize:17, borderRadius:5, cursor:'pointer', width:28, height:32, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}
+                  >−</button>
+                  <span style={{ color:'#d4af37', fontSize:9, fontWeight:700, padding:'0 2px' }}>BID</span>
+                  <input
+                    type="number"
+                    value={bidAmount}
+                    onChange={e => setBidAmount(Number(e.target.value))}
+                    style={{ background:'transparent', border:'none', color:'#fff', fontSize:15, fontWeight:800, width:60, textAlign:'center', outline:'none' }}
+                  />
+                  <button
+                    onClick={() => setBidAmount(n => Math.min(maxBid, n + 10))}
+                    style={{ background:'rgba(255,255,255,.1)', border:'none', color:'#fff', fontSize:17, borderRadius:5, cursor:'pointer', width:28, height:32, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}
+                  >+</button>
+                </div>
+                <button
+                  onClick={() => onBid?.(bidAmount)}
+                  style={{
+                    padding:'0 22px', fontSize:13, fontWeight:800, letterSpacing:'.6px',
+                    borderRadius:8, border:'none', cursor:'pointer',
+                    textTransform:'uppercase', minHeight:44, display:'flex', alignItems:'center',
+                    background:'linear-gradient(135deg,#fffdf0 0%,#f9d976 30%,#e9b646 70%,#9a6b1f 100%)',
+                    color:'#1a0d00',
+                  }}
+                >Confirm Bid</button>
+                </div>
+              </>
+            )}
+            {showBidPanel && bidState?.currentBidderId !== myPlayerId && (
+              <div style={{ color:'rgba(255,255,255,.5)', fontSize:11, fontStyle:'italic' }}>
+                ⏳ Waiting for{' '}
+                <span style={{ color:'#f9d976', fontStyle:'normal', fontWeight:700 }}>
+                  {bidState?.currentBidderId
+                    ? (players.find(p => p.id === bidState?.currentBidderId)?.name ?? 'player')
+                    : 'player'}
+                </span>{' '}to bid…
+              </div>
+            )}
+            {phase === 'playing' && isMyTurn && selectedCardId && (
+              <button
+                onClick={() => {
+                  const card = myHand.find(c => c.id === selectedCardId);
+                  if (card) { setSelectedCardId(null); onPlayCard(card); }
+                }}
+                style={{
+                  padding:'0 28px', fontSize:13, fontWeight:800, letterSpacing:'.6px',
+                  borderRadius:8, border:'1px solid #166534', cursor:'pointer',
+                  textTransform:'uppercase', minHeight:44,
+                  background:'#14532d', color:'#a7f3d0',
+                }}
+              >Play Card</button>
+            )}
+          </div>
+
+          {/* RIGHT: icon buttons */}
+          <div style={{ display:'flex', gap:6, alignItems:'center', flexShrink:0 }}>
+            <button
+              onClick={() => setSortTrigger(n => n + 1)}
+              title="Sort cards by suit and rank"
+              style={{
+                width:44, height:44, borderRadius:8, border:'1px solid rgba(255,255,255,.1)',
+                background:'rgba(255,255,255,.07)', color:'rgba(255,255,255,.7)',
+                cursor:'pointer', fontSize:13, fontWeight:700,
+                display:'flex', alignItems:'center', justifyContent:'center',
+              }}
+            >↕</button>
+            <button
+              onClick={() => setHandHidden(v => !v)}
+              title={`${handHidden ? 'Show' : 'Hide'} cards (H)`}
+              style={{
+                width:44, height:44, borderRadius:8, border:'1px solid rgba(255,255,255,.1)',
+                background: handHidden ? 'rgba(217,119,6,.3)' : 'rgba(255,255,255,.07)',
+                color:'#fff', cursor:'pointer', fontSize:15,
+                display:'flex', alignItems:'center', justifyContent:'center',
+              }}
+            >{handHidden ? '👁️' : '🙈'}</button>
+            <div style={{ position:'relative' }}>
+              <Scoreboard
+                teams={teams} players={players} bidWinnerId={bidWinnerId}
+                bidAmount={bidState?.currentBid ?? null} trumpSuit={trumpSuit}
+                roundNumber={roundNumber} revealedPartnerIds={revealedPartnerIds}
+                playerTotals={gameState.playerTotals ?? {}}
+              />
+            </div>
+            <AvatarUpload roomId={gameState.roomId} className="shrink-0" />
+          </div>
+        </div>
+      </div>
+
+      {/* ── LANDSCAPE CARD COLUMN (mobile landscape only) ── */}
+      {isMobile && isLandscape && (
+        <div style={{
+          position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, zIndex: 110,
+          borderLeft: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(0,0,0,0.88)',
+        }}>
+          <LandscapeCardColumn
+            cards={myHand}
+            selectedCardId={selectedCardId}
+            playableCardIds={playableCardIds}
+            isMyTurn={isMyTurn && phase === 'playing'}
+            phase={phase}
+            effectivelyHidden={effectivelyHidden}
+            handHidden={handHidden}
+            showDealAnim={showDealAnim}
+            onToggleHide={() => setHandHidden(v => !v)}
+            onCardSelect={(card) => setSelectedCardId(card.id)}
+            onCardPlay={(card) => { setSelectedCardId(null); onPlayCard(card); }}
+            onDeselect={() => setSelectedCardId(null)}
+          />
+        </div>
+      )}
+
+      {/* ── Full-screen overlays ── */}
+      {showTrumpSelector && (
+        <TrumpSelector bidAmount={bidState?.currentBid ?? 0} myHand={myHand} onSelect={(suit) => onSelectTrump!(suit)} />
+      )}
+      {showPartnerSelector && (
+        <PartnerSelector trumpSuit={trumpSuit!} myHand={myHand} partnerCount={partnerCount} deckCount={deckCount} onSelect={(slots) => onSelectPartners!(slots)} />
+      )}
     </div>
   );
 }

@@ -13,7 +13,7 @@ interface PlayerSeatProps {
   isRevealed: boolean;
   isBidWinner?: boolean;
   trickCard?: CardType | null;
-  position: 'bottom' | 'top' | 'left' | 'right' | 'top-left' | 'top-right';
+  position?: 'bottom' | 'top' | 'left' | 'right' | 'top-left' | 'top-right';
   compact?: boolean;
   displayPoints?: number | null;
   teamId?: 'A' | 'B' | null;
@@ -21,6 +21,7 @@ interface PlayerSeatProps {
   turnTimerTotalSeconds?: number;
   showCombinedLabel?: boolean;
   extraCompact?: boolean;
+  miniCardCount?: number;
 }
 
 const AVATAR_GRADIENTS = [
@@ -109,13 +110,49 @@ function PlayerSeat({
   turnTimerTotalSeconds = 30,
   showCombinedLabel = false,
   extraCompact = false,
+  miniCardCount = 0,
 }: PlayerSeatProps) {
   const isDisconnected = player.status === 'disconnected';
   const gradient = isLocalPlayer
     ? 'from-sky-500 to-blue-600'
     : AVATAR_GRADIENTS[nameHash(player.name) % AVATAR_GRADIENTS.length];
 
-  const isTeamA = isBidWinner || (isRevealed && isPartner);
+  const partnerRevealed = isPartner && isRevealed;
+
+  const avatarSize = extraCompact ? 34 : 56;
+  const avatarFontSize = extraCompact ? 10 : 16;
+
+  const avatarBorder = isCurrentTurn
+    ? '2.5px solid #00ffcc'
+    : isLocalPlayer
+    ? '2.5px solid #f9d976'
+    : partnerRevealed
+    ? '2.5px solid #34d399'
+    : '2.5px solid #d4af37';
+
+  const avatarBoxShadow = isCurrentTurn
+    ? '0 0 0 4px rgba(0,255,204,.25), 0 0 14px rgba(0,255,204,.5)'
+    : isLocalPlayer
+    ? '0 0 0 3px rgba(249,217,118,.3)'
+    : partnerRevealed
+    ? '0 0 10px rgba(52,211,153,.45)'
+    : undefined;
+
+  const namePillColor = isCurrentTurn
+    ? '#a7f3d0'
+    : isLocalPlayer
+    ? '#f9d976'
+    : partnerRevealed
+    ? '#6ee7b7'
+    : '#e2d9c0';
+
+  const namePillBorderColor = isCurrentTurn
+    ? 'rgba(0,255,204,.4)'
+    : isLocalPlayer
+    ? 'rgba(249,217,118,.5)'
+    : partnerRevealed
+    ? 'rgba(52,211,153,.4)'
+    : 'rgba(212,175,55,0.4)';
 
   return (
     <div
@@ -124,22 +161,8 @@ function PlayerSeat({
         isDisconnected && 'opacity-40'
       )}
     >
-      {/* Avatar with turn indicator and timer ring */}
-      <div className="relative mt-1" style={{ width: extraCompact ? 32 : 48, height: extraCompact ? 32 : 48 }}>
-        {/* Turn glow — CSS animations instead of Framer Motion boxShadow */}
-        {isCurrentTurn && (
-          <>
-            <div
-              className="absolute rounded-full glow-seat-pulse"
-              style={{ inset: -10, background: 'radial-gradient(circle, rgba(74,222,128,0.4) 0%, transparent 70%)' }}
-            />
-            <div
-              className="absolute rounded-full glow-seat-border"
-              style={{ inset: -6, border: '2px solid rgba(74,222,128,0.8)', boxShadow: '0 0 12px rgba(74,222,128,0.5)' }}
-            />
-          </>
-        )}
-
+      {/* Avatar with timer ring */}
+      <div className="relative mt-1" style={{ width: avatarSize, height: avatarSize }}>
         {/* Timer ring */}
         {isCurrentTurn && turnTimerEndsAt && (
           <div className="absolute" style={{ inset: -7 }}>
@@ -151,44 +174,37 @@ function PlayerSeat({
           </div>
         )}
 
-        {/* Avatar circle — removed animate boxShadow, use static boxShadow */}
-        <div style={{
-          padding: '3px',
-          borderRadius: '50%',
-          background: isCurrentTurn
-            ? 'linear-gradient(135deg, rgba(34,197,94,0.25), rgba(0,0,0,0.8))'
-            : 'rgba(0,0,0,0.7)',
-          boxShadow: isCurrentTurn
-            ? '0 0 0 2px rgba(34,197,94,0.7), 0 0 16px rgba(34,197,94,0.4), 0 4px 12px rgba(0,0,0,0.9)'
-            : isPartner && isRevealed
-            ? '0 0 0 2px rgba(52,211,153,0.6), 0 4px 12px rgba(0,0,0,0.8)'
-            : '0 0 0 1px rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.8)',
-        }}>
-          <div
-            className={clsx(
-              'rounded-full bg-gradient-to-br flex items-center justify-center font-bold uppercase shadow-md text-white relative overflow-hidden',
-              extraCompact ? 'w-8 h-8 text-xs' : 'w-12 h-12 text-sm',
-              gradient
-            )}
-            style={{
-              boxShadow: isPartner && isRevealed && !isCurrentTurn ? '0 0 8px rgba(52,211,153,0.5)' : undefined,
-            }}
-          >
-            {player.avatarUrl ? (
-              <img src={player.avatarUrl} alt={player.name} className="absolute inset-0 w-full h-full object-cover rounded-full" />
-            ) : (
-              <span className="relative z-10">{player.name.charAt(0)}</span>
-            )}
-            {player.type === 'bot' && (
-              <span className="absolute -bottom-0.5 -right-0.5 text-xs leading-none bg-slate-800 rounded-full px-0.5 z-20">
-                {player.isSubstitutedBot ? '🔄' : '🤖'}
-              </span>
-            )}
-          </div>
+        {/* Avatar circle */}
+        <div
+          className={clsx(
+            'rounded-full bg-gradient-to-br flex items-center justify-center font-black uppercase text-white relative',
+            isCurrentTurn && 'av-pulse',
+            gradient
+          )}
+          style={{
+            width: avatarSize,
+            height: avatarSize,
+            fontSize: avatarFontSize,
+            border: avatarBorder,
+            boxShadow: avatarBoxShadow,
+            flexShrink: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {player.avatarUrl ? (
+            <img src={player.avatarUrl} alt={player.name} className="absolute inset-0 w-full h-full object-cover rounded-full" />
+          ) : (
+            <span className="relative z-10">{player.name.charAt(0)}</span>
+          )}
+          {player.type === 'bot' && (
+            <span className="absolute -bottom-0.5 -right-0.5 text-xs leading-none bg-slate-800 rounded-full px-0.5 z-20">
+              {player.isSubstitutedBot ? '🔄' : '🤖'}
+            </span>
+          )}
         </div>
 
         {player.isHost && (
-          <span className="absolute -top-1 -right-1 text-xs leading-none">👑</span>
+          <span style={{ position: 'absolute', top: -9, right: -4, fontSize: 10, lineHeight: 1 }}>👑</span>
         )}
 
         {/* Card count badge in compact mode */}
@@ -201,77 +217,60 @@ function PlayerSeat({
 
       {/* Name + score + badges */}
       <div className="flex flex-col items-center gap-0.5">
-        <div className="flex items-center gap-1 flex-wrap justify-center">
-          <span
-            className={clsx(
-              'rounded-full px-2.5 py-0.5 font-bold truncate',
-              extraCompact ? 'text-[10px] max-w-[60px]' : 'text-[11px] max-w-[72px]',
-              isLocalPlayer
-                ? 'bg-sky-900/80 border border-sky-600/50 text-sky-200'
-                : isCurrentTurn
-                ? 'bg-green-950/90 border border-green-600/60 text-green-300'
-                : 'text-slate-100',
-              isDisconnected && 'line-through text-slate-500'
-            )}
-            style={!isLocalPlayer && !isCurrentTurn ? {
-              background: 'linear-gradient(135deg, rgba(30,20,5,0.92), rgba(10,7,2,0.95))',
-              border: '1px solid rgba(212,160,23,0.35)',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
-            } : undefined}
-            title={player.name}
-          >
-            {player.name}
-          </span>
-          {isBidWinner && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="text-[9px] font-bold bg-amber-600 text-white px-1.5 py-0.5 rounded-full"
-              title="Bid winner – Team A lead"
-            >
-              Lead
-            </motion.span>
-          )}
-          {isPartner && isRevealed && !isBidWinner && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="text-[9px] font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded-full"
-              title="Partner revealed"
-            >
-              Partner
-            </motion.span>
-          )}
-          {showCombinedLabel && !isLocalPlayer && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="text-[9px] font-bold bg-orange-700 text-white px-1.5 py-0.5 rounded-full"
-              title="Team B ally"
-            >
-              Ally
-            </motion.span>
-          )}
+        {/* Name pill */}
+        <div
+          style={{
+            background: 'rgba(0,0,0,.75)',
+            borderRadius: 10,
+            padding: '3px 9px',
+            fontSize: 11,
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+            maxWidth: 80,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            border: `1px solid ${namePillBorderColor}`,
+            color: namePillColor,
+            lineHeight: 1.4,
+            textDecoration: isDisconnected ? 'line-through' : undefined,
+          }}
+          title={player.name}
+        >
+          {player.name}
         </div>
 
-        {/* Score */}
+        {/* Points */}
         {displayPoints !== null && (
-          <span className={clsx(
-            'font-bold tabular-nums rounded px-1.5 py-0.5',
-            extraCompact ? 'text-[9px]' : 'text-[11px]',
-            displayPoints < 0 ? 'text-red-300 bg-red-950/60' : isTeamA ? 'text-sky-300 bg-sky-950/50' : showCombinedLabel ? 'text-orange-300 bg-orange-950/50' : 'text-slate-200 bg-black/40'
-          )}
-          style={{ border: '1px solid rgba(255,255,255,0.07)', lineHeight: 1.4 }}
-          >
-            {displayPoints > 0 ? '+' : ''}{displayPoints}
-          </span>
+          <div style={{ fontSize: 11, fontWeight: 800, color: displayPoints < 0 ? '#f87171' : '#4ade80' }}>
+            {displayPoints > 0 ? '+' : ''}{displayPoints} pts
+          </div>
         )}
 
-        {/* BOT label for substituted bots */}
+        {/* Badges */}
+        {isBidWinner && (
+          <div style={{ fontSize: 10, color: '#f9d976' }}>Bid Won</div>
+        )}
+        {isPartner && isRevealed && !isBidWinner && (
+          <div style={{ fontSize: 10, color: '#6ee7b7' }}>🤝 Partner</div>
+        )}
         {player.isSubstitutedBot && (
-          <span className="text-[9px] font-bold text-amber-400 bg-amber-950/60 border border-amber-700/40 rounded px-1 leading-tight">
-            BOT
-          </span>
+          <div style={{ fontSize: 8, color: '#fbbf24' }}>BOT</div>
+        )}
+
+        {/* Mini-hand cards for opponents */}
+        {!isLocalPlayer && miniCardCount > 0 && (
+          <div style={{ display: 'flex', gap: 2, marginTop: 1 }}>
+            {Array.from({ length: Math.min(miniCardCount, 5) }).map((_, i) => (
+              <div key={i} style={{
+                width: 16,
+                height: 22,
+                borderRadius: 2,
+                flexShrink: 0,
+                background: 'linear-gradient(135deg,#1e3a8a 0%,#1e40af 55%,#2563eb 100%)',
+                border: '1.5px solid rgba(147,197,253,.4)',
+              }} />
+            ))}
+          </div>
         )}
       </div>
     </div>

@@ -46,7 +46,7 @@ export default function TrumpSelector({ onSelect, bidAmount, myHand = [] }: Trum
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[500] bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
       <motion.div
         className="relative bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col"
         initial={{ opacity: 0, y: 60 }}

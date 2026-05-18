@@ -97,7 +97,7 @@ export default function PartnerSelector({
   const getSlotsForTypeId = (typeId: string) => selectedSlots.filter(s => s.typeId === typeId);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
       <motion.div
         className="relative bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
         initial={{ opacity: 0, scale: 0.9, y: 20 }}

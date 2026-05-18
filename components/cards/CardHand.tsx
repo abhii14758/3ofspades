@@ -28,6 +28,9 @@ interface CardHandProps {
   dimIfNotPlayable?: boolean;
   vertical?: boolean;
   hidden?: boolean;
+  hideSortButton?: boolean;
+  /** Increment this counter from outside to trigger a sort */
+  sortTrigger?: number;
 }
 
 function getHighlightSuit(cards: CardType[], leadSuit?: Suit | null, trumpSuit?: Suit | null): Suit | null {
@@ -51,6 +54,8 @@ export default function CardHand({
   dimIfNotPlayable = true,
   vertical = false,
   hidden = false,
+  hideSortButton = false,
+  sortTrigger = 0,
 }: CardHandProps) {
   const CARD_W = compact ? CARD_W_MOBILE : CARD_W_DESKTOP;
   const CARD_H = compact ? CARD_H_MOBILE : CARD_H_DESKTOP;
@@ -78,6 +83,17 @@ export default function CardHand({
       return [...kept, ...added];
     });
   }, [cards]);
+
+  // External sort trigger — when sortTrigger increments, re-sort
+  useEffect(() => {
+    if (sortTrigger <= 0) return;
+    const sorted = [...cards].sort((a, b) => {
+      const sd = SUIT_ORDER[a.suit] - SUIT_ORDER[b.suit];
+      return sd !== 0 ? sd : RANK_ORDER[a.rank] - RANK_ORDER[b.rank];
+    });
+    setCardOrder(sorted.map(c => c.id));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortTrigger]);
 
   // Ordered cards by user arrangement (computed early for vertical path)
   const orderedCards = useMemo(() => {
@@ -236,13 +252,15 @@ export default function CardHand({
             </motion.p>
           )}
         </AnimatePresence>
-        <button
-          onClick={handleSort}
-          className="ml-auto shrink-0 text-xs text-slate-400 hover:text-slate-200 bg-slate-800/90 border border-slate-600/60 rounded-full px-3 py-1 transition-colors font-medium"
-          title="Sort cards by suit and rank"
-        >
-          ↕ Sort
-        </button>
+        {!hideSortButton && (
+          <button
+            onClick={handleSort}
+            className="ml-auto shrink-0 text-xs text-slate-400 hover:text-slate-200 bg-slate-800/90 border border-slate-600/60 rounded-full px-3 py-1 transition-colors font-medium"
+            title="Sort cards by suit and rank"
+          >
+            ↕ Sort
+          </button>
+        )}
       </div>
 
       {/* Card area + Play button */}
