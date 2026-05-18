@@ -1432,6 +1432,24 @@ export function setupSocketServer(io: Server): void {
       io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
     });
 
+    // ── room:blackout ─────────────────────────────────────────────────────
+    socket.on('room:blackout', ({ roomId }: { roomId: string }) => {
+      const info = socketToPlayer.get(socket.id);
+      if (!info || info.roomId !== roomId) return;
+      const room = rooms.get(roomId);
+      if (!room) return;
+      io.to(roomId).emit('room:blackout');
+    });
+
+    // ── room:blackoutReveal ───────────────────────────────────────────────
+    socket.on('room:blackoutReveal', ({ roomId }: { roomId: string }) => {
+      const info = socketToPlayer.get(socket.id);
+      if (!info || info.roomId !== roomId) return;
+      const room = rooms.get(roomId);
+      if (!room) return;
+      io.to(roomId).emit('room:blackoutReveal');
+    });
+
     // ── chat:send ────────────────────────────────────────────────────────
     socket.on('chat:send', ({ roomId, text }: { roomId: string; text: string }) => {
       const info = socketToPlayer.get(socket.id);

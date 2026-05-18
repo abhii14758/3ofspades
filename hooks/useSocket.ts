@@ -284,6 +284,14 @@ export function useSocket() {
       router.push('/');
     });
 
+    socket.on('room:blackout', () => {
+      gameStore.setBlackout(true);
+    });
+
+    socket.on('room:blackoutReveal', () => {
+      gameStore.setBlackout(false);
+    });
+
     socket.on('game:nextRoundReady', () => {
       // Server started next round — gameState will be updated via game:started
     });
@@ -323,6 +331,8 @@ export function useSocket() {
       socket.off('game:turnTimerExpired');
       socket.off('game:terminated');
       socket.off('game:nextRoundReady');
+      socket.off('room:blackout');
+      socket.off('room:blackoutReveal');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

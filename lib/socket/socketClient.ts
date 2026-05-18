@@ -110,4 +110,10 @@ export const socketEmit = {
 
   voteEnd: (roomId: string) =>
     getSocket().emit('game:voteEnd', { roomId } satisfies VoteEndPayload),
+
+  blackout: (roomId: string) =>
+    getSocket().emit('room:blackout', { roomId }),
+
+  blackoutReveal: (roomId: string) =>
+    getSocket().emit('room:blackoutReveal', { roomId }),
 };

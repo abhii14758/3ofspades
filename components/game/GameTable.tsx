@@ -18,6 +18,7 @@ import AvatarUpload from './AvatarUpload';
 import OpponentStrip from './OpponentStrip';
 import PartnerTracker from './PartnerTracker';
 import LandscapeCardColumn from './LandscapeCardColumn';
+import BlackoutOverlay from './BlackoutOverlay';
 import { socketEmit } from '@/lib/socket/socketClient';
 
 const SUIT_SYMBOLS: Record<Suit, string> = {
@@ -452,6 +453,8 @@ export default function GameTable({
   const [bidAmount, setBidAmount] = useState(0);
   const myCalledCards = useGameStore((s) => s.myCalledCards);
   const myCalledCardSlots = useGameStore((s) => s.myCalledCardSlots);
+  const isBlackout = useGameStore((s) => s.isBlackout);
+  const setBlackout = useGameStore((s) => s.setBlackout);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const [tableDims, setTableDims] = useState({ w: 860, h: 540 });
@@ -505,6 +508,19 @@ export default function GameTable({
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
+
+  // ESC → blackout all screens; SPACE (when blacked out) → reveal
+  useEffect(() => {
+    const handleBlackoutKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA') return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        socketEmit.blackout(gameState.roomId);
+      }
+    };
+    window.addEventListener('keydown', handleBlackoutKey);
+    return () => window.removeEventListener('keydown', handleBlackoutKey);
+  }, [gameState.roomId]);
 
   const handleDealComplete = useCallback(() => setDealAnimDone(true), []);
   const handleSkipDeal = useCallback(() => {
@@ -1165,6 +1181,10 @@ export default function GameTable({
       {showPartnerSelector && (
         <PartnerSelector trumpSuit={trumpSuit!} myHand={myHand} partnerCount={partnerCount} deckCount={deckCount} onSelect={(slots) => onSelectPartners!(slots)} />
       )}
+      <BlackoutOverlay
+        visible={isBlackout}
+        onReveal={() => socketEmit.blackoutReveal(gameState.roomId)}
+      />
     </div>
   );
 }

@@ -23,9 +23,11 @@ interface GameStore {
   showRoundResult: boolean;
   showWinner: boolean;
   turnTimerEndsAt: number | null;
+  isBlackout: boolean;
 
   // Setters driven by socket events
   setGameState: (state: GameState) => void;
+  setBlackout: (on: boolean) => void;
   setMyHand: (cards: Card[]) => void;
   setMyCalledCards: (cards: Card[]) => void;
   setMyCalledCardSlots: (slots: CalledCardSlot[]) => void;
@@ -70,6 +72,7 @@ const initialState = {
   showRoundResult: false,
   showWinner: false,
   turnTimerEndsAt: null as number | null,
+  isBlackout: false,
 };
 
 export const useGameStore = create<GameStore>()((set, get) => ({
@@ -80,6 +83,8 @@ export const useGameStore = create<GameStore>()((set, get) => ({
   // -------------------------------------------------------------------------
 
   setGameState: (state) => set({ gameState: state }),
+
+  setBlackout: (on) => set({ isBlackout: on }),
 
   setMyHand: (cards) => set({ myHand: cards }),
 
