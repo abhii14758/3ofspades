@@ -1,0 +1,6 @@
+Analyzing 3ofspades_flutter...                                  
+
+  error - The named parameter 'width' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'width' - ..\3ofspades_flutter\lib\widgets\game\deal_hand_reveal.dart:121:15 - undefined_named_parameter
+  error - The named parameter 'height' isn't defined. Try correcting the name to an existing named parameter's name, or defining a named parameter with the name 'height' - ..\3ofspades_flutter\lib\widgets\game\deal_hand_reveal.dart:122:15 - undefined_named_parameter
+
+2 issues found. (ran in 2.6s)

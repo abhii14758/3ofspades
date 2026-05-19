@@ -22,7 +22,7 @@ export default function VotePanel({
   const [showConfirm, setShowConfirm] = useState(false);
   const [mounted, setMounted] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [popupStyle, setPopupStyle] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+  const [popupStyle, setPopupStyle] = useState<{ top: number; left?: number; right?: number }>({ top: 0, left: 0 });
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -34,10 +34,15 @@ export default function VotePanel({
     if (hasVoted) return;
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setPopupStyle({
-        top: rect.bottom + 8,
-        right: window.innerWidth - rect.right,
-      });
+      const popupWidth = 224; // w-56
+      const spaceOnRight = window.innerWidth - rect.left - popupWidth - 8;
+      if (spaceOnRight >= 0) {
+        // Enough room to open to the right of the button's left edge
+        setPopupStyle({ top: rect.bottom + 8, left: rect.left });
+      } else {
+        // Clamp to right edge of screen
+        setPopupStyle({ top: rect.bottom + 8, right: Math.max(8, window.innerWidth - rect.right) });
+      }
     }
     setShowConfirm(true);
   };
@@ -73,7 +78,7 @@ export default function VotePanel({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.92, y: -4 }}
                 transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-                style={{ top: popupStyle.top, right: popupStyle.right }}
+                style={{ top: popupStyle.top, left: popupStyle.left, right: popupStyle.right }}
                 className="fixed z-[100] bg-slate-900 border border-slate-700/80 rounded-2xl p-4 shadow-2xl shadow-black/60 w-56"
               >
                 {/* Red accent line */}

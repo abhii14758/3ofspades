@@ -330,12 +330,16 @@ const SUIT_SYM: Record<string, string> = { spades: '♠', hearts: '♥', diamond
 
 function DealHandReveal({ cards, revealedCount }: { cards: CardType[]; revealedCount: number }) {
   const visible = cards.slice(0, revealedCount);
+  const allDealt = revealedCount >= cards.length && cards.length > 0;
   const isRed = (suit: string) => suit === 'hearts' || suit === 'diamonds';
 
   return (
     <div className="flex flex-col items-center gap-1 py-1">
-      <p className="text-xs text-slate-400 font-medium tracking-widest uppercase">
-        Dealing your cards…
+      <p
+        className="text-xs font-medium tracking-widest uppercase"
+        style={{ color: allDealt ? '#f9d976' : 'rgba(148,163,184,0.9)', transition: 'color 0.4s' }}
+      >
+        {allDealt ? '✨ Revealing your hand!' : 'Dealing your cards…'}
       </p>
       <div className="flex items-end justify-center gap-1 flex-wrap px-4">
         <AnimatePresence mode="popLayout">
@@ -343,75 +347,83 @@ function DealHandReveal({ cards, revealedCount }: { cards: CardType[]; revealedC
             <motion.div
               key={card.id}
               layout
-              initial={{ rotateY: 90, opacity: 0, y: 20, scale: 0.8 }}
-              animate={{ rotateY: 0, opacity: 1, y: 0, scale: 1 }}
+              initial={{ scale: 0.7, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
               transition={{ type: 'spring', stiffness: 380, damping: 28, delay: 0.04 }}
-              style={{ perspective: 600 }}
+              style={{ width: 48, height: 70, position: 'relative', flexShrink: 0 }}
             >
-              <div
-                className="flex flex-col items-center justify-between rounded-lg select-none overflow-hidden"
-                style={{
-                  width: 48, height: 70,
-                  background: '#ffffff',
-                  border: isRed(card.suit)
-                    ? '1.5px solid #ffb3b3'
-                    : '1.5px solid #c0c8d8',
-                  boxShadow: idx === visible.length - 1
-                    ? '0 0 14px rgba(212,160,23,0.6), 0 4px 16px rgba(0,0,0,0.5)'
-                    : '0 3px 10px rgba(0,0,0,0.4)',
-                  padding: '3px 4px',
-                }}
-              >
-                {/* Top-left */}
-                <div style={{ alignSelf: 'flex-start', lineHeight: 1.1 }}>
-                  <div style={{
-                    fontSize: 11, fontWeight: 800,
-                    color: isRed(card.suit) ? '#c0152a' : '#1a1a2e',
-                    lineHeight: 1
-                  }}>
-                    {RANK_DISPLAY[card.rank] ?? card.rank}
-                  </div>
-                  <div style={{
-                    fontSize: 10,
-                    color: isRed(card.suit) ? '#c0152a' : '#1a1a2e',
-                    lineHeight: 1
-                  }}>
-                    {SUIT_SYM[card.suit]}
-                  </div>
-                </div>
-                {/* Center */}
-                <div style={{
-                  fontSize: 18, lineHeight: 1,
-                  color: isRed(card.suit) ? '#c0152a' : '#1a1a2e'
-                }}>
-                  {SUIT_SYM[card.suit]}
-                </div>
-                {/* Bottom-right rotated */}
-                <div style={{
-                  alignSelf: 'flex-end', lineHeight: 1.1,
-                  transform: 'rotate(180deg)'
-                }}>
-                  <div style={{
-                    fontSize: 11, fontWeight: 800,
-                    color: isRed(card.suit) ? '#c0152a' : '#1a1a2e',
-                    lineHeight: 1
-                  }}>
-                    {RANK_DISPLAY[card.rank] ?? card.rank}
-                  </div>
-                  <div style={{
-                    fontSize: 10,
-                    color: isRed(card.suit) ? '#c0152a' : '#1a1a2e',
-                    lineHeight: 1
-                  }}>
-                    {SUIT_SYM[card.suit]}
-                  </div>
-                </div>
-              </div>
+              {/* Card back — shown while dealing */}
+              <AnimatePresence>
+                {!allDealt && (
+                  <motion.div
+                    key="back"
+                    exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.18 } }}
+                    style={{
+                      position: 'absolute', inset: 0, borderRadius: 8,
+                      background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 55%, #2563eb 100%)',
+                      border: '1.5px solid rgba(96,165,250,0.5)',
+                      boxShadow: '0 3px 10px rgba(0,0,0,0.4)',
+                    }}
+                  >
+                    <div style={{
+                      position: 'absolute', inset: 4, borderRadius: 5,
+                      border: '1px solid rgba(96,165,250,0.3)',
+                      backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.05) 3px, rgba(255,255,255,0.05) 6px)',
+                    }} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {/* Card face — revealed after all dealt with stagger flip */}
+              <AnimatePresence>
+                {allDealt && (
+                  <motion.div
+                    key="face"
+                    initial={{ opacity: 0, rotateY: 90, scale: 0.85 }}
+                    animate={{ opacity: 1, rotateY: 0, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 24, delay: idx * 0.07 }}
+                    style={{
+                      position: 'absolute', inset: 0, perspective: 600,
+                      borderRadius: 8, overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      className="flex flex-col items-center justify-between select-none"
+                      style={{
+                        width: '100%', height: '100%',
+                        background: '#ffffff',
+                        border: isRed(card.suit) ? '1.5px solid #ffb3b3' : '1.5px solid #c0c8d8',
+                        boxShadow: '0 0 14px rgba(212,160,23,0.5), 0 4px 16px rgba(0,0,0,0.5)',
+                        padding: '3px 4px',
+                      }}
+                    >
+                      <div style={{ alignSelf: 'flex-start', lineHeight: 1.1 }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: isRed(card.suit) ? '#c0152a' : '#1a1a2e', lineHeight: 1 }}>
+                          {RANK_DISPLAY[card.rank] ?? card.rank}
+                        </div>
+                        <div style={{ fontSize: 10, color: isRed(card.suit) ? '#c0152a' : '#1a1a2e', lineHeight: 1 }}>
+                          {SUIT_SYM[card.suit]}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 18, lineHeight: 1, color: isRed(card.suit) ? '#c0152a' : '#1a1a2e' }}>
+                        {SUIT_SYM[card.suit]}
+                      </div>
+                      <div style={{ alignSelf: 'flex-end', lineHeight: 1.1, transform: 'rotate(180deg)' }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: isRed(card.suit) ? '#c0152a' : '#1a1a2e', lineHeight: 1 }}>
+                          {RANK_DISPLAY[card.rank] ?? card.rank}
+                        </div>
+                        <div style={{ fontSize: 10, color: isRed(card.suit) ? '#c0152a' : '#1a1a2e', lineHeight: 1 }}>
+                          {SUIT_SYM[card.suit]}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           ))}
         </AnimatePresence>
         {/* Placeholder slots for undealt cards */}
-        {Array.from({ length: Math.max(0, cards.length - visible.length) }).map((_, i) => (
+        {!allDealt && Array.from({ length: Math.max(0, cards.length - visible.length) }).map((_, i) => (
           <div
             key={`ph-${i}`}
             className="rounded-lg border border-dashed border-slate-700/50"
@@ -917,16 +929,24 @@ export default function GameTable({
 
         {/* RIGHT HUD */}
         {!(isMobile && isLandscape) && (
-          <div style={{ position:'absolute', top:8, right:14, zIndex:50, display:'flex', flexDirection:'column', gap:5, alignItems:'flex-end' }}>
-            <HudPill label="Target" value="500 pts" />
-            {phase === 'playing' && (
-              <HudPill label="Trick" value={`${completedTricks.length + 1}/${totalTricks}`} />
-            )}
+          <div style={{ position:'absolute', top:8, right:14, zIndex:50, display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end' }}>
+            {/* Target + Trick pills */}
+            <div style={{ display:'flex', flexDirection:'column', gap:6, alignItems:'flex-end' }}>
+              <HudPill label="Target" value="500 pts" />
+              {phase === 'playing' && (
+                <HudPill label="Trick" value={`${completedTricks.length + 1}/${totalTricks}`} />
+              )}
+            </div>
+            {/* Timer — clearly separated */}
             {turnTimerEndsAt && (
               <div style={{ display:'flex', alignItems:'center', gap:6, background:'rgba(0,0,0,.72)', border:'1px solid rgba(212,175,55,0.4)', borderRadius:20, padding:'4px 10px' }}>
                 <TurnTimer endsAt={turnTimerEndsAt} totalSeconds={turnTimerTotalSeconds} />
                 <span style={{ color:'rgba(255,255,255,.42)', fontSize:9 }}>sec</span>
               </div>
+            )}
+            {/* Partner slot tracker — inline below HUD pills, no position conflict */}
+            {phase === 'playing' && myPlayerId === bidWinnerId && myCalledCardSlots.length > 0 && (
+              <PartnerTracker slots={myCalledCardSlots} players={players} bidWinnerId={bidWinnerId!} inline />
             )}
           </div>
         )}
@@ -963,7 +983,7 @@ export default function GameTable({
           top: isMobile && isLandscape ? '42%' : isMobile ? '38%' : '44%',
           transform: 'translate(-50%, -50%)',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
-          gap: isMobile ? 3 : 6, zIndex: 10, pointerEvents: 'none',
+          gap: isMobile ? 4 : 14, zIndex: 10, pointerEvents: 'none',
         }}>
           <div style={{
             fontSize: isMobile ? (isLandscape ? 12 : 13) : 20,
@@ -1016,25 +1036,26 @@ export default function GameTable({
             </div>
           )}
           {(phase === 'playing' || (currentTrick && currentTrick.cards.length > 0)) && (
-            <TrickPile trick={currentTrick ?? heldTrick} players={players} trumpSuit={trumpSuit} completedTricksCount={completedTricks.length} totalTricks={totalTricks} />
-          )}
-          {phase === 'playing' && (
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:0 }}>
-              <div style={{ fontSize: isMobile ? 9 : 11, letterSpacing:'1.5px', textTransform:'uppercase', color:'rgba(255,255,255,0.35)', fontWeight:600 }}>Pts</div>
-              <div style={{ fontSize: isMobile ? (isLandscape ? 22 : 26) : 42, fontWeight:900, color:'#f9d976', textShadow:'0 0 18px rgba(212,175,55,0.7)', lineHeight:1 }}>
-                {Object.values(playerIndividualPoints).reduce((a, b) => a + Math.max(0, b), 0)}
-              </div>
+            <div style={{ marginTop: isMobile ? 2 : 6, marginBottom: isMobile ? 2 : 4 }}>
+              <TrickPile trick={currentTrick ?? heldTrick} players={players} trumpSuit={trumpSuit} completedTricksCount={completedTricks.length} totalTricks={totalTricks} />
             </div>
           )}
+          {phase === 'playing' && (() => {
+            const trickInPlay = currentTrick ?? heldTrick;
+            const trickPts = trickInPlay?.cards.reduce((sum, tc) => sum + tc.card.points, 0) ?? 0;
+            return (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:0 }}>
+                <div style={{ fontSize: isMobile ? 9 : 11, letterSpacing:'1.5px', textTransform:'uppercase', color:'rgba(255,255,255,0.35)', fontWeight:600 }}>Pts</div>
+                <div style={{ fontSize: isMobile ? (isLandscape ? 22 : 26) : 42, fontWeight:900, color:'#f9d976', textShadow:'0 0 18px rgba(212,175,55,0.7)', lineHeight:1 }}>
+                  {trickPts}
+                </div>
+              </div>
+            );
+          })()}
           {!trumpSuit && phase !== 'playing' && (
             <div style={{ opacity:0.35, fontSize:28, color:'#d4a017', lineHeight:1 }}>♠</div>
           )}
         </div>
-
-        {/* PARTNER SLOT TRACKER */}
-        {phase === 'playing' && myPlayerId === bidWinnerId && myCalledCardSlots.length > 0 && (
-          <PartnerTracker slots={myCalledCardSlots} players={players} bidWinnerId={bidWinnerId!} />
-        )}
 
         {/* DEAL ANIMATION */}
         {showDealAnim && (
@@ -1118,16 +1139,68 @@ export default function GameTable({
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             alignSelf: 'stretch', gap: 10,
           }}>
-            <div style={{
-              display:'flex', alignItems:'center', gap:6, flexShrink:0,
-              background:'rgba(0,0,0,.72)', border:'1px solid rgba(212,175,55,0.4)',
-              borderRadius:20, padding: isMobile && isLandscape ? '3px 10px' : '4px 12px',
-              fontSize:12, fontWeight:700, whiteSpace:'nowrap',
-            }}>
-              <span style={{ color:'rgba(255,255,255,.42)', fontSize: isMobile && isLandscape ? 10 : 11 }}>Your pts</span>
-              <span style={{ color: getDisplayPoints(myPlayerId) < 0 ? '#f87171' : '#6ee7b7', fontSize: isMobile && isLandscape ? 15 : 17, fontWeight:900 }}>
-                {getDisplayPoints(myPlayerId) > 0 ? '+' : ''}{getDisplayPoints(myPlayerId)}
-              </span>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-start', gap:4, flexShrink:0 }}>
+              <div style={{
+                display:'flex', alignItems:'center', gap:6,
+                background:'rgba(0,0,0,.72)', border:'1px solid rgba(212,175,55,0.4)',
+                borderRadius:20, padding: isMobile && isLandscape ? '3px 10px' : '4px 12px',
+                fontSize:12, fontWeight:700, whiteSpace:'nowrap',
+              }}>
+                <span style={{ color:'rgba(255,255,255,.42)', fontSize: isMobile && isLandscape ? 10 : 11 }}>Your pts</span>
+                <span style={{ color: getDisplayPoints(myPlayerId) < 0 ? '#f87171' : '#6ee7b7', fontSize: isMobile && isLandscape ? 15 : 17, fontWeight:900 }}>
+                  {getDisplayPoints(myPlayerId) > 0 ? '+' : ''}{getDisplayPoints(myPlayerId)}
+                </span>
+              </div>
+              {/* Partner cards — desktop bottom bar */}
+              {!isMobile && (calledCardSlots.length > 0 ? calledCardSlots.length : calledCards.length) > 0 && phase === 'playing' && (
+                <div style={{ display:'flex', alignItems:'center', gap:4, flexWrap:'wrap', background:'rgba(0,0,0,.55)', border:'1px solid rgba(212,175,55,0.25)', borderRadius:14, padding:'3px 8px' }}>
+                  <span style={{ fontSize:10, color:'rgba(255,255,255,0.45)', fontWeight:700, whiteSpace:'nowrap' }}>
+                    {bidWinnerId === myPlayerId ? '🤝 Partner:' : '🤝 Partner:'}
+                  </span>
+                  {calledCardSlots.length > 0
+                    ? (() => {
+                        const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+                        const showOrdinal = deckCount > 1;
+                        return calledCardSlots.map((slot, idx) => {
+                          const parts = slot.typeId.split('_');
+                          const suit = parts[0] as import('@/types').Suit;
+                          const rank = parts.slice(1).join('_') as import('@/types').Card['rank'];
+                          const isRed = suit === 'hearts' || suit === 'diamonds';
+                          const isMyCard = myHand.some((c) => c.suit === suit && c.rank === rank);
+                          const ordinalLabel = slot.ordinal === 1 ? '1st' : '2nd';
+                          return (
+                            <span key={`${slot.typeId}-${slot.ordinal}-${idx}`}
+                              style={{ display:'inline-flex', alignItems:'center', gap:2, fontSize:12, fontWeight:800, padding:'1px 6px', borderRadius:8,
+                                border: isMyCard ? '1px solid rgba(52,211,153,0.6)' : isRed ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(148,163,184,0.3)',
+                                background: isMyCard ? 'rgba(6,78,59,0.5)' : isRed ? 'rgba(127,29,29,0.4)' : 'rgba(30,41,59,0.5)',
+                                color: isMyCard ? '#6ee7b7' : isRed ? '#f87171' : '#e2e8f0',
+                              }}
+                              title={isMyCard ? 'You hold this partner card!' : undefined}>
+                              {showOrdinal && <span style={{ fontSize:8, opacity:0.7 }}>{ordinalLabel}</span>}
+                              {rank}{SUIT_SYM2[suit]}{isMyCard ? ' 🤝' : ''}
+                            </span>
+                          );
+                        });
+                      })()
+                    : calledCards.map((card) => {
+                        const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
+                        const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
+                        const isMyCard = myHand.some((c) => c.suit === card.suit && c.rank === card.rank);
+                        return (
+                          <span key={card.id}
+                            style={{ display:'inline-flex', alignItems:'center', fontSize:12, fontWeight:800, padding:'1px 6px', borderRadius:8,
+                              border: isMyCard ? '1px solid rgba(52,211,153,0.6)' : isRed ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(148,163,184,0.3)',
+                              background: isMyCard ? 'rgba(6,78,59,0.5)' : isRed ? 'rgba(127,29,29,0.4)' : 'rgba(30,41,59,0.5)',
+                              color: isMyCard ? '#6ee7b7' : isRed ? '#f87171' : '#e2e8f0',
+                            }}
+                            title={isMyCard ? 'You hold this partner card!' : undefined}>
+                            {card.rank}{SUIT_SYM2[card.suit]}{isMyCard ? ' 🤝' : ''}
+                          </span>
+                        );
+                      })
+                  }
+                </div>
+              )}
             </div>
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, flex:1, justifyContent:'center' }}>
               {showBidPanel && bidState?.currentBidderId === myPlayerId && (

@@ -25,7 +25,7 @@ function formatTypeId(typeId: string): { rank: string; suit: Suit; symbol: strin
   return { rank, suit, symbol, isRed };
 }
 
-export default function PartnerTracker({ slots, players, bidWinnerId }: PartnerTrackerProps) {
+export default function PartnerTracker({ slots, players, bidWinnerId, inline = false }: PartnerTrackerProps & { inline?: boolean }) {
   void bidWinnerId;
   if (slots.length === 0) return null;
 
@@ -33,7 +33,9 @@ export default function PartnerTracker({ slots, players, bidWinnerId }: PartnerT
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="absolute top-2 right-2 z-30 bg-slate-900/90 border border-slate-700 rounded-xl p-2 shadow-xl min-w-[120px] max-w-[160px]"
+      className={inline
+        ? 'bg-slate-900/90 border border-slate-700 rounded-xl p-2 shadow-xl min-w-[120px] max-w-[160px]'
+        : 'absolute top-2 right-2 z-30 bg-slate-900/90 border border-slate-700 rounded-xl p-2 shadow-xl min-w-[120px] max-w-[160px]'}
     >
       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-0.5">
         Partner Slots
