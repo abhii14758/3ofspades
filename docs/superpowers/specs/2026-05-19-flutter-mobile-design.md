@@ -95,7 +95,7 @@ All 5 model files follow this same pattern. No game logic in models.
 
 `SocketService` is a singleton that wraps `socket_io_client`. It mirrors the `socketEmit.*` helper pattern from `lib/socket/socketClient.ts`.
 
-**Connection:** The server URL is configurable (dev: `ws://localhost:3000`, prod: the deployed Railway URL).
+**Connection:** The server URL is configurable (dev: `ws://localhost:3000`, prod: `https://3ofspades-production.up.railway.app/`).
 
 **Events emitted (client → server):**
 - `room:create`, `room:join`, `room:addBot`
@@ -278,6 +278,19 @@ The TypeScript game engine in `lib/game-engine/` is **not ported to Dart**. All 
 
 - Push notifications
 - In-app purchases
-- Offline / bot-only mode
-- In-app server address configuration (use hardcoded prod URL)
+- In-app server address configuration (hardcoded prod URL: `https://3ofspades-production.up.railway.app/`)
 - iPad-specific layout (phone layout scales fine)
+- True offline bots (bots run on Railway server, internet required)
+
+---
+
+## 15. Bot-Only / Offline Mode
+
+The app must support a **"Play vs Bots"** mode where a single player can start a game immediately without inviting anyone — the server fills all 5 remaining seats with bots automatically.
+
+**Flow:**
+1. Home screen has a third button: **Play vs Bots**
+2. Tap → auto-creates a private room, emits `room:addBot` × 5, then `game:start` — all sequentially on connect
+3. The server's existing bot infrastructure handles everything; no server changes needed
+
+**Note:** Requires internet (Railway server runs the bots). True on-device offline bots are out of scope for v1.
