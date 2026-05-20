@@ -972,8 +972,14 @@ export default function GameTable({
           const cardCount = hands[player.id]?.length ?? 0;
           const trickCard = getTrickCard(player.id);
           const isLocalPlayer = player.id === myPlayerId;
+          // Local player seat: anchor from BOTTOM so it always sits above the card-hand strip.
+          // Other seats use top-% positioning relative to the oval.
+          const localBottomPx = isMobile && isLandscape ? 130 : isMobile ? 200 : 270;
+          const seatStyle: React.CSSProperties = isLocalPlayer
+            ? { position:'absolute', left:'50%', bottom: localBottomPx, top:'auto', transform:'translate(-50%, 0)', zIndex: 5 }
+            : { position:'absolute', left:`${x}%`, top:`${y}%`, transform:'translate(-50%, -50%)', zIndex: 1 };
           return (
-            <div key={player.id} className="absolute" style={{ left:`${x}%`, top:`${y}%`, transform:'translate(-50%, -50%)', zIndex: isLocalPlayer ? 2 : 1 }}>
+            <div key={player.id} style={seatStyle}>
               <PlayerSeat player={player} cardCount={isLocalPlayer ? myHand.length : cardCount} isCurrentTurn={isCurrentTurn} isLocalPlayer={isLocalPlayer} isPartner={isPartner} isRevealed={isPartner} isBidWinner={player.id === bidWinnerId && !!bidWinnerId} trickCard={trickCard} position="bottom" compact={isMobile} extraCompact={isMobile && isLandscape} displayPoints={getDisplayPoints(player.id)} teamId={getPlayerTeamId(player.id)} turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null} turnTimerTotalSeconds={turnTimerTotalSeconds} showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)} miniCardCount={isLocalPlayer ? myHand.length : (hands[player.id]?.length ?? 0)} />
             </div>
           );
@@ -1071,7 +1077,8 @@ export default function GameTable({
           paddingLeft: isMobile ? 8 : 20,
           paddingRight: isMobile ? 8 : 20,
           paddingBottom: isMobile ? 6 : 12,
-          paddingTop: 0,
+          // Top padding creates the gradient "fade in" zone — keeps avatar above the black area
+          paddingTop: isMobile && isLandscape ? 8 : isMobile ? 10 : 16,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           gap: isMobile && isLandscape ? 3 : 6,
         }}>
