@@ -527,6 +527,9 @@ export default function GameTable({
   const tableRef = useRef<HTMLDivElement>(null);
 
   const [tableDims, setTableDims] = useState({ w: 860, h: 540 });
+  // True when the CSS viewport is small (e.g. 150%+ browser zoom) — used to shift
+  // center info upward and keep the local player avatar out of the table info area.
+  const isSmallViewport = tableDims.h < 680;
   useEffect(() => {
     if (!tableRef.current) return;
     const el = tableRef.current;
@@ -960,7 +963,7 @@ export default function GameTable({
           </div>
         )}
 
-        {/* PLAYER SEATS — opponents only; local player is rendered above the bottom zone */}
+        {/* PLAYER SEATS — opponents only; local player is rendered separately below */}
         {players.map((player) => {
           const myPlayerLocal = players.find((p) => p.id === myPlayerId);
           const mySeatIdx = myPlayerLocal?.seatIndex ?? 0;
@@ -972,7 +975,7 @@ export default function GameTable({
           const cardCount = hands[player.id]?.length ?? 0;
           const trickCard = getTrickCard(player.id);
           const isLocalPlayer = player.id === myPlayerId;
-          // Skip local player here — rendered anchored to bottom zone below
+          // Skip local player here — rendered at a fixed offset above card strip below
           if (isLocalPlayer) return null;
           return (
             <div key={player.id} className="absolute" style={{ left:`${x}%`, top:`${y}%`, transform:'translate(-50%, -50%)', zIndex: 1 }}>
@@ -981,10 +984,52 @@ export default function GameTable({
           );
         })}
 
+        {/* LOCAL PLAYER SEAT — placed at a fixed pixel offset above the card strip.
+            Using tableDims.h avoids breakage at different browser zoom levels. */}
+        {(() => {
+          const localPlayer = players.find((p) => p.id === myPlayerId);
+          if (!localPlayer) return null;
+          const isLocalCurrentTurn = currentTurnPlayerId === myPlayerId;
+          const localTrickCard = getTrickCard(myPlayerId);
+          // Bottom offset: card hand (~90px) + action bar (~50px) + gap (~20px).
+          // Scale with tableDims.h so it works at any zoom (larger offset on larger screens).
+          const baseBottom = isMobile && isLandscape ? 0.20 : isMobile ? 0.22 : 0.24;
+          const minBottom = isMobile && isLandscape ? 110 : isMobile ? 140 : 165;
+          const localBottomPx = Math.max(minBottom, Math.round(tableDims.h * baseBottom));
+          return (
+            <div key="local-player-seat" style={{
+              position: 'absolute', bottom: localBottomPx, left: '50%',
+              transform: 'translate(-50%, 0)', zIndex: 5,
+            }}>
+              <PlayerSeat
+                player={localPlayer}
+                cardCount={myHand.length}
+                isCurrentTurn={isLocalCurrentTurn}
+                isLocalPlayer={true}
+                isPartner={revealedPartnerIds.includes(myPlayerId)}
+                isRevealed={revealedPartnerIds.includes(myPlayerId)}
+                isBidWinner={myPlayerId === bidWinnerId && !!bidWinnerId}
+                trickCard={localTrickCard}
+                position="bottom"
+                compact={isMobile}
+                extraCompact={isMobile && isLandscape}
+                displayPoints={getDisplayPoints(myPlayerId)}
+                teamId={getPlayerTeamId(myPlayerId)}
+                turnTimerEndsAt={isLocalCurrentTurn ? turnTimerEndsAt : null}
+                turnTimerTotalSeconds={turnTimerTotalSeconds}
+                showCombinedLabel={allPartnersRevealed && teamBIds.includes(myPlayerId)}
+                miniCardCount={myHand.length}
+              />
+            </div>
+          );
+        })()}
+
         {/* CENTER TABLE INFO */}
         <div style={{
           position: 'absolute', left: '50%',
-          top: isMobile && isLandscape ? '42%' : isMobile ? '38%' : '44%',
+          top: isMobile && isLandscape ? '42%'
+            : isMobile ? (isSmallViewport ? '28%' : '38%')
+            : (isSmallViewport ? '22%' : '44%'),
           transform: 'translate(-50%, -50%)',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           gap: isMobile ? 4 : 14, zIndex: 10, pointerEvents: 'none',
@@ -1067,11 +1112,6 @@ export default function GameTable({
         )}
 
         {/* BOTTOM ZONE */}
-        {(() => {
-          const localPlayer = players.find((p) => p.id === myPlayerId);
-          const isLocalCurrentTurn = currentTurnPlayerId === myPlayerId;
-          const localTrickCard = getTrickCard(myPlayerId);
-          return (
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100,
           background: 'linear-gradient(to top, rgba(0,0,0,.97) 60%, transparent 100%)',
@@ -1081,39 +1121,7 @@ export default function GameTable({
           paddingTop: isMobile && isLandscape ? 8 : isMobile ? 10 : 16,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           gap: isMobile && isLandscape ? 3 : 6,
-          overflow: 'visible',
         }}>
-          {/* LOCAL PLAYER AVATAR — anchored to top of this zone so it always floats
-              just above the card hand regardless of viewport size / browser zoom.
-              `bottom: 100%` positions the div's bottom edge at the zone's top edge. */}
-          {localPlayer && (
-            <div style={{
-              position: 'absolute', bottom: '100%', left: '50%',
-              transform: 'translateX(-50%)',
-              paddingBottom: isMobile ? 6 : 10,
-              zIndex: 200, pointerEvents: 'none',
-            }}>
-              <PlayerSeat
-                player={localPlayer}
-                cardCount={myHand.length}
-                isCurrentTurn={isLocalCurrentTurn}
-                isLocalPlayer={true}
-                isPartner={revealedPartnerIds.includes(myPlayerId)}
-                isRevealed={revealedPartnerIds.includes(myPlayerId)}
-                isBidWinner={myPlayerId === bidWinnerId && !!bidWinnerId}
-                trickCard={localTrickCard}
-                position="bottom"
-                compact={isMobile}
-                extraCompact={isMobile && isLandscape}
-                displayPoints={getDisplayPoints(myPlayerId)}
-                teamId={getPlayerTeamId(myPlayerId)}
-                turnTimerEndsAt={isLocalCurrentTurn ? turnTimerEndsAt : null}
-                turnTimerTotalSeconds={turnTimerTotalSeconds}
-                showCombinedLabel={allPartnersRevealed && teamBIds.includes(myPlayerId)}
-                miniCardCount={myHand.length}
-              />
-            </div>
-          )}
           {showDealAnim && <DealHandReveal cards={myHand} revealedCount={dealRevealedCount} />}
           {!showDealAnim && (
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, paddingTop: isMobile && isLandscape ? 4 : 8, width:'100%' }}>
@@ -1322,8 +1330,6 @@ export default function GameTable({
             </div>
           </div>
         </div>
-          );
-        })()}
 
       </div>
 
