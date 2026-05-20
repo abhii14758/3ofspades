@@ -253,6 +253,9 @@ function PlayerSeat({
         {isPartner && isRevealed && !isBidWinner && (
           <div style={{ fontSize: 10, color: '#6ee7b7' }}>🤝 Partner</div>
         )}
+        {showCombinedLabel && !isPartner && !isBidWinner && (
+          <div style={{ fontSize: 10, color: '#a5b4fc' }}>🤝 Ally</div>
+        )}
         {player.isSubstitutedBot && (
           <div style={{ fontSize: 8, color: '#fbbf24' }}>BOT</div>
         )}
