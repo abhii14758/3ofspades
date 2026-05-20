@@ -102,10 +102,10 @@ export default function Scoreboard({
                 transition={{ type: 'spring', stiffness: 340, damping: 32 }}
                 className={clsx(
                   'fixed z-50 bg-slate-900 border-slate-700 shadow-2xl flex flex-col overflow-hidden',
-                  // Mobile: bottom sheet
-                  'inset-x-0 bottom-0 max-h-[80vh] rounded-t-2xl border-t',
-                  // Desktop: right side panel
-                  'sm:inset-x-auto sm:bottom-auto sm:top-0 sm:right-0 sm:h-screen sm:max-h-full sm:w-80 sm:rounded-none sm:border-t-0 sm:border-l',
+                  // Mobile: bottom sheet — explicit h for flex-1 scroll to work
+                  'inset-x-0 bottom-0 h-[80vh] rounded-t-2xl border-t',
+                  // Desktop: right side panel — wider for readability at zoom levels
+                  'sm:inset-x-auto sm:bottom-auto sm:top-0 sm:right-0 sm:h-screen sm:max-h-full sm:w-96 sm:rounded-none sm:border-t-0 sm:border-l',
                 )}
               >
               {/* Gold accent */}
@@ -130,7 +130,7 @@ export default function Scoreboard({
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))', touchAction: 'pan-y', overscrollBehavior: 'contain' } as React.CSSProperties}>
                 {/* Top 3 leaderboard */}
                 {Object.keys(playerTotals).length > 0 && (() => {
                   const top3 = [...players]

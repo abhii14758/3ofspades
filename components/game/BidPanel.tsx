@@ -86,7 +86,7 @@ export default function BidPanel({
       </div>
 
       {/* Bid history */}
-      <div className="mx-4 mb-3 max-h-[4.5rem] sm:max-h-28 overflow-y-auto rounded-xl bg-slate-800/70 border border-slate-700/40 divide-y divide-slate-700/30 scroll-smooth">
+      <div className="mx-4 mb-3 max-h-32 sm:max-h-40 overflow-y-auto rounded-xl bg-slate-800/70 border border-slate-700/40 divide-y divide-slate-700/30 scroll-smooth" style={{ touchAction: 'pan-y' }}>
         {bids.length === 0 ? (
           <p className="text-xs text-slate-500 text-center py-2">No bids placed yet</p>
         ) : (
