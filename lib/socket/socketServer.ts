@@ -77,6 +77,9 @@ const dealTimers = new Map<string, NodeJS.Timeout>();
 /** Per-room timers that delay advancing to the next trick after a trick completes. */
 const trickClearTimers = new Map<string, NodeJS.Timeout>();
 
+/** Tracks which playerIds pressed ESC (blackout) per room — reset on reveal. */
+const blackoutVoters = new Map<string, Set<string>>();
+
 /**
  * Computes how long (ms) the server waits before transitioning dealing → bidding.
  * Mirrors client DealAnimation: ROUND_INTERVAL(500ms) × cardsPerPlayer rounds + buffer.
@@ -131,6 +134,7 @@ function cleanupRoomTimers(roomId: string): void {
   if (trickClear) { clearTimeout(trickClear); trickClearTimers.delete(roomId); }
 
   roomTeamTotals.delete(roomId);
+  blackoutVoters.delete(roomId);
 }
 
 // ─── ID generators ────────────────────────────────────────────────────────────
@@ -893,10 +897,6 @@ export function setupSocketServer(io: Server): void {
         socket.emit('room:error', { message: 'Only the host can remove players' });
         return;
       }
-      if (room.gameState) {
-        socket.emit('room:error', { message: 'Cannot remove players during a game' });
-        return;
-      }
       if (payload.targetPlayerId === room.hostId) {
         socket.emit('room:error', { message: 'Host cannot kick themselves' });
         return;
@@ -915,25 +915,35 @@ export function setupSocketServer(io: Server): void {
         disconnectTimers.delete(payload.targetPlayerId);
       }
 
-      // Remove from room
-      room.players = room.players.filter((p) => p.id !== payload.targetPlayerId);
-
-      // Notify the kicked player
+      // Notify the kicked player before modifying their state
       if (targetPlayer.socketId) {
         io.to(targetPlayer.socketId).emit('room:kicked', {
           reason: 'You were removed from the room by the host',
         });
-        // Remove their socket→player mapping
-        for (const [sid, info] of socketToPlayer.entries()) {
-          if (info.playerId === payload.targetPlayerId) {
+        for (const [sid, sInfo] of socketToPlayer.entries()) {
+          if (sInfo.playerId === payload.targetPlayerId) {
             socketToPlayer.delete(sid);
             break;
           }
         }
       }
 
-      // Notify everyone else
-      io.to(payload.roomId).emit('room:updated', { room: getSafeRoom(room) });
+      if (room.gameState) {
+        // Game in progress — convert to substituted bot so game never stalls
+        targetPlayer.type = 'bot';
+        targetPlayer.isSubstitutedBot = true;
+        targetPlayer.status = 'playing';
+        targetPlayer.socketId = undefined;
+        // If it's their turn, schedule bot play immediately
+        if (room.gameState.currentTurnPlayerId === payload.targetPlayerId) {
+          scheduleAutoPlayIfNeeded(io, room);
+        }
+        io.to(payload.roomId).emit('game:stateUpdate', { gameState: getSafeGameState(room.gameState) });
+      } else {
+        // Lobby — fully remove
+        room.players = room.players.filter((p) => p.id !== payload.targetPlayerId);
+        io.to(payload.roomId).emit('room:updated', { room: getSafeRoom(room) });
+      }
     });
 
     // ── game:start ────────────────────────────────────────────────────────
@@ -1438,7 +1448,21 @@ export function setupSocketServer(io: Server): void {
       if (!info || info.roomId !== roomId) return;
       const room = rooms.get(roomId);
       if (!room) return;
+
+      // Track who pressed ESC
+      if (!blackoutVoters.has(roomId)) blackoutVoters.set(roomId, new Set());
+      blackoutVoters.get(roomId)!.add(info.playerId);
+
+      // Broadcast blackout to everyone
       io.to(roomId).emit('room:blackout');
+
+      // Send count+names to the host
+      const voters = blackoutVoters.get(roomId)!;
+      const names = [...voters].map(pid => room.players.find(p => p.id === pid)?.name ?? pid);
+      const hostPlayer = room.players.find(p => p.id === room.hostId);
+      if (hostPlayer?.socketId) {
+        io.to(hostPlayer.socketId).emit('room:blackoutCount', { count: voters.size, names });
+      }
     });
 
     // ── room:blackoutReveal ───────────────────────────────────────────────
@@ -1447,6 +1471,9 @@ export function setupSocketServer(io: Server): void {
       if (!info || info.roomId !== roomId) return;
       const room = rooms.get(roomId);
       if (!room) return;
+
+      // Clear voter tracking on reveal
+      blackoutVoters.delete(roomId);
       io.to(roomId).emit('room:blackoutReveal');
     });
 

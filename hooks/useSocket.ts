@@ -292,6 +292,10 @@ export function useSocket() {
       gameStore.setBlackout(false);
     });
 
+    socket.on('room:blackoutCount', ({ count, names }: { count: number; names: string[] }) => {
+      gameStore.setBlackoutCount(count, names);
+    });
+
     socket.on('game:nextRoundReady', () => {
       // Server started next round — gameState will be updated via game:started
     });
@@ -333,6 +337,7 @@ export function useSocket() {
       socket.off('game:nextRoundReady');
       socket.off('room:blackout');
       socket.off('room:blackoutReveal');
+      socket.off('room:blackoutCount');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -24,10 +24,13 @@ interface GameStore {
   showWinner: boolean;
   turnTimerEndsAt: number | null;
   isBlackout: boolean;
+  blackoutCount: number;
+  blackoutVoterNames: string[];
 
   // Setters driven by socket events
   setGameState: (state: GameState) => void;
   setBlackout: (on: boolean) => void;
+  setBlackoutCount: (count: number, names: string[]) => void;
   setMyHand: (cards: Card[]) => void;
   setMyCalledCards: (cards: Card[]) => void;
   setMyCalledCardSlots: (slots: CalledCardSlot[]) => void;
@@ -73,6 +76,8 @@ const initialState = {
   showWinner: false,
   turnTimerEndsAt: null as number | null,
   isBlackout: false,
+  blackoutCount: 0,
+  blackoutVoterNames: [] as string[],
 };
 
 export const useGameStore = create<GameStore>()((set, get) => ({
@@ -84,7 +89,9 @@ export const useGameStore = create<GameStore>()((set, get) => ({
 
   setGameState: (state) => set({ gameState: state }),
 
-  setBlackout: (on) => set({ isBlackout: on }),
+  setBlackout: (on) => set({ isBlackout: on, ...(on ? {} : { blackoutCount: 0, blackoutVoterNames: [] }) }),
+
+  setBlackoutCount: (count, names) => set({ blackoutCount: count, blackoutVoterNames: names }),
 
   setMyHand: (cards) => set({ myHand: cards }),
 

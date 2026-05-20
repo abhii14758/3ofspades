@@ -524,6 +524,8 @@ export default function GameTable({
   const myCalledCardSlots = useGameStore((s) => s.myCalledCardSlots);
   const isBlackout = useGameStore((s) => s.isBlackout);
   const setBlackout = useGameStore((s) => s.setBlackout);
+  const blackoutCount = useGameStore((s) => s.blackoutCount);
+  const blackoutVoterNames = useGameStore((s) => s.blackoutVoterNames);
   const tableRef = useRef<HTMLDivElement>(null);
 
   const [tableDims, setTableDims] = useState({ w: 860, h: 540 });
@@ -980,6 +982,27 @@ export default function GameTable({
           return (
             <div key={player.id} className="absolute" style={{ left:`${x}%`, top:`${y}%`, transform:'translate(-50%, -50%)', zIndex: 1 }}>
               <PlayerSeat player={player} cardCount={cardCount} isCurrentTurn={isCurrentTurn} isLocalPlayer={false} isPartner={isPartner} isRevealed={isPartner} isBidWinner={player.id === bidWinnerId && !!bidWinnerId} trickCard={trickCard} position="bottom" compact={isMobile} extraCompact={isMobile && isLandscape} displayPoints={getDisplayPoints(player.id)} teamId={getPlayerTeamId(player.id)} turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null} turnTimerTotalSeconds={turnTimerTotalSeconds} showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)} miniCardCount={hands[player.id]?.length ?? 0} />
+              {/* Host kick button — only shown to host, not for bots */}
+              {myPlayer?.isHost && player.type !== 'bot' && (
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Kick ${player.name}? A bot will take their seat.`)) {
+                      socketEmit.kickPlayer(gameState.roomId, player.id);
+                    }
+                  }}
+                  title={`Kick ${player.name}`}
+                  style={{
+                    position: 'absolute', top: -4, right: -4,
+                    width: 18, height: 18, borderRadius: '50%',
+                    background: 'rgba(220,38,38,0.85)', border: '1px solid rgba(239,68,68,0.6)',
+                    color: '#fff', fontSize: 9, fontWeight: 900, lineHeight: 1,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', zIndex: 10,
+                  }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
           );
         })}
@@ -1340,7 +1363,14 @@ export default function GameTable({
       {showPartnerSelector && (
         <PartnerSelector trumpSuit={trumpSuit!} myHand={myHand} partnerCount={partnerCount} deckCount={deckCount} onSelect={(slots) => onSelectPartners!(slots)} />
       )}
-      <BlackoutOverlay visible={isBlackout} onReveal={() => socketEmit.blackoutReveal(gameState.roomId)} />
+      <BlackoutOverlay
+        visible={isBlackout}
+        onReveal={() => socketEmit.blackoutReveal(gameState.roomId)}
+        isHost={myPlayer?.isHost ?? false}
+        blackoutCount={blackoutCount}
+        blackoutVoterNames={blackoutVoterNames}
+        totalPlayers={players.length}
+      />
     </div>
   );
 }
