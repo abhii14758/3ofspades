@@ -79,23 +79,26 @@ function getSeatPosition(
   totalSeats: number,
   layout: 'desktop' | 'portrait' | 'landscape' = 'desktop'
 ): { x: number; y: number } {
+  // Seat 0 = local player (always bottom-center).
+  // y values for seat 0 are intentionally pulled up from the felt edge so
+  // the avatar doesn't hide behind the card-hand strip at the bottom.
   const SEAT_MAPS: Record<number, Array<[number, number]>> = {
     4: [
-      [50, 92], // 0 local player bottom (not rendered as seat)
+      [50, 82], // 0 local player bottom (raised above card strip)
       [8, 50],  // 1 left-mid
       [50, 12], // 2 top-center
       [92, 50], // 3 right-mid
     ],
     6: [
-      [50, 92], // 0 local player
-      [10, 50], // 1 left-mid
+      [50, 82], // 0 local player
+      [10, 58], // 1 left-mid
       [22, 18], // 2 top-left
       [50, 14], // 3 top-center
       [78, 18], // 4 top-right
-      [90, 50], // 5 right-mid
+      [90, 58], // 5 right-mid
     ],
     8: [
-      [50, 92], // 0 local
+      [50, 82], // 0 local
       [10, 68], // 1 bottom-left
       [8, 40],  // 2 mid-left
       [22, 16], // 3 top-left
@@ -105,7 +108,7 @@ function getSeatPosition(
       [90, 68], // 7 bottom-right
     ],
     10: [
-      [50, 92], // 0 local
+      [50, 82], // 0 local (raised)
       [20, 82], // 1 bottom-left
       [8,  58], // 2 mid-left
       [8,  32], // 3 top-left
@@ -120,13 +123,13 @@ function getSeatPosition(
 
   const LANDSCAPE_SEAT_MAPS: Record<number, Array<[number, number]>> = {
     4: [
-      [50, 92],
+      [50, 80], // 0 local (raised in landscape — card strip is below)
       [93, 45],
       [50, 10],
       [7, 45],
     ],
     6: [
-      [50, 92],
+      [50, 80], // 0 local
       [93, 38],
       [20, 16],
       [50, 10],
@@ -134,7 +137,7 @@ function getSeatPosition(
       [93, 62],
     ],
     8: [
-      [50, 92],
+      [50, 80], // 0 local (raised)
       [93, 28],
       [20, 14],
       [40, 10],
@@ -144,7 +147,7 @@ function getSeatPosition(
       [93, 72],
     ],
     10: [
-      [50, 92],
+      [50, 80], // 0 local (raised)
       [93, 20], [22, 12], [38, 10], [50, 8], [62, 10], [78, 12], [93, 36], [93, 58], [93, 76],
     ],
   };
@@ -969,10 +972,9 @@ export default function GameTable({
           const cardCount = hands[player.id]?.length ?? 0;
           const trickCard = getTrickCard(player.id);
           const isLocalPlayer = player.id === myPlayerId;
-          if (isLocalPlayer) return null;
           return (
-            <div key={player.id} className="absolute" style={{ left:`${x}%`, top:`${y}%`, transform:'translate(-50%, -50%)', zIndex: 1 }}>
-              <PlayerSeat player={player} cardCount={cardCount} isCurrentTurn={isCurrentTurn} isLocalPlayer={false} isPartner={isPartner} isRevealed={isPartner} isBidWinner={player.id === bidWinnerId && !!bidWinnerId} trickCard={trickCard} position="bottom" compact={isMobile} extraCompact={isMobile && isLandscape} displayPoints={getDisplayPoints(player.id)} teamId={getPlayerTeamId(player.id)} turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null} turnTimerTotalSeconds={turnTimerTotalSeconds} showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)} miniCardCount={hands[player.id]?.length ?? 0} />
+            <div key={player.id} className="absolute" style={{ left:`${x}%`, top:`${y}%`, transform:'translate(-50%, -50%)', zIndex: isLocalPlayer ? 2 : 1 }}>
+              <PlayerSeat player={player} cardCount={isLocalPlayer ? myHand.length : cardCount} isCurrentTurn={isCurrentTurn} isLocalPlayer={isLocalPlayer} isPartner={isPartner} isRevealed={isPartner} isBidWinner={player.id === bidWinnerId && !!bidWinnerId} trickCard={trickCard} position="bottom" compact={isMobile} extraCompact={isMobile && isLandscape} displayPoints={getDisplayPoints(player.id)} teamId={getPlayerTeamId(player.id)} turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null} turnTimerTotalSeconds={turnTimerTotalSeconds} showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)} miniCardCount={isLocalPlayer ? myHand.length : (hands[player.id]?.length ?? 0)} />
             </div>
           );
         })}
