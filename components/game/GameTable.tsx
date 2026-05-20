@@ -960,7 +960,7 @@ export default function GameTable({
           </div>
         )}
 
-        {/* PLAYER SEATS */}
+        {/* PLAYER SEATS — opponents only; local player is rendered above the bottom zone */}
         {players.map((player) => {
           const myPlayerLocal = players.find((p) => p.id === myPlayerId);
           const mySeatIdx = myPlayerLocal?.seatIndex ?? 0;
@@ -972,15 +972,11 @@ export default function GameTable({
           const cardCount = hands[player.id]?.length ?? 0;
           const trickCard = getTrickCard(player.id);
           const isLocalPlayer = player.id === myPlayerId;
-          // Local player seat: anchor from BOTTOM so it always sits above the card-hand strip.
-          // Other seats use top-% positioning relative to the oval.
-          const localBottomPx = isMobile && isLandscape ? 130 : isMobile ? 200 : 270;
-          const seatStyle: React.CSSProperties = isLocalPlayer
-            ? { position:'absolute', left:'50%', bottom: localBottomPx, top:'auto', transform:'translate(-50%, 0)', zIndex: 5 }
-            : { position:'absolute', left:`${x}%`, top:`${y}%`, transform:'translate(-50%, -50%)', zIndex: 1 };
+          // Skip local player here — rendered anchored to bottom zone below
+          if (isLocalPlayer) return null;
           return (
-            <div key={player.id} style={seatStyle}>
-              <PlayerSeat player={player} cardCount={isLocalPlayer ? myHand.length : cardCount} isCurrentTurn={isCurrentTurn} isLocalPlayer={isLocalPlayer} isPartner={isPartner} isRevealed={isPartner} isBidWinner={player.id === bidWinnerId && !!bidWinnerId} trickCard={trickCard} position="bottom" compact={isMobile} extraCompact={isMobile && isLandscape} displayPoints={getDisplayPoints(player.id)} teamId={getPlayerTeamId(player.id)} turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null} turnTimerTotalSeconds={turnTimerTotalSeconds} showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)} miniCardCount={isLocalPlayer ? myHand.length : (hands[player.id]?.length ?? 0)} />
+            <div key={player.id} className="absolute" style={{ left:`${x}%`, top:`${y}%`, transform:'translate(-50%, -50%)', zIndex: 1 }}>
+              <PlayerSeat player={player} cardCount={cardCount} isCurrentTurn={isCurrentTurn} isLocalPlayer={false} isPartner={isPartner} isRevealed={isPartner} isBidWinner={player.id === bidWinnerId && !!bidWinnerId} trickCard={trickCard} position="bottom" compact={isMobile} extraCompact={isMobile && isLandscape} displayPoints={getDisplayPoints(player.id)} teamId={getPlayerTeamId(player.id)} turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null} turnTimerTotalSeconds={turnTimerTotalSeconds} showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)} miniCardCount={hands[player.id]?.length ?? 0} />
             </div>
           );
         })}
@@ -1071,17 +1067,53 @@ export default function GameTable({
         )}
 
         {/* BOTTOM ZONE */}
+        {(() => {
+          const localPlayer = players.find((p) => p.id === myPlayerId);
+          const isLocalCurrentTurn = currentTurnPlayerId === myPlayerId;
+          const localTrickCard = getTrickCard(myPlayerId);
+          return (
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 100,
           background: 'linear-gradient(to top, rgba(0,0,0,.97) 60%, transparent 100%)',
           paddingLeft: isMobile ? 8 : 20,
           paddingRight: isMobile ? 8 : 20,
           paddingBottom: isMobile ? 6 : 12,
-          // Top padding creates the gradient "fade in" zone — keeps avatar above the black area
           paddingTop: isMobile && isLandscape ? 8 : isMobile ? 10 : 16,
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           gap: isMobile && isLandscape ? 3 : 6,
+          overflow: 'visible',
         }}>
+          {/* LOCAL PLAYER AVATAR — anchored to top of this zone so it always floats
+              just above the card hand regardless of viewport size / browser zoom.
+              `bottom: 100%` positions the div's bottom edge at the zone's top edge. */}
+          {localPlayer && (
+            <div style={{
+              position: 'absolute', bottom: '100%', left: '50%',
+              transform: 'translateX(-50%)',
+              paddingBottom: isMobile ? 6 : 10,
+              zIndex: 200, pointerEvents: 'none',
+            }}>
+              <PlayerSeat
+                player={localPlayer}
+                cardCount={myHand.length}
+                isCurrentTurn={isLocalCurrentTurn}
+                isLocalPlayer={true}
+                isPartner={revealedPartnerIds.includes(myPlayerId)}
+                isRevealed={revealedPartnerIds.includes(myPlayerId)}
+                isBidWinner={myPlayerId === bidWinnerId && !!bidWinnerId}
+                trickCard={localTrickCard}
+                position="bottom"
+                compact={isMobile}
+                extraCompact={isMobile && isLandscape}
+                displayPoints={getDisplayPoints(myPlayerId)}
+                teamId={getPlayerTeamId(myPlayerId)}
+                turnTimerEndsAt={isLocalCurrentTurn ? turnTimerEndsAt : null}
+                turnTimerTotalSeconds={turnTimerTotalSeconds}
+                showCombinedLabel={allPartnersRevealed && teamBIds.includes(myPlayerId)}
+                miniCardCount={myHand.length}
+              />
+            </div>
+          )}
           {showDealAnim && <DealHandReveal cards={myHand} revealedCount={dealRevealedCount} />}
           {!showDealAnim && (
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, paddingTop: isMobile && isLandscape ? 4 : 8, width:'100%' }}>
@@ -1290,6 +1322,8 @@ export default function GameTable({
             </div>
           </div>
         </div>
+          );
+        })()}
 
       </div>
 
