@@ -224,7 +224,7 @@ export default function HomePage() {
             🔑 Join Room
           </Link>
         </motion.div>
-        <p className="text-slate-700 text-xs">Works fully offline — no account, no internet needed</p>
+        <p className="text-slate-700 text-xs">Create a free account to play and track your stats</p>
       </section>
     </div>
   );
