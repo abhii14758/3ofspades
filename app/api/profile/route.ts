@@ -21,6 +21,9 @@ export async function GET() {
     avatarType: user.avatarType,
     presetAvatarId: user.presetAvatarId,
     equippedFrameId: user.equippedFrameId,
+    equippedCardBackId: user.equippedCardBackId,
+    equippedTableThemeId: user.equippedTableThemeId,
+    equippedEmoteIds: user.equippedEmoteIds,
     createdAt: user.createdAt,
     stats: user.stats ?? {
       gamesPlayed: 0,
@@ -38,9 +41,13 @@ export async function PATCH(req: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const { displayName, bio, presetAvatarId, avatarType, avatarUrl, equippedFrameId } = body;
+  const { displayName, bio, presetAvatarId, avatarType, avatarUrl, equippedFrameId, equippedCardBackId, equippedTableThemeId, equippedEmoteIds } = body;
 
-  const data: Record<string, string> = {};
+  if (equippedEmoteIds !== undefined && (!Array.isArray(equippedEmoteIds) || equippedEmoteIds.length > 8)) {
+    return NextResponse.json({ error: 'equippedEmoteIds must be an array with max 8 items' }, { status: 400 });
+  }
+
+  const data: Record<string, unknown> = {};
   if (displayName !== undefined) {
     if (displayName.trim().length < 2) return NextResponse.json({ error: 'Name too short' }, { status: 400 });
     if (displayName.trim().length > 20) return NextResponse.json({ error: 'Name too long' }, { status: 400 });
@@ -51,6 +58,9 @@ export async function PATCH(req: NextRequest) {
   if (avatarType !== undefined) data.avatarType = avatarType;
   if (avatarUrl !== undefined) data.avatarUrl = avatarUrl;
   if (equippedFrameId !== undefined) data.equippedFrameId = equippedFrameId;
+  if (equippedCardBackId !== undefined) data.equippedCardBackId = equippedCardBackId;
+  if (equippedTableThemeId !== undefined) data.equippedTableThemeId = equippedTableThemeId;
+  if (equippedEmoteIds !== undefined) data.equippedEmoteIds = equippedEmoteIds;
 
   const user = await prisma.user.update({
     where: { id: session.user.id },
@@ -61,5 +71,8 @@ export async function PATCH(req: NextRequest) {
     displayName: user.displayName,
     bio: user.bio,
     presetAvatarId: user.presetAvatarId,
+    equippedCardBackId: user.equippedCardBackId,
+    equippedTableThemeId: user.equippedTableThemeId,
+    equippedEmoteIds: user.equippedEmoteIds,
   });
 }

@@ -5,6 +5,10 @@ import Link from 'next/link';
 import AvatarDisplay from './AvatarDisplay';
 import { PRESET_AVATARS } from '@/config/avatars';
 import { FRAMES } from '@/config/frames';
+import { CARD_BACKS } from '@/config/cardBacks';
+import { TABLE_THEMES } from '@/config/tableThemes';
+import { ALL_EMOTES, MAX_EQUIPPED_EMOTES } from '@/config/emotes';
+import { useSettingsStore } from '@/store/settingsStore';
 
 interface Profile {
   id: string;
@@ -27,7 +31,7 @@ interface Profile {
 }
 
 export default function ProfileClient({ userId, userEmail }: { userId: string; userEmail: string }) {
-  const [tab, setTab] = useState<'profile' | 'stats' | 'security'>('profile');
+  const [tab, setTab] = useState<'profile' | 'cosmetics' | 'stats' | 'settings' | 'security'>('profile');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,7 +47,12 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [equippedFrameId, setEquippedFrameId] = useState('none');
+  const [equippedCardBackId, setEquippedCardBackId] = useState('default');
+  const [equippedTableThemeId, setEquippedTableThemeId] = useState('default');
+  const [equippedEmoteIds, setEquippedEmoteIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { soundVolume, musicVolume, muted, language, setSoundVolume, setMusicVolume, setMuted, setLanguage } = useSettingsStore();
 
   // Security
   const [currentPassword, setCurrentPassword] = useState('');
@@ -66,6 +75,9 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
         setAvatarType(data.avatarType ?? 'preset');
             setUploadedAvatarUrl(data.avatarUrl ?? '');
             setEquippedFrameId(data.equippedFrameId ?? 'none');
+            setEquippedCardBackId(data.equippedCardBackId ?? 'default');
+            setEquippedTableThemeId(data.equippedTableThemeId ?? 'default');
+            setEquippedEmoteIds(data.equippedEmoteIds ?? []);
             setLoading(false);
       });
   }, []);
@@ -77,7 +89,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
     const res = await fetch('/api/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayName, bio, presetAvatarId, avatarType, avatarUrl: uploadedAvatarUrl, equippedFrameId }),
+      body: JSON.stringify({ displayName, bio, presetAvatarId, avatarType, avatarUrl: uploadedAvatarUrl, equippedFrameId, equippedCardBackId, equippedTableThemeId, equippedEmoteIds }),
     });
     const data = await res.json();
     setSaving(false);
@@ -211,7 +223,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
 
         {/* Tabs */}
         <div className="flex bg-slate-800/60 rounded-xl p-1 mb-6 border border-slate-700/50">
-          {(['profile', 'stats', 'security'] as const).map(t => (
+          {(['profile', 'cosmetics', 'stats', 'settings', 'security'] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -219,7 +231,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
                 tab === t ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              {t === 'profile' ? '👤 Profile' : t === 'stats' ? '📊 Stats' : '🔒 Security'}
+              {t === 'profile' ? '👤 Profile' : t === 'cosmetics' ? '🎨 Cosmetics' : t === 'stats' ? '📊 Stats' : t === 'settings' ? '⚙️ Settings' : '🔒 Security'}
             </button>
           ))}
         </div>
@@ -356,6 +368,183 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
             >
               {saving ? 'Saving…' : 'Save Changes'}
             </button>
+          </div>
+        )}
+
+        {/* Cosmetics Tab */}
+        {tab === 'cosmetics' && (
+          <div className="space-y-6">
+            {/* Card Backs */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-1">Card Back</h2>
+              <p className="text-xs text-slate-500 mb-3">Pick the design shown on the back of your cards</p>
+              <div className="grid grid-cols-4 gap-3">
+                {CARD_BACKS.map(cb => {
+                  const selected = equippedCardBackId === cb.id;
+                  return (
+                    <button
+                      key={cb.id}
+                      onClick={() => setEquippedCardBackId(cb.id)}
+                      title={cb.label}
+                      className={`aspect-[3/4] rounded-xl bg-gradient-to-br ${cb.gradient} flex flex-col items-center justify-center text-2xl transition-all ${
+                        selected
+                          ? 'ring-2 ring-violet-400 ring-offset-2 ring-offset-slate-900 scale-110'
+                          : 'opacity-70 hover:opacity-100 hover:scale-105'
+                      }`}
+                    >
+                      <span>{cb.pattern}</span>
+                      <span className="text-[10px] text-white/70 mt-1 font-medium">{cb.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Table Themes */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-1">Table Theme</h2>
+              <p className="text-xs text-slate-500 mb-3">Choose the felt color for your game table</p>
+              <div className="grid grid-cols-6 gap-3">
+                {TABLE_THEMES.map(theme => {
+                  const selected = equippedTableThemeId === theme.id;
+                  return (
+                    <button
+                      key={theme.id}
+                      onClick={() => setEquippedTableThemeId(theme.id)}
+                      title={theme.label}
+                      className={`aspect-square rounded-xl bg-gradient-to-br ${theme.bg} flex flex-col items-center justify-center transition-all ${
+                        selected
+                          ? 'ring-2 ring-violet-400 ring-offset-2 ring-offset-slate-900 scale-110'
+                          : 'opacity-70 hover:opacity-100 hover:scale-105'
+                      }`}
+                    >
+                      <span className="text-[10px] text-white/80 font-medium mt-1">{theme.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Emote Selector */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-1">Quick Emotes</h2>
+              <p className="text-xs text-slate-500 mb-3">Select up to {MAX_EQUIPPED_EMOTES} emotes for in-game quick chat</p>
+              <p className="text-xs text-slate-400 mb-3 font-semibold">{equippedEmoteIds.length}/{MAX_EQUIPPED_EMOTES} selected</p>
+              <div className="grid grid-cols-4 gap-2">
+                {ALL_EMOTES.map(emote => {
+                  const selected = equippedEmoteIds.includes(emote.id);
+                  const atLimit = !selected && equippedEmoteIds.length >= MAX_EQUIPPED_EMOTES;
+                  return (
+                    <button
+                      key={emote.id}
+                      onClick={() => {
+                        if (selected) {
+                          setEquippedEmoteIds(ids => ids.filter(id => id !== emote.id));
+                        } else if (!atLimit) {
+                          setEquippedEmoteIds(ids => [...ids, emote.id]);
+                        }
+                      }}
+                      disabled={atLimit}
+                      title={emote.label}
+                      className={`flex flex-col items-center justify-center py-3 rounded-lg border transition-all ${
+                        selected
+                          ? 'border-violet-500 bg-violet-600/20 text-white scale-105'
+                          : atLimit
+                          ? 'border-slate-700 bg-slate-800/50 text-slate-600 cursor-not-allowed'
+                          : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-violet-500/50 hover:bg-slate-700'
+                      }`}
+                    >
+                      <span className="text-xl">{emote.emoji}</span>
+                      <span className="text-[10px] mt-1 font-medium text-slate-400">{emote.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {error && (
+              <p className="text-red-400 text-sm bg-red-950/30 border border-red-800/30 rounded-lg px-3 py-2">
+                {error}
+              </p>
+            )}
+            {msg && (
+              <p className="text-green-400 text-sm bg-green-950/30 border border-green-800/30 rounded-lg px-3 py-2">
+                {msg}
+              </p>
+            )}
+            <button
+              onClick={handleSaveProfile}
+              disabled={saving}
+              className="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-sm transition-colors"
+            >
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {tab === 'settings' && (
+          <div className="space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Audio</h2>
+              <div className="space-y-5">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm text-slate-300">Sound Volume</label>
+                    <span className="text-xs text-slate-500">{soundVolume}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={soundVolume}
+                    onChange={e => setSoundVolume(Number(e.target.value))}
+                    className="w-full accent-violet-500"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm text-slate-300">Music Volume</label>
+                    <span className="text-xs text-slate-500">{musicVolume}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={musicVolume}
+                    onChange={e => setMusicVolume(Number(e.target.value))}
+                    className="w-full accent-violet-500"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-slate-300">Mute All</label>
+                  <button
+                    onClick={() => setMuted(!muted)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      muted ? 'bg-red-600' : 'bg-slate-600'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        muted ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Language</h2>
+              <select
+                value={language}
+                onChange={e => setLanguage(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-500"
+              >
+                <option value="en">English</option>
+              </select>
+              <p className="text-xs text-slate-500 mt-1.5">More languages coming soon</p>
+            </div>
           </div>
         )}
 
