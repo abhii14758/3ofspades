@@ -756,6 +756,12 @@ function handlePlayCard(
  * Called once from server.ts during application startup.
  */
 export function setupSocketServer(io: Server): void {
+  // On startup, clear all activeRoomId values — server restart wipes in-memory
+  // game state, so any DB-tracked "active room" is now stale.
+  prisma.user.updateMany({ data: { activeRoomId: null } })
+    .then(r => { if (r.count > 0) console.log(`[socket] Cleared stale activeRoomId for ${r.count} user(s)`); })
+    .catch(err => console.error('[socket] Failed to clear stale activeRoomIds:', err));
+
   io.on('connection', (socket: Socket) => {
     // ── room:create ───────────────────────────────────────────────────────
     socket.on('room:create', (payload: CreateRoomPayload) => {
