@@ -1,12 +1,14 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useLobbyStore } from '@/store/lobbyStore';
 import { usePlayerStore } from '@/store/playerStore';
 import { useGameStore } from '@/store/gameStore';
 import { socketEmit, connectSocket, getSocket } from '@/lib/socket/socketClient';
+import AvatarDisplay from '@/components/profile/AvatarDisplay';
 import type { Player, RoomConfig, GamePreset } from '@/types';
 
 // ─── Clipboard helper (works on HTTP/LAN, not just HTTPS) ─────────────────────
@@ -31,19 +33,21 @@ async function copyToClipboard(text: string): Promise<void> {
 
 function PlayerAvatar({ player, isLocal }: { player: Player; isLocal: boolean }) {
   const isBot = player.type === 'bot';
+  if (isBot) {
+    return (
+      <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-lg bg-violet-800 text-violet-100">
+        🤖
+      </div>
+    );
+  }
   return (
-    <div
-      className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-lg ${
-        isLocal
-          ? 'bg-indigo-600 text-white ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900'
-          : isBot
-            ? 'bg-violet-800 text-violet-100'
-            : player.isHost
-              ? 'bg-amber-700 text-amber-100'
-              : 'bg-slate-700 text-slate-200'
-      }`}
-    >
-      {isBot ? '🤖' : player.name.charAt(0).toUpperCase()}
+    <div className={`shrink-0 shadow-lg rounded-full ${isLocal ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900' : ''}`}>
+      <AvatarDisplay
+        avatarType={player.avatarType ?? 'preset'}
+        avatarUrl={player.avatarUrl}
+        presetAvatarId={player.presetAvatarId ?? 'spade'}
+        size="md"
+      />
     </div>
   );
 }
@@ -64,19 +68,21 @@ function ConfigPill({ icon, label }: { icon: string; label: string }) {
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>();
   const router = useRouter();
+  const { data: session } = useSession();
 
   const { currentRoom, isConnected, allPlayersReady, clearRoom } = useLobbyStore();
-  const { playerId } = usePlayerStore();
+  const { playerId, presetAvatarId, avatarType, avatarUrl } = usePlayerStore();
   const { gameState } = useGameStore();
   const [copied, setCopied] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [joinName, setJoinName] = useState('');
+  const [joinName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState('');
   const [showConfigEdit, setShowConfigEdit] = useState(false);
   const [configDraft, setConfigDraft] = useState<Partial<RoomConfig>>({});
   const editNameRef = useRef<HTMLInputElement>(null);
+  const hasJoinedRef = useRef(false);
 
   const shareLink = typeof window !== 'undefined'
     ? `${window.location.origin}/room/${roomId}`
@@ -85,6 +91,15 @@ export default function RoomPage() {
   useEffect(() => {
     connectSocket();
   }, []);
+
+  // Auto-join when socket connects and we don't have a room yet
+  useEffect(() => {
+    if (!isConnected || currentRoom || hasJoinedRef.current) return;
+    hasJoinedRef.current = true;
+    const playerName = session?.user?.name ?? usePlayerStore.getState().playerName || 'Player';
+    setIsJoining(true);
+    socketEmit.joinRoom({ roomId, playerName, presetAvatarId, avatarType, avatarUrl });
+  }, [isConnected, currentRoom, roomId, session, presetAvatarId, avatarType, avatarUrl]);
 
   // Listen for host-terminated event
   useEffect(() => {
@@ -192,13 +207,6 @@ export default function RoomPage() {
 
   // ─── Loading state ──────────────────────────────────────────────────────────
   if (!room) {
-    const handleJoinViaLink = () => {
-      if (!joinName.trim()) return;
-      setIsJoining(true);
-      usePlayerStore.getState().setPlayerName(joinName.trim());
-      socketEmit.joinRoom({ roomId, playerName: joinName.trim() });
-    };
-
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
         <div className="text-center max-w-xs w-full">
@@ -209,33 +217,12 @@ export default function RoomPage() {
           >
             ♠
           </motion.div>
-          {isConnected ? (
-            <>
-              <p className="text-slate-200 font-semibold mb-1">Join Room</p>
-              <p className="text-slate-500 text-sm mb-5">
-                Enter your name to join <span className="font-mono text-slate-300">{roomId}</span>
-              </p>
-              <input
-                type="text"
-                placeholder="Your name"
-                value={joinName}
-                onChange={(e) => setJoinName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleJoinViaLink()}
-                className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 text-sm mb-3 outline-none focus:border-indigo-500"
-                autoFocus
-                maxLength={20}
-              />
-              <button
-                onClick={handleJoinViaLink}
-                disabled={!joinName.trim() || isJoining}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isJoining ? 'Joining…' : 'Join Game →'}
-              </button>
-            </>
-          ) : (
-            <p className="text-sm font-medium text-slate-400">Connecting to server…</p>
-          )}
+          <p className="text-slate-200 font-semibold mb-1">
+            {isConnected ? (isJoining ? 'Joining room…' : 'Connecting…') : 'Connecting to server…'}
+          </p>
+          <p className="text-slate-500 text-sm mb-5">
+            Room <span className="font-mono text-slate-300">{roomId}</span>
+          </p>
           {!isConnected && (
             <p className="text-xs text-yellow-500 mt-2">Reconnecting to server…</p>
           )}

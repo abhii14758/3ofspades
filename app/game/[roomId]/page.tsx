@@ -44,9 +44,20 @@ export default function GamePage() {
   useEffect(() => {
     const socket = connectSocket();
     const { playerId: storedPlayerId } = usePlayerStore.getState();
-    if (storedPlayerId && roomId && socket.connected) {
-      socket.emit('player:reconnect', { roomId, playerId: storedPlayerId });
+
+    const attemptReconnect = () => {
+      if (storedPlayerId && roomId) {
+        socket.emit('player:reconnect', { roomId, playerId: storedPlayerId });
+      }
+    };
+
+    if (socket.connected) {
+      attemptReconnect();
     }
+
+    // Also handle case where socket connects after mount
+    socket.on('connect', attemptReconnect);
+    return () => socket.off('connect', attemptReconnect);
   }, [roomId]);
 
   // Loading / reconnecting state

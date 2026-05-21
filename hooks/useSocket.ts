@@ -95,6 +95,13 @@ export function useSocket() {
 
     socket.on('game:stateSync', ({ gameState }: { gameState: GameState }) => {
       gameStore.setGameState(gameState);
+      // Navigate to game page if not already there (handles reconnect scenarios)
+      if (gameState.roomId && typeof window !== 'undefined') {
+        const currentPath = window.location.pathname;
+        if (!currentPath.startsWith('/game/')) {
+          router.push(`/game/${gameState.roomId}`);
+        }
+      }
     });
 
     socket.on('game:dealComplete', ({ gameState }: { gameState: GameState }) => {
@@ -306,6 +313,15 @@ export function useSocket() {
       }
     });
 
+    socket.on('room:hostTransferred', ({ newHostId, newHostName }: { newHostId: string; newHostName: string }) => {
+      const { playerId } = usePlayerStore.getState();
+      if (playerId === newHostId) {
+        toast.success(`You are now the host!`);
+      } else {
+        toast(`${newHostName} is now the host`, { icon: '👑' });
+      }
+    });
+
     // ------------------------------------------------------------------
     // Cleanup
     // ------------------------------------------------------------------
@@ -337,6 +353,7 @@ export function useSocket() {
       socket.off('room:blackout');
       socket.off('room:blackoutReveal');
       socket.off('room:blackoutCount');
+      socket.off('room:hostTransferred');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
