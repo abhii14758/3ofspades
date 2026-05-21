@@ -6,7 +6,7 @@ import type { GamePreset, RoomConfig } from '@/types';
 import { GAME_PRESETS } from '@/config/gameConfig';
 
 interface CreateRoomProps {
-  onSubmit: (roomName: string, playerName: string, config: RoomConfig) => void;
+  onSubmit: (roomName: string, config: RoomConfig) => void;
   isLoading?: boolean;
 }
 
@@ -186,8 +186,7 @@ const itemVariants = {
 
 export default function CreateRoom({ onSubmit, isLoading = false }: CreateRoomProps) {
   const [roomName, setRoomName] = useState('');
-  const [playerName, setPlayerName] = useState('');
-  const [errors, setErrors] = useState<{ roomName?: string; playerName?: string }>({});
+  const [errors, setErrors] = useState<{ roomName?: string }>({});
 
   const [preset, setPreset] = useState<GamePreset>('6p1d');
   const [turnTimerSeconds, setTurnTimerSeconds] = useState<number>(60);
@@ -195,14 +194,12 @@ export default function CreateRoom({ onSubmit, isLoading = false }: CreateRoomPr
   const [autoFillBots, setAutoFillBots] = useState(false);
 
   const selectedPresetCfg = GAME_PRESETS[preset];
-  const targetScore = selectedPresetCfg.totalRoundPoints * 2; // sensible default based on preset
+  const targetScore = selectedPresetCfg.totalRoundPoints * 2;
 
   const validate = () => {
     const e: typeof errors = {};
     if (!roomName.trim()) e.roomName = 'Room name is required';
     else if (roomName.trim().length < 2) e.roomName = 'At least 2 characters';
-    if (!playerName.trim()) e.playerName = 'Player name is required';
-    else if (playerName.trim().length < 2) e.playerName = 'At least 2 characters';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -210,7 +207,7 @@ export default function CreateRoom({ onSubmit, isLoading = false }: CreateRoomPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit(roomName.trim(), playerName.trim(), {
+      onSubmit(roomName.trim(), {
         preset,
         turnTimerSeconds,
         targetScore,
@@ -258,34 +255,6 @@ export default function CreateRoom({ onSubmit, isLoading = false }: CreateRoomPr
                 className="mt-1 text-xs text-red-400"
               >
                 {errors.roomName}
-              </motion.p>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* Player Name */}
-        <motion.div variants={itemVariants}>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">Your Name</label>
-          <input
-            type="text"
-            value={playerName}
-            onChange={(e) => {
-              setPlayerName(e.target.value);
-              setErrors((prev) => ({ ...prev, playerName: undefined }));
-            }}
-            placeholder="e.g. Akbar"
-            maxLength={20}
-            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-          />
-          <AnimatePresence>
-            {errors.playerName && (
-              <motion.p
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-1 text-xs text-red-400"
-              >
-                {errors.playerName}
               </motion.p>
             )}
           </AnimatePresence>
