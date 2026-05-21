@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import CreateRoom from '@/components/lobby/CreateRoom';
@@ -10,6 +10,7 @@ import JoinRoom from '@/components/lobby/JoinRoom';
 import { useLobbyStore } from '@/store/lobbyStore';
 import { usePlayerStore } from '@/store/playerStore';
 import { socketEmit } from '@/lib/socket/socketClient';
+import { useActiveGame } from '@/hooks/useActiveGame';
 
 function LobbyContent() {
   const searchParams = useSearchParams();
@@ -17,10 +18,23 @@ function LobbyContent() {
   const [activeTab, setActiveTab] = useState<'create' | 'join'>(initialTab);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { isConnected, error, setError } = useLobbyStore();
+  const { isConnected, error, setError, currentRoom } = useLobbyStore();
   const { setPlayerName, setAvatar, presetAvatarId, avatarType, avatarUrl, equippedFrameId } = usePlayerStore();
   const { data: session } = useSession();
+  const router = useRouter();
+  const { activeRoomId, loading: activeLoading } = useActiveGame();
   const playerName = session?.user?.name ?? 'Player';
+
+  // Auto-redirect to active game if one exists
+  useEffect(() => {
+    if (activeLoading || !activeRoomId) return;
+    if (!currentRoom) {
+      const timer = setTimeout(() => {
+        router.push(`/game/${activeRoomId}`);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeRoomId, activeLoading, currentRoom, router]);
 
   // Fetch profile once on mount to sync avatar info into store
   useEffect(() => {
@@ -142,6 +156,22 @@ function LobbyContent() {
             className="mb-4 p-3 rounded-xl bg-red-950/50 border border-red-700/60 text-red-300 text-sm"
           >
             {error}
+          </motion.div>
+        )}
+
+        {activeRoomId && !activeLoading && !currentRoom && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 rounded-xl bg-indigo-950/50 border border-indigo-700/60 text-indigo-200 text-sm flex items-center justify-between"
+          >
+            <span>You have an active game! Rejoining...</span>
+            <button
+              onClick={() => router.push(`/game/${activeRoomId}`)}
+              className="text-xs bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded-lg font-semibold"
+            >
+              Rejoin Now
+            </button>
           </motion.div>
         )}
 

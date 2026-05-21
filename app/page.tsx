@@ -1,8 +1,10 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useLobbyStore } from '@/store/lobbyStore';
 import { useSession, signOut } from 'next-auth/react';
+import { useActiveGame } from '@/hooks/useActiveGame';
 
 const container = {
   hidden: { opacity: 0 },
@@ -32,6 +34,8 @@ const CARD_VALUES = [
 export default function HomePage() {
   const { isConnected } = useLobbyStore();
   const { data: session } = useSession();
+  const { activeRoomId, loading: activeLoading } = useActiveGame();
+  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden">
@@ -72,6 +76,25 @@ export default function HomePage() {
           </span>
         </div>
       </div>
+
+      {/* ── Active game banner ── */}
+      {session?.user && activeRoomId && !activeLoading && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50">
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="px-5 py-2.5 rounded-xl bg-indigo-950/80 backdrop-blur border border-indigo-700/60 text-indigo-200 text-sm flex items-center gap-4 shadow-lg shadow-indigo-900/30"
+          >
+            <span>You have an active game!</span>
+            <button
+              onClick={() => router.push(`/game/${activeRoomId}`)}
+              className="text-xs bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg font-semibold transition-colors"
+            >
+              Rejoin Game
+            </button>
+          </motion.div>
+        </div>
+      )}
 
       {/* ── Hero ── */}
       <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 text-center">
