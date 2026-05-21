@@ -1,5 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
+import { prisma } from '@/lib/db/prisma';
 
 import type {
   Room,
@@ -713,6 +714,11 @@ function handlePlayCard(
           roundHistory: finalState.roundHistory,
           playerTotals: updatedPlayerTotals,
         });
+        // Clear activeRoomId for all human players now that game is over
+        const humanPlayers = room.players.filter(p => p.type === 'human' || p.isSubstitutedBot);
+        Promise.all(humanPlayers.map(p =>
+          prisma.user.update({ where: { id: p.id }, data: { activeRoomId: null } }).catch(console.error)
+        ));
       }
       // No auto-restart: host must emit game:nextRound to begin the next round
     } else {
@@ -792,6 +798,11 @@ export function setupSocketServer(io: Server): void {
       socketToPlayer.set(socket.id, { roomId, playerId });
       socket.join(roomId);
 
+      if (socket.data.userId) {
+        prisma.user.update({ where: { id: socket.data.userId }, data: { activeRoomId: roomId } })
+          .catch(err => console.error('[socket] Failed to set activeRoomId:', err));
+      }
+
       socket.emit('room:created', { room: getSafeRoom(room), playerId });
       } catch (err) {
         console.error('[room:create]', err);
@@ -835,6 +846,10 @@ export function setupSocketServer(io: Server): void {
           if (existingPlayer.isSubstitutedBot) { existingPlayer.type = 'human'; existingPlayer.isSubstitutedBot = false; }
           socketToPlayer.set(socket.id, { roomId: payload.roomId, playerId: existingPlayer.id });
           socket.join(payload.roomId);
+          if (socket.data.userId) {
+            prisma.user.update({ where: { id: socket.data.userId }, data: { activeRoomId: payload.roomId } })
+              .catch(err => console.error('[socket] Failed to set activeRoomId on reconnect:', err));
+          }
           socket.emit('room:joined', { room: getSafeRoom(room), playerId: existingPlayer.id });
           socket.to(payload.roomId).emit('room:updated', { room: getSafeRoom(room) });
           if (room.gameState) {
@@ -863,6 +878,11 @@ export function setupSocketServer(io: Server): void {
       room.players.push(player);
       socketToPlayer.set(socket.id, { roomId: payload.roomId, playerId });
       socket.join(payload.roomId);
+
+      if (socket.data.userId) {
+        prisma.user.update({ where: { id: socket.data.userId }, data: { activeRoomId: payload.roomId } })
+          .catch(err => console.error('[socket] Failed to set activeRoomId on join:', err));
+      }
 
       socket.emit('room:joined', { room: getSafeRoom(room), playerId });
       socket.to(payload.roomId).emit('room:updated', { room: getSafeRoom(room) });
@@ -951,6 +971,10 @@ export function setupSocketServer(io: Server): void {
         clearTimeout(existingTimer);
         disconnectTimers.delete(payload.targetPlayerId);
       }
+
+      // Clear activeRoomId for kicked player
+      prisma.user.update({ where: { id: payload.targetPlayerId }, data: { activeRoomId: null } })
+        .catch(err => console.error('[socket] Failed to clear activeRoomId on kick:', err));
 
       // Notify the kicked player before modifying their state
       if (targetPlayer.socketId) {
@@ -1356,6 +1380,10 @@ export function setupSocketServer(io: Server): void {
           const idx = currentRoom.players.findIndex((p) => p.id === playerId);
           if (idx === -1) return;
 
+          // Player timed out — clear their activeRoomId (bot has permanently taken over)
+          prisma.user.update({ where: { id: playerId }, data: { activeRoomId: null } })
+            .catch(err => console.error('[socket] Failed to clear activeRoomId on bot takeover:', err));
+
           if (currentRoom.gameState) {
             // Substitution is now permanent — update status to 'playing' so
             // the UI no longer shows the player as disconnected.
@@ -1424,6 +1452,11 @@ export function setupSocketServer(io: Server): void {
 
         socketToPlayer.delete(socket.id);
         socket.leave(roomId);
+
+        if (socket.data.userId) {
+          prisma.user.update({ where: { id: socket.data.userId }, data: { activeRoomId: null } })
+            .catch(err => console.error('[socket] Failed to clear activeRoomId on leave:', err));
+        }
 
         if (room.gameState && room.gameState.phase !== 'game_end') {
           // Active game running — substitute with bot immediately

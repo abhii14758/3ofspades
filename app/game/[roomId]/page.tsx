@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import GameTable from '@/components/game/GameTable';
 import RoundResult from '@/components/game/RoundResult';
 import WinnerScreen from '@/components/game/WinnerScreen';
@@ -29,6 +30,11 @@ export default function GamePage() {
     startNextRound,
   } = useGame();
 
+  // Reactive selectors so effects re-run after Zustand hydrates from localStorage
+  const storedPlayerId = usePlayerStore((s) => s.playerId);
+  const userId = usePlayerStore((s) => s.userId);
+  const setRoomId = usePlayerStore((s) => s.setRoomId);
+
   const currentRoom = useLobbyStore((s) => s.currentRoom);
   const preset = currentRoom?.config?.preset ?? '6p1d';
   const roomGameConfig = getConfigForPreset(preset);
@@ -40,10 +46,10 @@ export default function GamePage() {
   const handleSelectTrump = useCallback((suit: Suit) => selectTrump(suit), [selectTrump]);
   const handleSelectPartners = useCallback((slots: Array<{ typeId: string; ordinal: 1 | 2 }>) => selectPartners(slots), [selectPartners]);
 
-  // Ensure socket is alive and attempt to rejoin if we have a stored playerId
+  // Ensure socket is alive and attempt to rejoin if we have a stored playerId.
+  // storedPlayerId and userId are in deps so this re-fires after Zustand hydrates.
   useEffect(() => {
     const socket = connectSocket();
-    const { playerId: storedPlayerId } = usePlayerStore.getState();
 
     const attemptReconnect = () => {
       if (storedPlayerId && roomId) {
@@ -55,10 +61,23 @@ export default function GamePage() {
       attemptReconnect();
     }
 
-    // Also handle case where socket connects after mount
     socket.on('connect', attemptReconnect);
     return () => { socket.off('connect', attemptReconnect); };
-  }, [roomId]);
+  }, [roomId, storedPlayerId, userId]);
+
+  // Handle reconnect failure: server emits room:error when the room no longer exists
+  useEffect(() => {
+    const socket = connectSocket();
+
+    const handleRoomError = ({ message }: { message: string }) => {
+      toast.error(message);
+      setRoomId(null);
+      setTimeout(() => router.push('/lobby'), 2000);
+    };
+
+    socket.on('room:error', handleRoomError);
+    return () => { socket.off('room:error', handleRoomError); };
+  }, [router, setRoomId]);
 
   // Loading / reconnecting state
   if (!gameState) {

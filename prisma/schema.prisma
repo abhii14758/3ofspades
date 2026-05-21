@@ -21,6 +21,7 @@ model User {
   equippedTableThemeId String   @default("default")
   equippedTitleId      String   @default("none")
   equippedEmoteIds     String[] @default([])
+  activeRoomId    String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

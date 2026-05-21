@@ -28,6 +28,17 @@ export function useSocket() {
   const { setRoom, updateRoom, setConnected, setConnecting, setError } = useLobbyStore();
   const gameStore = useGameStore();
 
+  // Re-fire reconnect if userId/roomId become available after socket already connected
+  const userId = usePlayerStore((s) => s.userId);
+  const storedRoomId = usePlayerStore((s) => s.roomId);
+
+  useEffect(() => {
+    if (!userId || !storedRoomId) return;
+    const socket = getSocket();
+    if (!socket?.connected) return;
+    socket.emit('player:reconnect', { roomId: storedRoomId, playerId: userId });
+  }, [userId, storedRoomId]);
+
   useEffect(() => {
     // Guard against double-registration (React StrictMode / re-renders)
     if (initialized.current) return;
