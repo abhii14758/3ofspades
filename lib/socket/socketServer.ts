@@ -1382,7 +1382,7 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
 
       // Notify client of their actual player ID (in case it differs from what they sent)
       if (actualPlayerId !== playerId) {
-        socket.emit('room:joined', { room: getSafeRoom(room), playerId: actualPlayerId });
+        socket.emit('player:idUpdate', { playerId: actualPlayerId });
       }
       } catch (err) {
         console.error('[player:reconnect]', err);

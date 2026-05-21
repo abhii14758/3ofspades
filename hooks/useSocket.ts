@@ -342,6 +342,11 @@ export function useSocket() {
       }, 2000);
     });
 
+    // Server tells us our actual player ID (differs when player was created before login)
+    socket.on('player:idUpdate', ({ playerId: pid }: { playerId: string }) => {
+      usePlayerStore.getState().setPlayerId(pid);
+    });
+
     // ------------------------------------------------------------------
     // Cleanup
     // ------------------------------------------------------------------
@@ -375,6 +380,7 @@ export function useSocket() {
       socket.off('room:blackoutCount');
       socket.off('room:hostTransferred');
       socket.off('session:takeover');
+      socket.off('player:idUpdate');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
