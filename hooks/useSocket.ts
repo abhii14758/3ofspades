@@ -333,6 +333,15 @@ export function useSocket() {
       }
     });
 
+    socket.on('session:takeover', ({ message }: { message: string }) => {
+      toast.error(message ?? 'Session taken over from another device');
+      usePlayerStore.getState().clear();
+      useLobbyStore.getState().clearRoom();
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 2000);
+    });
+
     // ------------------------------------------------------------------
     // Cleanup
     // ------------------------------------------------------------------
@@ -365,6 +374,7 @@ export function useSocket() {
       socket.off('room:blackoutReveal');
       socket.off('room:blackoutCount');
       socket.off('room:hostTransferred');
+      socket.off('session:takeover');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
