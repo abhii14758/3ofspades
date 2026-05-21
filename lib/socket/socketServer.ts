@@ -55,6 +55,8 @@ import {
 } from '@/lib/game-engine/botEngine';
 import { getCardTypeId } from '@/lib/game-engine/deck';
 
+let userIdToSocketMap: Map<string, string>;
+
 // ─── Server-side state ────────────────────────────────────────────────────────
 
 /** All live rooms, keyed by roomId. Contains full server-side GameState (all hands). */
@@ -755,7 +757,8 @@ function handlePlayCard(
  * Attaches all game socket event handlers to the provided Socket.IO server instance.
  * Called once from server.ts during application startup.
  */
-export function setupSocketServer(io: Server): void {
+export function setupSocketServer(io: Server, userIdToSocket?: Map<string, string>): void {
+  userIdToSocketMap = userIdToSocket ?? new Map();
   // On startup, clear all activeRoomId values — server restart wipes in-memory
   // game state, so any DB-tracked "active room" is now stale.
   prisma.user.updateMany({ data: { activeRoomId: null } })
@@ -804,6 +807,10 @@ export function setupSocketServer(io: Server): void {
       socketToPlayer.set(socket.id, { roomId, playerId });
       socket.join(roomId);
 
+      if (userIdToSocketMap && socket.data.userId) {
+        userIdToSocketMap.set(socket.data.userId, socket.id);
+      }
+
       if (socket.data.userId) {
         prisma.user.update({ where: { id: socket.data.userId }, data: { activeRoomId: roomId } })
           .catch(err => console.error('[socket] Failed to set activeRoomId:', err));
@@ -828,22 +835,14 @@ export function setupSocketServer(io: Server): void {
         socket.emit('room:error', { message: 'Room is full' });
         return;
       }
-      if (room.gameState) {
-        socket.emit('room:error', { message: 'Game already in progress' });
-        return;
-      }
 
       const playerId = socket.data.userId ?? generatePlayerId();
 
-      // Prevent duplicate seat: same authenticated user can't join a room they're already in
+      // Reconnect path: same authenticated user reconnecting to their seat
       if (socket.data.userId) {
         const existingPlayer = room.players.find(p => p.id === socket.data.userId);
-        if (existingPlayer && existingPlayer.status !== 'disconnected') {
-          socket.emit('room:error', { message: 'You are already in this room' });
-          return;
-        }
-        // Reconnect path: player was disconnected, restore them
-        if (existingPlayer && existingPlayer.status === 'disconnected') {
+        if (existingPlayer) {
+          // Player is already in room — reconnect them (lobby or game in progress)
           const existingTimer = disconnectTimers.get(existingPlayer.id);
           if (existingTimer) { clearTimeout(existingTimer); disconnectTimers.delete(existingPlayer.id); }
           if (existingPlayer.socketId) socketToPlayer.delete(existingPlayer.socketId);
@@ -852,21 +851,37 @@ export function setupSocketServer(io: Server): void {
           if (existingPlayer.isSubstitutedBot) { existingPlayer.type = 'human'; existingPlayer.isSubstitutedBot = false; }
           socketToPlayer.set(socket.id, { roomId: payload.roomId, playerId: existingPlayer.id });
           socket.join(payload.roomId);
-          if (socket.data.userId) {
-            prisma.user.update({ where: { id: socket.data.userId }, data: { activeRoomId: payload.roomId } })
-              .catch(err => console.error('[socket] Failed to set activeRoomId on reconnect:', err));
-          }
+
+          if (userIdToSocketMap) userIdToSocketMap.set(existingPlayer.id, socket.id);
+
+          prisma.user.update({ where: { id: socket.data.userId }, data: { activeRoomId: payload.roomId } })
+            .catch(err => console.error('[socket] Failed to set activeRoomId on reconnect:', err));
+
           socket.emit('room:joined', { room: getSafeRoom(room), playerId: existingPlayer.id });
           socket.to(payload.roomId).emit('room:updated', { room: getSafeRoom(room) });
+
           if (room.gameState) {
             const gs = room.gameState as GameState;
             socket.emit('game:stateSync', { gameState: getPublicGameState(gs, existingPlayer.id) });
             socket.emit('player:hand', { cards: gs.hands[existingPlayer.id] ?? [] });
+            if (existingPlayer.id === gs.bidWinnerId && gs.calledCards.length > 0) {
+              socket.emit('player:calledCards', { cards: gs.calledCards, slots: gs.calledCardSlots ?? [] });
+            }
+            if (gs.currentTurnPlayerId === existingPlayer.id) {
+              scheduleAutoPlayIfNeeded(io, room);
+            }
           }
           return;
         }
       }
 
+      // Block new joins if game is already running (reconnects handled above)
+      if (room.gameState) {
+        socket.emit('room:error', { message: 'Game already in progress' });
+        return;
+      }
+
+      // New player joining
       const player: Player = {
         id: playerId,
         name: payload.playerName.trim() || `Player ${room.players.length + 1}`,
@@ -884,6 +899,10 @@ export function setupSocketServer(io: Server): void {
       room.players.push(player);
       socketToPlayer.set(socket.id, { roomId: payload.roomId, playerId });
       socket.join(payload.roomId);
+
+      if (userIdToSocketMap && socket.data.userId) {
+        userIdToSocketMap.set(socket.data.userId, socket.id);
+      }
 
       if (socket.data.userId) {
         prisma.user.update({ where: { id: socket.data.userId }, data: { activeRoomId: payload.roomId } })
@@ -1316,6 +1335,10 @@ export function setupSocketServer(io: Server): void {
       player.status = room.gameState ? 'playing' : 'ready';
       socketToPlayer.set(socket.id, { roomId, playerId });
       socket.join(roomId);
+
+      if (userIdToSocketMap) {
+        userIdToSocketMap.set(playerId, socket.id);
+      }
 
       io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
 

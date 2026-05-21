@@ -61,9 +61,10 @@ app.prepare().then(async () => {
     maxHttpBufferSize: 1e6,
   });
 
-  initSocketServer(io);
+  const userIdToSocket = new Map<string, string>();
 
   // Socket.IO auth middleware — extracts userId from NextAuth JWT cookie
+  // Also handles session takeover: kicks existing socket for same userId
   io.use(async (socket, next) => {
     try {
       const cookieHeader = socket.request.headers.cookie || '';
@@ -91,6 +92,19 @@ app.prepare().then(async () => {
       if (token?.userId) {
         socket.data.userId = token.userId as string;
         socket.data.displayName = (token.name as string) || '';
+
+        // Session takeover: kick existing socket for this userId
+        const existingSocketId = userIdToSocket.get(token.userId as string);
+        if (existingSocketId && existingSocketId !== socket.id) {
+          const existingSocket = io.sockets.sockets.get(existingSocketId);
+          if (existingSocket) {
+            existingSocket.emit('session:takeover', {
+              message: 'Your session was taken over from another device.',
+            });
+            existingSocket.disconnect(true);
+          }
+        }
+        userIdToSocket.set(token.userId as string, socket.id);
       }
 
       next();
@@ -98,6 +112,20 @@ app.prepare().then(async () => {
       console.error('[socket auth middleware]', err);
       next();
     }
+  });
+
+  initSocketServer(io, userIdToSocket);
+
+  // Clean up userIdToSocket on disconnect
+  io.on('connection', (socket) => {
+    socket.on('disconnect', () => {
+      if (socket.data.userId) {
+        const current = userIdToSocket.get(socket.data.userId);
+        if (current === socket.id) {
+          userIdToSocket.delete(socket.data.userId);
+        }
+      }
+    });
   });
 
   httpServer.listen(port, () => {
