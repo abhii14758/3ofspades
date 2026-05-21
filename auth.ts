@@ -29,10 +29,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
         if (!valid) return null;
 
-        if (user.activeRoomId) {
-          throw new Error('ACCOUNT_IN_GAME');
-        }
-
         return {
           id: user.id,
           email: user.email,
