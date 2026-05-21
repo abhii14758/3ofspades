@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  passwordHash    String
+  displayName     String
+  bio             String   @default("")
+  avatarUrl       String   @default("")
+  avatarType      String   @default("preset")
+  presetAvatarId  String   @default("default")
+  equippedFrameId      String   @default("none")
+  equippedCardBackId   String   @default("default")
+  equippedTableThemeId String   @default("default")
+  equippedTitleId      String   @default("none")
+  equippedEmoteIds     String[] @default([])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  stats                PlayerStats?
+  unlockedCosmetics    UnlockedCosmetic[]
+  passwordResetTokens  PasswordResetToken[]
+}
+
+model PlayerStats {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gamesPlayed  Int      @default(0)
+  gamesWon     Int      @default(0)
+  totalPoints  Int      @default(0)
+  totalTricks  Int      @default(0)
+  winStreak    Int      @default(0)
+  maxWinStreak Int      @default(0)
+  updatedAt    DateTime @updatedAt
+}
+
+model UnlockedCosmetic {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cosmeticId String
+  unlockedAt DateTime @default(now())
+
+  @@unique([userId, cosmeticId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+}
