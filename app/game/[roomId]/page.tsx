@@ -52,8 +52,9 @@ export default function GamePage() {
     const socket = connectSocket();
 
     const attemptReconnect = () => {
-      if (storedPlayerId && roomId) {
-        socket.emit('player:reconnect', { roomId, playerId: storedPlayerId });
+      const pid = storedPlayerId || userId;
+      if (pid && roomId) {
+        socket.emit('player:reconnect', { roomId, playerId: pid });
       }
     };
 
