@@ -765,6 +765,9 @@ export function setupSocketServer(io: Server): void {
         isHost: true,
         seatIndex: 0,
         socketId: socket.id,
+        avatarType: payload.avatarType ?? 'preset',
+        presetAvatarId: payload.presetAvatarId ?? 'spade',
+        avatarUrl: payload.avatarUrl ?? '',
       };
 
       const config: RoomConfig = { ...defaultRoomConfig, ...(payload.config ?? {}) };
@@ -813,6 +816,35 @@ export function setupSocketServer(io: Server): void {
       }
 
       const playerId = socket.data.userId ?? generatePlayerId();
+
+      // Prevent duplicate seat: same authenticated user can't join a room they're already in
+      if (socket.data.userId) {
+        const existingPlayer = room.players.find(p => p.id === socket.data.userId);
+        if (existingPlayer && existingPlayer.status !== 'disconnected') {
+          socket.emit('room:error', { message: 'You are already in this room' });
+          return;
+        }
+        // Reconnect path: player was disconnected, restore them
+        if (existingPlayer && existingPlayer.status === 'disconnected') {
+          const existingTimer = disconnectTimers.get(existingPlayer.id);
+          if (existingTimer) { clearTimeout(existingTimer); disconnectTimers.delete(existingPlayer.id); }
+          if (existingPlayer.socketId) socketToPlayer.delete(existingPlayer.socketId);
+          existingPlayer.socketId = socket.id;
+          existingPlayer.status = room.gameState ? 'playing' : 'ready';
+          if (existingPlayer.isSubstitutedBot) { existingPlayer.type = 'human'; existingPlayer.isSubstitutedBot = false; }
+          socketToPlayer.set(socket.id, { roomId: payload.roomId, playerId: existingPlayer.id });
+          socket.join(payload.roomId);
+          socket.emit('room:joined', { room: getSafeRoom(room), playerId: existingPlayer.id });
+          socket.to(payload.roomId).emit('room:updated', { room: getSafeRoom(room) });
+          if (room.gameState) {
+            const gs = room.gameState as GameState;
+            socket.emit('game:stateSync', { gameState: getPublicGameState(gs, existingPlayer.id) });
+            socket.emit('player:hand', { cards: gs.hands[existingPlayer.id] ?? [] });
+          }
+          return;
+        }
+      }
+
       const player: Player = {
         id: playerId,
         name: payload.playerName.trim() || `Player ${room.players.length + 1}`,
@@ -821,6 +853,9 @@ export function setupSocketServer(io: Server): void {
         isHost: false,
         seatIndex: getNextSeatIndex(room.players, room.maxPlayers),
         socketId: socket.id,
+        avatarType: payload.avatarType ?? 'preset',
+        presetAvatarId: payload.presetAvatarId ?? 'spade',
+        avatarUrl: payload.avatarUrl ?? '',
       };
 
       room.players.push(player);

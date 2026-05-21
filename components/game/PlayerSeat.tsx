@@ -3,6 +3,7 @@ import { memo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import type { Player, Card as CardType } from '@/types';
+import AvatarDisplay from '@/components/profile/AvatarDisplay';
 
 interface PlayerSeatProps {
   player: Player;
@@ -177,9 +178,9 @@ function PlayerSeat({
         {/* Avatar circle */}
         <div
           className={clsx(
-            'rounded-full bg-gradient-to-br flex items-center justify-center font-black uppercase text-white relative',
+            'rounded-full flex items-center justify-center font-black uppercase text-white relative overflow-hidden',
             isCurrentTurn && 'av-pulse',
-            gradient
+            !player.avatarUrl && !player.presetAvatarId && `bg-gradient-to-br ${gradient}`
           )}
           style={{
             width: avatarSize,
@@ -188,10 +189,15 @@ function PlayerSeat({
             border: avatarBorder,
             boxShadow: avatarBoxShadow,
             flexShrink: 0,
-            overflow: 'hidden',
           }}
         >
-          {player.avatarUrl ? (
+          {(player.avatarType === 'preset' || player.presetAvatarId) && !player.avatarUrl ? (
+            <AvatarDisplay
+              avatarType={player.avatarType ?? 'preset'}
+              presetAvatarId={player.presetAvatarId ?? 'spade'}
+              size={avatarSize}
+            />
+          ) : player.avatarUrl ? (
             <img src={player.avatarUrl} alt={player.name} className="absolute inset-0 w-full h-full object-cover rounded-full" />
           ) : (
             <span className="relative z-10">{player.name.charAt(0)}</span>

@@ -55,7 +55,7 @@ export function disconnectSocket(): void {
  * Callers should call `connectSocket()` before using any of these.
  */
 export const socketEmit = {
-  createRoom: (payload: { roomName: string; playerName: string; config?: Partial<RoomConfig> }) =>
+  createRoom: (payload: { roomName: string; playerName: string; config?: Partial<RoomConfig>; presetAvatarId?: string; avatarType?: 'preset' | 'upload'; avatarUrl?: string }) =>
     getSocket().emit('room:create', payload),
 
   joinRoom: (payload: JoinRoomPayload) =>

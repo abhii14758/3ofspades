@@ -18,9 +18,26 @@ function LobbyContent() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { isConnected, error, setError } = useLobbyStore();
-  const { setPlayerName } = usePlayerStore();
+  const { setPlayerName, setAvatar, presetAvatarId, avatarType, avatarUrl } = usePlayerStore();
   const { data: session } = useSession();
   const playerName = session?.user?.name ?? 'Player';
+
+  // Fetch profile once on mount to sync avatar info into store
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch('/api/profile')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          setAvatar({
+            presetAvatarId: data.presetAvatarId ?? 'spade',
+            avatarType: data.avatarType ?? 'preset',
+            avatarUrl: data.avatarUrl ?? '',
+          });
+        }
+      })
+      .catch(() => {});
+  }, [session?.user, setAvatar]);
 
   useEffect(() => {
     setError(null);
@@ -33,7 +50,7 @@ function LobbyContent() {
     }
     setIsLoading(true);
     setPlayerName(playerName);
-    socketEmit.createRoom({ roomName, playerName, config });
+    socketEmit.createRoom({ roomName, playerName, config, presetAvatarId, avatarType, avatarUrl });
     const t = setTimeout(() => setIsLoading(false), 8000);
     return () => clearTimeout(t);
   };
@@ -45,7 +62,7 @@ function LobbyContent() {
     }
     setIsLoading(true);
     setPlayerName(playerName);
-    socketEmit.joinRoom({ roomId, playerName });
+    socketEmit.joinRoom({ roomId, playerName, presetAvatarId, avatarType, avatarUrl });
     const t = setTimeout(() => setIsLoading(false), 8000);
     return () => clearTimeout(t);
   };

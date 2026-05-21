@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useLobbyStore } from '@/store/lobbyStore';
+import { useSession, signOut } from 'next-auth/react';
 
 const container = {
   hidden: { opacity: 0 },
@@ -30,6 +31,7 @@ const CARD_VALUES = [
 
 export default function HomePage() {
   const { isConnected } = useLobbyStore();
+  const { data: session } = useSession();
 
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden">
@@ -41,12 +43,34 @@ export default function HomePage() {
         <span className="absolute bottom-1/4 left-[8%] text-[13rem] font-black text-slate-800/[0.05] leading-none">♦</span>
       </div>
 
-      {/* ── Connection badge ── */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-full px-3 py-1.5 text-xs">
-        <span className={`w-2 h-2 rounded-full transition-all duration-500 ${isConnected ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.9)]' : 'bg-slate-600 animate-pulse'}`} />
-        <span className={isConnected ? 'text-green-400' : 'text-slate-500'}>
-          {isConnected ? 'Server ready' : 'Connecting…'}
-        </span>
+      {/* ── Top-right header bar ── */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-3 text-xs">
+        {session?.user ? (
+          <>
+            <span className="text-slate-400 hidden sm:block">
+              👤 <span className="font-medium text-slate-200">{session.user.name}</span>
+            </span>
+            <Link href="/profile" className="text-violet-400 hover:text-violet-300 transition-colors font-medium">
+              Profile
+            </Link>
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="text-slate-500 hover:text-red-400 transition-colors"
+            >
+              Sign Out
+            </button>
+          </>
+        ) : (
+          <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+            Sign In
+          </Link>
+        )}
+        <div className="flex items-center gap-1.5 bg-slate-900/80 backdrop-blur border border-slate-800 rounded-full px-3 py-1.5">
+          <span className={`w-2 h-2 rounded-full transition-all duration-500 ${isConnected ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.9)]' : 'bg-slate-600 animate-pulse'}`} />
+          <span className={isConnected ? 'text-green-400' : 'text-slate-500'}>
+            {isConnected ? 'Server ready' : 'Connecting…'}
+          </span>
+        </div>
       </div>
 
       {/* ── Hero ── */}

@@ -31,7 +31,9 @@ export interface Player {
   isHost: boolean;
   seatIndex: number;
   socketId?: string;
-  avatarUrl?: string; // base64 data URL or empty string
+  avatarUrl?: string; // uploaded image URL
+  avatarType?: 'preset' | 'upload'; // avatar display mode
+  presetAvatarId?: string; // e.g. 'spade', 'crown' — keys from config/avatars.ts
   /** True when this was a human player who disconnected and was auto-converted to a bot mid-game. */
   isSubstitutedBot?: boolean;
 }
@@ -166,11 +168,17 @@ export interface CreateRoomPayload {
   roomName: string;
   playerName: string;
   config?: Partial<RoomConfig>;
+  presetAvatarId?: string;
+  avatarType?: 'preset' | 'upload';
+  avatarUrl?: string;
 }
 
 export interface JoinRoomPayload {
   roomId: string;
   playerName: string;
+  presetAvatarId?: string;
+  avatarType?: 'preset' | 'upload';
+  avatarUrl?: string;
 }
 
 export interface PlaceBidPayload {

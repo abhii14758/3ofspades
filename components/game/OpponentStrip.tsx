@@ -2,6 +2,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import type { Player, Card as CardType } from '@/types';
+import AvatarDisplay from '@/components/profile/AvatarDisplay';
 
 const SUIT_SYMBOLS: Record<string, string> = {
   spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣',
@@ -114,7 +115,9 @@ export default function OpponentStrip({
 
             {/* Avatar */}
             <div
-              className={clsx('rounded-full bg-gradient-to-br flex items-center justify-center font-bold text-xs text-white', gradient)}
+              className={clsx('rounded-full overflow-hidden flex items-center justify-center font-bold text-xs text-white',
+                !player.avatarUrl && !player.presetAvatarId && `bg-gradient-to-br ${gradient}`
+              )}
               style={{
                 width: 28, height: 28,
                 boxShadow: isCurrentTurn
@@ -124,7 +127,13 @@ export default function OpponentStrip({
                   : '0 0 0 1px rgba(255,255,255,0.1)',
               }}
             >
-              {player.avatarUrl ? (
+              {(player.avatarType === 'preset' || player.presetAvatarId) && !player.avatarUrl ? (
+                <AvatarDisplay
+                  avatarType={player.avatarType ?? 'preset'}
+                  presetAvatarId={player.presetAvatarId ?? 'spade'}
+                  size={28}
+                />
+              ) : player.avatarUrl ? (
                 <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover rounded-full" />
               ) : (
                 <span style={{ fontSize: 10 }}>{player.name.charAt(0)}</span>

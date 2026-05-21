@@ -4,11 +4,11 @@ interface AvatarDisplayProps {
   avatarType: string;
   avatarUrl?: string;
   presetAvatarId?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | number;
   className?: string;
 }
 
-const SIZES = {
+const NAMED_SIZES = {
   sm: 'w-8 h-8 text-base',
   md: 'w-10 h-10 text-xl',
   lg: 'w-16 h-16 text-3xl',
@@ -22,11 +22,13 @@ export default function AvatarDisplay({
   size = 'md',
   className = '',
 }: AvatarDisplayProps) {
-  const sizeClass = SIZES[size];
+  const isNumeric = typeof size === 'number';
+  const sizeClass = isNumeric ? '' : NAMED_SIZES[size as keyof typeof NAMED_SIZES];
+  const sizeStyle = isNumeric ? { width: size, height: size, fontSize: size * 0.45 } : undefined;
 
   if (avatarType === 'upload' && avatarUrl) {
     return (
-      <div className={`${sizeClass} rounded-full overflow-hidden flex-shrink-0 ${className}`}>
+      <div className={`${sizeClass} rounded-full overflow-hidden flex-shrink-0 ${className}`} style={sizeStyle}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
       </div>
@@ -37,6 +39,7 @@ export default function AvatarDisplay({
   return (
     <div
       className={`${sizeClass} rounded-full bg-gradient-to-br ${preset.bg} flex items-center justify-center flex-shrink-0 ${className}`}
+      style={sizeStyle}
     >
       <span>{preset.emoji}</span>
     </div>
