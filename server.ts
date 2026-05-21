@@ -2,9 +2,12 @@ import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
 import { Server as SocketIOServer } from 'socket.io';
-import { initSocketServer } from './lib/socket/socketServer';
 import { decode } from 'next-auth/jwt';
 import { parse as parseCookies } from 'cookie';
+// NOTE: initSocketServer is NOT imported here at module level.
+// It transitively imports Prisma, which reads DATABASE_URL at construction time.
+// Next.js loads .env.local inside app.prepare() — so we must defer this import
+// until AFTER prepare() resolves, otherwise Prisma gets DATABASE_URL=undefined.
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || '0.0.0.0';
@@ -21,7 +24,10 @@ process.on('unhandledRejection', (reason) => {
   console.error('[unhandledRejection]', reason);
 });
 
-app.prepare().then(() => {
+app.prepare().then(async () => {
+  // Dynamic import AFTER app.prepare() so Next.js has already loaded .env.local
+  // before Prisma constructs its connection pool with DATABASE_URL.
+  const { initSocketServer } = await import('./lib/socket/socketServer');
   const httpServer = createServer(async (req, res) => {
     try {
       const parsedUrl = parse(req.url!, true);
