@@ -43,12 +43,11 @@ export function useSocket() {
       setConnecting(false);
 
       // Re-attach to an in-progress room after a reconnect
-      const { playerId: storedPlayerId, roomId: storedRoomId } =
-        usePlayerStore.getState();
-      if (storedPlayerId && storedRoomId) {
+      const { userId, roomId: storedRoomId } = usePlayerStore.getState();
+      if (userId && storedRoomId) {
         socket.emit('player:reconnect', {
           roomId: storedRoomId,
-          playerId: storedPlayerId,
+          playerId: userId,
         });
       }
     });

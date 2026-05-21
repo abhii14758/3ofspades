@@ -755,7 +755,7 @@ export function setupSocketServer(io: Server): void {
     socket.on('room:create', (payload: CreateRoomPayload) => {
       try {
         const roomId = generateRoomId();
-        const playerId = generatePlayerId();
+        const playerId = socket.data.userId ?? generatePlayerId();
 
       const player: Player = {
         id: playerId,
@@ -812,7 +812,7 @@ export function setupSocketServer(io: Server): void {
         return;
       }
 
-      const playerId = generatePlayerId();
+      const playerId = socket.data.userId ?? generatePlayerId();
       const player: Player = {
         id: playerId,
         name: payload.playerName.trim() || `Player ${room.players.length + 1}`,
@@ -1233,6 +1233,7 @@ export function setupSocketServer(io: Server): void {
       // Re-map socket
       if (player.socketId) socketToPlayer.delete(player.socketId);
       player.socketId = socket.id;
+      socket.data.userId = player.id;
       // Revert substituted bot back to human
       if (player.isSubstitutedBot) {
         player.type = 'human';
