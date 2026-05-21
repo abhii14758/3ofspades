@@ -19,7 +19,7 @@ function LobbyContent() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { isConnected, error, setError, currentRoom } = useLobbyStore();
-  const { setPlayerName, setAvatar, presetAvatarId, avatarType, avatarUrl, equippedFrameId } = usePlayerStore();
+  const { setPlayerName, setAvatar, presetAvatarId, avatarType, avatarUrl, equippedFrameId, equippedCardBackId } = usePlayerStore();
   const { data: session } = useSession();
   const router = useRouter();
   const { activeRoomId, loading: activeLoading } = useActiveGame();
@@ -65,7 +65,7 @@ function LobbyContent() {
     }
     setIsLoading(true);
     setPlayerName(playerName);
-    socketEmit.createRoom({ roomName, playerName, config, presetAvatarId, avatarType, avatarUrl, equippedFrameId });
+    socketEmit.createRoom({ roomName, playerName, config, presetAvatarId, avatarType, avatarUrl, equippedFrameId, equippedCardBackId });
     const t = setTimeout(() => setIsLoading(false), 8000);
     return () => clearTimeout(t);
   };
@@ -77,7 +77,7 @@ function LobbyContent() {
     }
     setIsLoading(true);
     setPlayerName(playerName);
-    socketEmit.joinRoom({ roomId, playerName, presetAvatarId, avatarType, avatarUrl, equippedFrameId });
+    socketEmit.joinRoom({ roomId, playerName, presetAvatarId, avatarType, avatarUrl, equippedFrameId, equippedCardBackId });
     const t = setTimeout(() => setIsLoading(false), 8000);
     return () => clearTimeout(t);
   };

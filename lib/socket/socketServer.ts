@@ -784,6 +784,7 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
         presetAvatarId: payload.presetAvatarId ?? 'spade',
         avatarUrl: payload.avatarUrl ?? '',
         equippedFrameId: payload.equippedFrameId ?? 'none',
+        equippedCardBackId: payload.equippedCardBackId ?? 'default',
       };
 
       const config: RoomConfig = { ...defaultRoomConfig, ...(payload.config ?? {}) };
@@ -894,6 +895,7 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
         presetAvatarId: payload.presetAvatarId ?? 'spade',
         avatarUrl: payload.avatarUrl ?? '',
         equippedFrameId: payload.equippedFrameId ?? 'none',
+        equippedCardBackId: payload.equippedCardBackId ?? 'default',
       };
 
       room.players.push(player);
