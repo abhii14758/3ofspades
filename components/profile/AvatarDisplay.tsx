@@ -7,7 +7,7 @@ interface AvatarDisplayProps {
   presetAvatarId?: string;
   equippedFrameId?: string;
   disableFrameRing?: boolean;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | number;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | number;
   className?: string;
 }
 
@@ -15,10 +15,11 @@ const NAMED_SIZES = {
   sm: 'w-8 h-8 text-base',
   md: 'w-10 h-10 text-xl',
   lg: 'w-16 h-16 text-3xl',
-  xl: 'w-24 h-24 text-5xl',
+  xl: 'w-32 h-32 text-5xl',
+  '2xl': 'w-48 h-48 text-7xl',
 };
 
-const NAMED_PX: Record<string, number> = { sm: 32, md: 40, lg: 64, xl: 96 };
+const NAMED_PX: Record<string, number> = { sm: 32, md: 40, lg: 64, xl: 128, '2xl': 192 };
 
 export default function AvatarDisplay({
   avatarType,

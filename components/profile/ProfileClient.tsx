@@ -182,7 +182,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
             avatarUrl={uploadedAvatarUrl || profile.avatarUrl}
             presetAvatarId={presetAvatarId}
             equippedFrameId={equippedFrameId}
-            size="xl"
+            size="2xl"
           />
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-black truncate">{profile.displayName}</h1>
