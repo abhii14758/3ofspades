@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import CreateRoom from '@/components/lobby/CreateRoom';
 import type { RoomConfig } from '@/types';
@@ -18,12 +19,14 @@ function LobbyContent() {
 
   const { isConnected, error, setError } = useLobbyStore();
   const { setPlayerName } = usePlayerStore();
+  const { data: session } = useSession();
+  const playerName = session?.user?.name ?? 'Player';
 
   useEffect(() => {
     setError(null);
   }, [activeTab, setError]);
 
-  const handleCreate = (roomName: string, playerName: string, config: RoomConfig) => {
+  const handleCreate = (roomName: string, config: RoomConfig) => {
     if (!isConnected) {
       setError('Not connected to server. Please wait…');
       return;
@@ -35,7 +38,7 @@ function LobbyContent() {
     return () => clearTimeout(t);
   };
 
-  const handleJoin = (roomId: string, playerName: string) => {
+  const handleJoin = (roomId: string) => {
     if (!isConnected) {
       setError('Not connected to server. Please wait…');
       return;
@@ -49,7 +52,6 @@ function LobbyContent() {
 
   return (
     <div className="min-h-screen bg-slate-950 relative overflow-hidden flex flex-col items-center justify-center px-4 py-8">
-      {/* Subtle dot grid background */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
@@ -57,27 +59,33 @@ function LobbyContent() {
           backgroundSize: '50px 50px',
         }}
       />
-      {/* Accent glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-700/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Back link */}
       <div className="absolute top-5 left-5 z-10">
-        <Link
-          href="/"
-          className="text-slate-500 hover:text-slate-300 text-sm flex items-center gap-1.5 transition-colors"
-        >
+        <Link href="/" className="text-slate-500 hover:text-slate-300 text-sm flex items-center gap-1.5 transition-colors">
           ← Home
         </Link>
       </div>
 
-      {/* Connection indicator */}
-      <div className="absolute top-5 right-5 z-10 flex items-center gap-2 text-xs text-slate-500">
-        <span
-          className={`w-2 h-2 rounded-full transition-colors ${
-            isConnected ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.7)]' : 'bg-yellow-500 animate-pulse'
-          }`}
-        />
-        {isConnected ? 'Connected' : 'Connecting…'}
+      {/* Top-right: name + profile + logout + connection */}
+      <div className="absolute top-5 right-5 z-10 flex items-center gap-3 text-xs">
+        <span className="text-slate-400 hidden sm:block">
+          👤 <span className="font-medium text-slate-200">{playerName}</span>
+        </span>
+        <Link href="/profile" className="text-violet-400 hover:text-violet-300 transition-colors font-medium">
+          Profile
+        </Link>
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="text-slate-500 hover:text-red-400 transition-colors"
+        >
+          Sign Out
+        </button>
+        <span className="flex items-center gap-1.5 text-slate-500">
+          <span className={`w-2 h-2 rounded-full transition-colors ${isConnected ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.7)]' : 'bg-yellow-500 animate-pulse'}`} />
+          {isConnected ? 'Connected' : 'Connecting…'}
+        </span>
       </div>
 
       <motion.div
@@ -86,17 +94,13 @@ function LobbyContent() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-md relative z-10"
       >
-        {/* Heading */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-black bg-gradient-to-br from-white via-slate-200 to-indigo-400 bg-clip-text text-transparent">
             Lobby
           </h1>
-          <p className="text-slate-500 text-sm mt-1.5">
-            ♠ 3 of Spades · Kali Teeri
-          </p>
+          <p className="text-slate-500 text-sm mt-1.5">♠ 3 of Spades · Kali Teeri</p>
         </div>
 
-        {/* Tab switcher */}
         <div className="flex bg-slate-800/80 rounded-xl p-1 mb-5 border border-slate-700/60">
           {(['create', 'join'] as const).map((tab) => (
             <button
@@ -113,7 +117,6 @@ function LobbyContent() {
           ))}
         </div>
 
-        {/* Error banner */}
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -8 }}
@@ -124,7 +127,6 @@ function LobbyContent() {
           </motion.div>
         )}
 
-        {/* Form panel */}
         <motion.div
           key={activeTab}
           initial={{ opacity: 0, x: activeTab === 'create' ? -12 : 12 }}
@@ -155,3 +157,5 @@ export default function LobbyPage() {
     </Suspense>
   );
 }
+
+
