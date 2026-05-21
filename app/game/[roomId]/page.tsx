@@ -46,12 +46,13 @@ export default function GamePage() {
   const handleSelectTrump = useCallback((suit: Suit) => selectTrump(suit), [selectTrump]);
   const handleSelectPartners = useCallback((slots: Array<{ typeId: string; ordinal: 1 | 2 }>) => selectPartners(slots), [selectPartners]);
 
-  // Ensure socket is alive and attempt to rejoin if we have a stored playerId.
-  // storedPlayerId and userId are in deps so this re-fires after Zustand hydrates.
+  // Ensure socket is alive and attempt to rejoin.
+  // Only reconnect if we don't already have game state (prevents duplicate emissions).
   useEffect(() => {
     const socket = connectSocket();
 
     const attemptReconnect = () => {
+      if (gameState) return; // Already connected and synced
       const pid = storedPlayerId || userId;
       if (pid && roomId) {
         socket.emit('player:reconnect', { roomId, playerId: pid });
@@ -64,7 +65,7 @@ export default function GamePage() {
 
     socket.on('connect', attemptReconnect);
     return () => { socket.off('connect', attemptReconnect); };
-  }, [roomId, storedPlayerId, userId]);
+  }, [roomId, storedPlayerId, userId, gameState]);
 
   // Handle reconnect failure: server emits room:error when the room no longer exists
   useEffect(() => {

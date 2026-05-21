@@ -28,7 +28,9 @@ export function useSocket() {
   const { setRoom, updateRoom, setConnected, setConnecting, setError } = useLobbyStore();
   const gameStore = useGameStore();
 
-  // Re-fire reconnect if userId/roomId become available after socket already connected
+  // Re-fire reconnect if userId/roomId become available after socket already connected.
+  // This is needed for the non-game-page case (e.g. user on lobby when socket reconnects).
+  // The game page has its own reconnect effect with a gameState guard.
   const userId = usePlayerStore((s) => s.userId);
   const storedRoomId = usePlayerStore((s) => s.roomId);
 
@@ -36,6 +38,8 @@ export function useSocket() {
     if (!userId || !storedRoomId) return;
     const socket = getSocket();
     if (!socket?.connected) return;
+    // Only emit from here if NOT on the game page (game page handles its own reconnect)
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/game/')) return;
     socket.emit('player:reconnect', { roomId: storedRoomId, playerId: userId });
   }, [userId, storedRoomId]);
 

@@ -830,6 +830,11 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
 
       if (!room) {
         socket.emit('room:error', { message: 'Room not found' });
+        // Clear stale activeRoomId so the client stops redirecting here
+        if (socket.data.userId) {
+          prisma.user.update({ where: { id: socket.data.userId }, data: { activeRoomId: null } })
+            .catch(err => console.error('[socket] Failed to clear stale activeRoomId:', err));
+        }
         return;
       }
       if (room.players.length >= room.maxPlayers) {
@@ -1310,6 +1315,11 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
 
       if (!room) {
         socket.emit('room:error', { message: 'Room not found' });
+        // Clear stale activeRoomId so the client stops redirecting here
+        if (socket.data.userId) {
+          prisma.user.update({ where: { id: socket.data.userId }, data: { activeRoomId: null } })
+            .catch(err => console.error('[socket] Failed to clear stale activeRoomId:', err));
+        }
         return;
       }
       let player = room.players.find((p) => p.id === playerId);
