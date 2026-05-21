@@ -18,7 +18,7 @@ function LobbyContent() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { isConnected, error, setError } = useLobbyStore();
-  const { setPlayerName, setAvatar, presetAvatarId, avatarType, avatarUrl } = usePlayerStore();
+  const { setPlayerName, setAvatar, presetAvatarId, avatarType, avatarUrl, equippedFrameId } = usePlayerStore();
   const { data: session } = useSession();
   const playerName = session?.user?.name ?? 'Player';
 
@@ -33,6 +33,7 @@ function LobbyContent() {
             presetAvatarId: data.presetAvatarId ?? 'spade',
             avatarType: data.avatarType ?? 'preset',
             avatarUrl: data.avatarUrl ?? '',
+            equippedFrameId: data.equippedFrameId ?? 'none',
           });
         }
       })
@@ -50,7 +51,7 @@ function LobbyContent() {
     }
     setIsLoading(true);
     setPlayerName(playerName);
-    socketEmit.createRoom({ roomName, playerName, config, presetAvatarId, avatarType, avatarUrl });
+    socketEmit.createRoom({ roomName, playerName, config, presetAvatarId, avatarType, avatarUrl, equippedFrameId });
     const t = setTimeout(() => setIsLoading(false), 8000);
     return () => clearTimeout(t);
   };
@@ -62,7 +63,7 @@ function LobbyContent() {
     }
     setIsLoading(true);
     setPlayerName(playerName);
-    socketEmit.joinRoom({ roomId, playerName, presetAvatarId, avatarType, avatarUrl });
+    socketEmit.joinRoom({ roomId, playerName, presetAvatarId, avatarType, avatarUrl, equippedFrameId });
     const t = setTimeout(() => setIsLoading(false), 8000);
     return () => clearTimeout(t);
   };

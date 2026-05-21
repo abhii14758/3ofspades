@@ -131,6 +131,8 @@ export default function OpponentStrip({
                 <AvatarDisplay
                   avatarType={player.avatarType ?? 'preset'}
                   presetAvatarId={player.presetAvatarId ?? 'spade'}
+                  equippedFrameId={player.equippedFrameId}
+                  disableFrameRing
                   size={28}
                 />
               ) : player.avatarUrl ? (

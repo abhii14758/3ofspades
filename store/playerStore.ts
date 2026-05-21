@@ -10,11 +10,12 @@ interface PlayerStore {
   presetAvatarId: string;
   avatarType: 'preset' | 'upload';
   avatarUrl: string;
+  equippedFrameId: string;
   setUserId: (id: string) => void;
   setPlayerId: (id: string) => void;
   setPlayerName: (name: string) => void;
   setRoomId: (id: string | null) => void;
-  setAvatar: (data: { presetAvatarId?: string; avatarType?: 'preset' | 'upload'; avatarUrl?: string }) => void;
+  setAvatar: (data: { presetAvatarId?: string; avatarType?: 'preset' | 'upload'; avatarUrl?: string; equippedFrameId?: string }) => void;
   clear: () => void;
 }
 
@@ -28,6 +29,7 @@ export const usePlayerStore = create<PlayerStore>()(
       presetAvatarId: 'spade',
       avatarType: 'preset',
       avatarUrl: '',
+      equippedFrameId: 'none',
       setUserId: (id) => set({ userId: id }),
       setPlayerId: (id) => set({ playerId: id }),
       setPlayerName: (name) => set({ playerName: name }),

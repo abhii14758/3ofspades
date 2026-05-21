@@ -96,7 +96,7 @@ export default function RoomPage() {
   useEffect(() => {
     if (!isConnected || currentRoom || hasJoinedRef.current) return;
     hasJoinedRef.current = true;
-    const playerName = session?.user?.name ?? usePlayerStore.getState().playerName || 'Player';
+    const playerName = (session?.user?.name ?? usePlayerStore.getState().playerName) || 'Player';
     setIsJoining(true);
     socketEmit.joinRoom({ roomId, playerName, presetAvatarId, avatarType, avatarUrl });
   }, [isConnected, currentRoom, roomId, session, presetAvatarId, avatarType, avatarUrl]);

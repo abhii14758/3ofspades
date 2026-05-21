@@ -4,6 +4,7 @@ import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 import AvatarDisplay from './AvatarDisplay';
 import { PRESET_AVATARS } from '@/config/avatars';
+import { FRAMES } from '@/config/frames';
 
 interface Profile {
   id: string;
@@ -41,6 +42,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
   const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [equippedFrameId, setEquippedFrameId] = useState('none');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Security
@@ -63,6 +65,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
         setPresetAvatarId(data.presetAvatarId ?? 'spade');
         setAvatarType(data.avatarType ?? 'preset');
             setUploadedAvatarUrl(data.avatarUrl ?? '');
+            setEquippedFrameId(data.equippedFrameId ?? 'none');
             setLoading(false);
       });
   }, []);
@@ -74,7 +77,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
     const res = await fetch('/api/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayName, bio, presetAvatarId, avatarType, avatarUrl: uploadedAvatarUrl }),
+      body: JSON.stringify({ displayName, bio, presetAvatarId, avatarType, avatarUrl: uploadedAvatarUrl, equippedFrameId }),
     });
     const data = await res.json();
     setSaving(false);
@@ -178,6 +181,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
             avatarType={avatarType}
             avatarUrl={uploadedAvatarUrl || profile.avatarUrl}
             presetAvatarId={presetAvatarId}
+            equippedFrameId={equippedFrameId}
             size="xl"
           />
           <div className="flex-1 min-w-0">
@@ -301,6 +305,37 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
                   )}
                 </div>
                 {uploadError && <p className="text-red-400 text-xs mt-2">{uploadError}</p>}
+              </div>
+            </div>
+
+            {/* Frames picker */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-1">Avatar Frame</h2>
+              <p className="text-xs text-slate-500 mb-3">All frames are free — pick your style</p>
+              <div className="grid grid-cols-6 gap-2">
+                {FRAMES.map(frame => {
+                  const selected = equippedFrameId === frame.id;
+                  return (
+                    <button
+                      key={frame.id}
+                      onClick={() => setEquippedFrameId(frame.id)}
+                      title={frame.label}
+                      className={`aspect-square rounded-full flex items-center justify-center text-lg transition-all ${
+                        selected
+                          ? 'ring-2 ring-violet-400 ring-offset-2 ring-offset-slate-900 scale-110'
+                          : 'opacity-70 hover:opacity-100 hover:scale-105'
+                      }`}
+                      style={{
+                        background: frame.id === 'none'
+                          ? '#1e293b'
+                          : frame.gradient ?? frame.ringColor,
+                        boxShadow: selected ? `0 0 10px ${frame.glowColor}` : undefined,
+                      }}
+                    >
+                      {frame.overlayEmoji ?? '∅'}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

@@ -195,6 +195,8 @@ function PlayerSeat({
             <AvatarDisplay
               avatarType={player.avatarType ?? 'preset'}
               presetAvatarId={player.presetAvatarId ?? 'spade'}
+              equippedFrameId={player.equippedFrameId}
+              disableFrameRing
               size={avatarSize}
             />
           ) : player.avatarUrl ? (

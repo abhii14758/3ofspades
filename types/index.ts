@@ -36,6 +36,7 @@ export interface Player {
   presetAvatarId?: string; // e.g. 'spade', 'crown' — keys from config/avatars.ts
   /** True when this was a human player who disconnected and was auto-converted to a bot mid-game. */
   isSubstitutedBot?: boolean;
+  equippedFrameId?: string;
 }
 
 export interface BidState {
@@ -171,6 +172,7 @@ export interface CreateRoomPayload {
   presetAvatarId?: string;
   avatarType?: 'preset' | 'upload';
   avatarUrl?: string;
+  equippedFrameId?: string;
 }
 
 export interface JoinRoomPayload {
@@ -179,6 +181,7 @@ export interface JoinRoomPayload {
   presetAvatarId?: string;
   avatarType?: 'preset' | 'upload';
   avatarUrl?: string;
+  equippedFrameId?: string;
 }
 
 export interface PlaceBidPayload {

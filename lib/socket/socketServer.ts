@@ -768,6 +768,7 @@ export function setupSocketServer(io: Server): void {
         avatarType: payload.avatarType ?? 'preset',
         presetAvatarId: payload.presetAvatarId ?? 'spade',
         avatarUrl: payload.avatarUrl ?? '',
+        equippedFrameId: payload.equippedFrameId ?? 'none',
       };
 
       const config: RoomConfig = { ...defaultRoomConfig, ...(payload.config ?? {}) };
@@ -856,6 +857,7 @@ export function setupSocketServer(io: Server): void {
         avatarType: payload.avatarType ?? 'preset',
         presetAvatarId: payload.presetAvatarId ?? 'spade',
         avatarUrl: payload.avatarUrl ?? '',
+        equippedFrameId: payload.equippedFrameId ?? 'none',
       };
 
       room.players.push(player);

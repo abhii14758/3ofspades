@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
-  const { displayName, bio, presetAvatarId, avatarType, avatarUrl } = body;
+  const { displayName, bio, presetAvatarId, avatarType, avatarUrl, equippedFrameId } = body;
 
   const data: Record<string, string> = {};
   if (displayName !== undefined) {
@@ -50,6 +50,7 @@ export async function PATCH(req: NextRequest) {
   if (presetAvatarId !== undefined) data.presetAvatarId = presetAvatarId;
   if (avatarType !== undefined) data.avatarType = avatarType;
   if (avatarUrl !== undefined) data.avatarUrl = avatarUrl;
+  if (equippedFrameId !== undefined) data.equippedFrameId = equippedFrameId;
 
   const user = await prisma.user.update({
     where: { id: session.user.id },

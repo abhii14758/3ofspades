@@ -57,7 +57,7 @@ export default function GamePage() {
 
     // Also handle case where socket connects after mount
     socket.on('connect', attemptReconnect);
-    return () => socket.off('connect', attemptReconnect);
+    return () => { socket.off('connect', attemptReconnect); };
   }, [roomId]);
 
   // Loading / reconnecting state
