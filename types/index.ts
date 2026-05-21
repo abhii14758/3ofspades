@@ -37,6 +37,7 @@ export interface Player {
   /** True when this was a human player who disconnected and was auto-converted to a bot mid-game. */
   isSubstitutedBot?: boolean;
   equippedFrameId?: string;
+  equippedCardBackId?: string;
 }
 
 export interface BidState {
@@ -173,6 +174,7 @@ export interface CreateRoomPayload {
   avatarType?: 'preset' | 'upload';
   avatarUrl?: string;
   equippedFrameId?: string;
+  equippedCardBackId?: string;
 }
 
 export interface JoinRoomPayload {
@@ -182,6 +184,7 @@ export interface JoinRoomPayload {
   avatarType?: 'preset' | 'upload';
   avatarUrl?: string;
   equippedFrameId?: string;
+  equippedCardBackId?: string;
 }
 
 export interface PlaceBidPayload {
