@@ -1184,7 +1184,7 @@ export function setupSocketServer(io: Server): void {
       if (!room.gameState.voteEndVotes) room.gameState.voteEndVotes = {};
       room.gameState.voteEndVotes[playerId] = true;
 
-      const totalPlayers = room.players.filter((p) => p.status !== 'disconnected').length;
+      const totalPlayers = room.players.filter((p) => p.type === 'human' && p.status !== 'disconnected').length;
       const yesVotes = Object.values(room.gameState.voteEndVotes).filter(Boolean).length;
       const percentage = totalPlayers > 0 ? yesVotes / totalPlayers : 0;
 
@@ -1246,6 +1246,13 @@ export function setupSocketServer(io: Server): void {
     socket.on('player:reconnect', (payload: ReconnectPayload) => {
       try {
         const { roomId, playerId } = payload;
+
+        // Security: authenticated users can only reconnect as themselves
+        if (socket.data.userId && socket.data.userId !== playerId) {
+          socket.emit('room:error', { message: 'Cannot reconnect as a different player' });
+          return;
+        }
+
         const room = rooms.get(roomId);
 
       if (!room) {
@@ -1355,6 +1362,18 @@ export function setupSocketServer(io: Server): void {
             if (currentRoom.gameState.currentTurnPlayerId === currentRoom.players[idx].id) {
               scheduleAutoPlayIfNeeded(io, currentRoom);
             }
+            // Transfer host if the disconnected player was the host
+            if (currentRoom.hostId === playerId) {
+              const nextHost = currentRoom.players.find(
+                (p) => p.id !== playerId && p.type === 'human' && p.status === 'playing'
+              );
+              if (nextHost) {
+                currentRoom.hostId = nextHost.id;
+                nextHost.isHost = true;
+                currentRoom.players[idx].isHost = false;
+                io.to(roomId).emit('room:hostTransferred', { newHostId: nextHost.id, newHostName: nextHost.name });
+              }
+            }
           } else {
             // Lobby — if host left, close the room entirely
             if (currentRoom.hostId === playerId) {
@@ -1404,8 +1423,8 @@ export function setupSocketServer(io: Server): void {
         socketToPlayer.delete(socket.id);
         socket.leave(roomId);
 
-        if (room.gameState) {
-          // Game running — substitute with bot immediately
+        if (room.gameState && room.gameState.phase !== 'game_end') {
+          // Active game running — substitute with bot immediately
           player.type = 'bot';
           player.isSubstitutedBot = true;
           player.status = 'playing';
@@ -1416,7 +1435,7 @@ export function setupSocketServer(io: Server): void {
           io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
           syncStateToAll(io, room);
         } else {
-          // Lobby — remove them; if host, close the room
+          // Lobby or game_end — remove them; if host, close the room
           if (room.hostId === playerId) {
             rooms.delete(roomId);
             io.to(roomId).emit('room:closed', { reason: 'Host has left the room' });

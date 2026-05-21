@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 import AvatarDisplay from './AvatarDisplay';
@@ -38,6 +38,10 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
   const [bio, setBio] = useState('');
   const [presetAvatarId, setPresetAvatarId] = useState('spade');
   const [avatarType, setAvatarType] = useState('preset');
+  const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Security
   const [currentPassword, setCurrentPassword] = useState('');
@@ -58,7 +62,8 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
         setBio(data.bio ?? '');
         setPresetAvatarId(data.presetAvatarId ?? 'spade');
         setAvatarType(data.avatarType ?? 'preset');
-        setLoading(false);
+            setUploadedAvatarUrl(data.avatarUrl ?? '');
+            setLoading(false);
       });
   }, []);
 
@@ -69,7 +74,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
     const res = await fetch('/api/profile', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayName, bio, presetAvatarId, avatarType }),
+      body: JSON.stringify({ displayName, bio, presetAvatarId, avatarType, avatarUrl: uploadedAvatarUrl }),
     });
     const data = await res.json();
     setSaving(false);
@@ -82,6 +87,33 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
       );
       setTimeout(() => setMsg(''), 3000);
     }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError('Image too large (max 2MB)');
+      return;
+    }
+    setUploading(true);
+    setUploadError('');
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('/api/profile/avatar', { method: 'POST', body: fd });
+    const data = await res.json();
+    setUploading(false);
+    if (!res.ok) {
+      setUploadError(data.error || 'Upload failed');
+    } else {
+      setUploadedAvatarUrl(data.avatarUrl);
+      setAvatarType('upload');
+      setProfile(p => p ? { ...p, avatarUrl: data.avatarUrl, avatarType: 'upload' } : p);
+      setMsg('Avatar updated!');
+      setTimeout(() => setMsg(''), 3000);
+    }
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -144,7 +176,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
         <div className="flex items-center gap-5 mb-8 p-5 bg-slate-900 border border-slate-800 rounded-2xl">
           <AvatarDisplay
             avatarType={avatarType}
-            avatarUrl={profile.avatarUrl}
+            avatarUrl={uploadedAvatarUrl || profile.avatarUrl}
             presetAvatarId={presetAvatarId}
             size="xl"
           />
@@ -218,7 +250,10 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
 
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
               <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Avatar</h2>
-              <div className="grid grid-cols-6 gap-2">
+
+              {/* Preset grid */}
+              <p className="text-xs text-slate-500 mb-3">Choose a preset</p>
+              <div className="grid grid-cols-6 gap-2 mb-5">
                 {PRESET_AVATARS.map(av => (
                   <button
                     key={av.id}
@@ -236,6 +271,36 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
                     {av.emoji}
                   </button>
                 ))}
+              </div>
+
+              {/* Upload section */}
+              <div className="border-t border-slate-700 pt-4">
+                <p className="text-xs text-slate-500 mb-3">Or upload a custom photo (max 2MB)</p>
+                <div className="flex items-center gap-3">
+                  {avatarType === 'upload' && uploadedAvatarUrl && (
+                    <AvatarDisplay avatarType="upload" avatarUrl={uploadedAvatarUrl} size="md" />
+                  )}
+                  <label className={`cursor-pointer flex-1 flex items-center justify-center gap-2 border border-dashed border-slate-600 hover:border-violet-500 rounded-lg py-2.5 px-4 text-sm transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <span className="text-slate-400">{uploading ? '⏳ Uploading…' : '📤 Choose image'}</span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                  </label>
+                  {avatarType === 'upload' && (
+                    <button
+                      onClick={() => setAvatarType('preset')}
+                      className="text-xs text-slate-500 hover:text-red-400 transition-colors whitespace-nowrap"
+                      title="Switch back to preset"
+                    >
+                      Use preset
+                    </button>
+                  )}
+                </div>
+                {uploadError && <p className="text-red-400 text-xs mt-2">{uploadError}</p>}
               </div>
             </div>
 
