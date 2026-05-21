@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem *)",
+      "Bash(Remove-Item *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(npx tsc *)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const lines=fs.readFileSync\\('components/game/GameTable.tsx','utf8'\\).split\\('\\\\n'\\);for\\(let i=1151;i<1156;i++\\)console.log\\(i+1+': '+JSON.stringify\\(lines[i]\\)\\)\")",
+      "Bash(node -e ' *)"
+    ]
+  }
+}
