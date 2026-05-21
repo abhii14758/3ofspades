@@ -27,11 +27,7 @@ export default function AuthCard() {
     });
     setLoading(false);
     if (res?.error) {
-      if (res.error === 'ACCOUNT_IN_GAME') {
-        setError('Your account is currently in an active game. Please finish the game or wait for it to end.');
-      } else {
-        setError('Invalid email or password.');
-      }
+      setError('Invalid email or password.');
       return;
     }
     // Check for active game and redirect accordingly
