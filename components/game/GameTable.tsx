@@ -1150,9 +1150,6 @@ export default function GameTable({
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, paddingTop: isMobile && isLandscape ? 4 : 8, width:'100%' }}>
               {(calledCardSlots.length > 0 ? calledCardSlots.length : calledCards.length) > 0 && phase === 'playing' && (
                 <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                  <span className="text-sm text-slate-300 shrink-0 font-semibold">
-                    {bidWinnerId === myPlayerId ? '🤝 Your partner cards:' : '🤝 Partner cards:'}
-                  </span>
                   {calledCardSlots.length > 0
                     ? (() => {
                         const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
