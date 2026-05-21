@@ -1,7 +1,8 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePlayerStore } from '@/store/playerStore';
+import { disconnectSocket, connectSocket } from '@/lib/socket/socketClient';
 
 export default function UserSync() {
   const { data: session } = useSession();
@@ -9,6 +10,7 @@ export default function UserSync() {
   const setPlayerName = usePlayerStore((s) => s.setPlayerName);
   const setPlayerId = usePlayerStore((s) => s.setPlayerId);
   const setRoomId = usePlayerStore((s) => s.setRoomId);
+  const prevUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!session?.user) return;
@@ -16,6 +18,15 @@ export default function UserSync() {
     if (user.id) {
       setUserId(user.id);
       setPlayerId(user.id);
+
+      // If the user just logged in (transition from no userId to having one),
+      // force a socket reconnect so the auth middleware picks up the JWT cookie.
+      if (!prevUserIdRef.current) {
+        disconnectSocket();
+        // Small delay to ensure disconnect completes before reconnecting
+        setTimeout(() => connectSocket(), 100);
+      }
+      prevUserIdRef.current = user.id;
     }
     if (user.name) setPlayerName(user.name);
 

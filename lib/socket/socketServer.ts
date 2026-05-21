@@ -1312,46 +1312,62 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
         socket.emit('room:error', { message: 'Room not found' });
         return;
       }
-      const player = room.players.find((p) => p.id === playerId);
+      let player = room.players.find((p) => p.id === playerId);
+
+      // Fallback: if player was created with a random UUID (before login),
+      // they may be reconnecting with their userId now. Find any disconnected
+      // human player in the room — if only one exists, assume it's them.
+      if (!player && socket.data.userId) {
+        const disconnectedHumans = room.players.filter(
+          (p) => (p.type === 'bot' && p.isSubstitutedBot) || (p.type === 'human' && p.status === 'disconnected'),
+        );
+        if (disconnectedHumans.length === 1) {
+          player = disconnectedHumans[0];
+        }
+      }
+
       if (!player) {
         socket.emit('room:error', { message: 'Player not found in room' });
         return;
       }
 
+      // Use the actual player ID (may differ from payload if fallback matched)
+      const actualPlayerId = player.id;
+
       // Cancel pending removal timer
-      const existingTimer = disconnectTimers.get(playerId);
+      const existingTimer = disconnectTimers.get(actualPlayerId);
       if (existingTimer) {
         clearTimeout(existingTimer);
-        disconnectTimers.delete(playerId);
+        disconnectTimers.delete(actualPlayerId);
       }
 
       // Re-map socket
       if (player.socketId) socketToPlayer.delete(player.socketId);
       player.socketId = socket.id;
-      socket.data.userId = player.id;
+      socket.data.userId = actualPlayerId;
       // Revert substituted bot back to human
       if (player.isSubstitutedBot) {
         player.type = 'human';
         player.isSubstitutedBot = false;
       }
       player.status = room.gameState ? 'playing' : 'ready';
-      socketToPlayer.set(socket.id, { roomId, playerId });
+      socketToPlayer.set(socket.id, { roomId, playerId: actualPlayerId });
       socket.join(roomId);
 
       if (userIdToSocketMap) {
-        userIdToSocketMap.set(playerId, socket.id);
+        userIdToSocketMap.set(actualPlayerId, socket.id);
       }
 
       io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
 
       if (room.gameState) {
         socket.emit('game:stateSync', {
-          gameState: getPublicGameState(room.gameState, playerId),
+          gameState: getPublicGameState(room.gameState, actualPlayerId),
         });
-        socket.emit('player:hand', { cards: room.gameState.hands[playerId] ?? [] });
+        socket.emit('player:hand', { cards: room.gameState.hands[actualPlayerId] ?? [] });
 
         // Re-send called cards if this player is the bid winner and already selected partners
-        if (playerId === room.gameState.bidWinnerId && room.gameState.calledCards.length > 0) {
+        if (actualPlayerId === room.gameState.bidWinnerId && room.gameState.calledCards.length > 0) {
           socket.emit('player:calledCards', {
             cards: room.gameState.calledCards,
             slots: room.gameState.calledCardSlots ?? [],
@@ -1359,9 +1375,14 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
         }
 
         // If it's this player's turn, reset the turn timer from bot-mode to human-mode
-        if (room.gameState.currentTurnPlayerId === playerId) {
+        if (room.gameState.currentTurnPlayerId === actualPlayerId) {
           scheduleAutoPlayIfNeeded(io, room);
         }
+      }
+
+      // Notify client of their actual player ID (in case it differs from what they sent)
+      if (actualPlayerId !== playerId) {
+        socket.emit('room:joined', { room: getSafeRoom(room), playerId: actualPlayerId });
       }
       } catch (err) {
         console.error('[player:reconnect]', err);
