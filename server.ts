@@ -3,6 +3,8 @@ import { parse } from 'url';
 import next from 'next';
 import { Server as SocketIOServer } from 'socket.io';
 import { initSocketServer } from './lib/socket/socketServer';
+import { decode } from 'next-auth/jwt';
+import { parse as parseCookies } from 'cookie';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || '0.0.0.0';
@@ -54,6 +56,43 @@ app.prepare().then(() => {
   });
 
   initSocketServer(io);
+
+  // Socket.IO auth middleware — extracts userId from NextAuth JWT cookie
+  io.use(async (socket, next) => {
+    try {
+      const cookieHeader = socket.request.headers.cookie || '';
+      const cookies = parseCookies(cookieHeader);
+
+      const sessionToken =
+        cookies['authjs.session-token'] ||
+        cookies['__Secure-authjs.session-token'];
+
+      if (!sessionToken) {
+        return next();
+      }
+
+      const secret = process.env.AUTH_SECRET;
+      if (!secret) return next();
+
+      const token = await decode({
+        token: sessionToken,
+        secret,
+        salt: sessionToken.startsWith('__Secure')
+          ? '__Secure-authjs.session-token'
+          : 'authjs.session-token',
+      });
+
+      if (token?.userId) {
+        socket.data.userId = token.userId as string;
+        socket.data.displayName = (token.name as string) || '';
+      }
+
+      next();
+    } catch (err) {
+      console.error('[socket auth middleware]', err);
+      next();
+    }
+  });
 
   httpServer.listen(port, () => {
     console.log(`> Ready on http://${hostname}:${port}`);
