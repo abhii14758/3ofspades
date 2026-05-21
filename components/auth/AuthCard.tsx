@@ -27,7 +27,18 @@ export default function AuthCard() {
     });
     setLoading(false);
     if (res?.error) {
-      setError('Invalid email or password.');
+      if (res.error === 'ACCOUNT_IN_GAME') {
+        setError('Your account is currently in an active game. Please finish the game or wait for it to end.');
+      } else {
+        setError('Invalid email or password.');
+      }
+      return;
+    }
+    // Check for active game and redirect accordingly
+    const activeRes = await fetch('/api/game/active');
+    const { activeRoomId } = await activeRes.json();
+    if (activeRoomId) {
+      router.push(`/game/${activeRoomId}`);
     } else {
       router.push(callbackUrl);
     }
