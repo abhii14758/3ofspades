@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "postinstall": "prisma generate",
     "dev": "tsx watch server.ts",
     "build": "next build --webpack",
     "start": "cross-env NODE_ENV=production tsx server.ts",
