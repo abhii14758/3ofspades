@@ -15,10 +15,13 @@ export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-/** Wait for DB connection with retries using a raw TCP check. */
+/** Wait for DB connection with retries. Logs warning instead of crashing on failure. */
 export async function waitForDb(maxRetries = 15, delayMs = 2000): Promise<void> {
   const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set');
+  if (!url) {
+    console.error('[db] DATABASE_URL is not set — DB features disabled');
+    return;
+  }
 
   for (let i = 0; i < maxRetries; i++) {
     try {
