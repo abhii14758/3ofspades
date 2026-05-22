@@ -317,6 +317,10 @@ export function useSocket() {
       gameStore.setBlackoutCount(count, names);
     });
 
+    socket.on('room:emote', ({ playerId, emote }: { playerId: string; emote: string }) => {
+      gameStore.showEmote(playerId, emote);
+    });
+
     socket.on('game:nextRoundReady', () => {
       // Server started next round — gameState will be updated via game:started
     });
@@ -344,6 +348,13 @@ export function useSocket() {
       setTimeout(() => {
         window.location.href = '/login';
       }, 2000);
+    });
+
+    socket.on('server:restarting', ({ message }: { message: string }) => {
+      toast(message ?? 'Server is restarting. Your game will be saved.', {
+        duration: 5000,
+        icon: '🔄',
+      });
     });
 
     // Server tells us our actual player ID (differs when player was created before login)
@@ -382,8 +393,10 @@ export function useSocket() {
       socket.off('room:blackout');
       socket.off('room:blackoutReveal');
       socket.off('room:blackoutCount');
+      socket.off('room:emote');
       socket.off('room:hostTransferred');
       socket.off('session:takeover');
+      socket.off('server:restarting');
       socket.off('player:idUpdate');
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

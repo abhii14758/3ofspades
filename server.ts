@@ -114,7 +114,7 @@ app.prepare().then(async () => {
     }
   });
 
-  initSocketServer(io, userIdToSocket);
+  const flushRooms = initSocketServer(io, userIdToSocket);
 
   // Clean up userIdToSocket on disconnect
   io.on('connection', (socket) => {
@@ -132,4 +132,33 @@ app.prepare().then(async () => {
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log(`> Socket.IO server running`);
   });
+
+  // Graceful shutdown — persist all state before exiting
+  const shutdown = async (signal: string) => {
+    console.log(`\n[${signal}] Shutting down gracefully...`);
+
+    // Notify all connected clients
+    io.emit('server:restarting', { message: 'Server is restarting. Your game is saved.' });
+
+    // Allow 2 seconds for clients to receive the notification
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Flush all room state to DB
+    console.log('[shutdown] Flushing room state to database...');
+    await flushRooms();
+
+    httpServer.close(() => {
+      console.log('[shutdown] HTTP server closed');
+      process.exit(0);
+    });
+
+    // Force exit after 10 seconds if graceful shutdown hangs
+    setTimeout(() => {
+      console.error('[shutdown] Forced exit after timeout');
+      process.exit(1);
+    }, 10_000);
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 });

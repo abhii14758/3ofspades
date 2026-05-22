@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
 import type { Player, Card as CardType } from '@/types';
 import AvatarDisplay from '@/components/profile/AvatarDisplay';
+import { getCardBack } from '@/config/cardBacks';
 
 const SUIT_SYMBOLS: Record<string, string> = {
   spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣',
@@ -18,6 +19,21 @@ const AVATAR_GRADIENTS = [
   'from-sky-500 to-blue-600',
   'from-violet-600 to-purple-700',
 ];
+
+const BACK_GRADIENTS: Record<string, string> = {
+  default: 'linear-gradient(135deg, #1a2850, #243f8a)',
+  midnight: 'linear-gradient(135deg, #1e1b4b, #4338ca)',
+  royal: 'linear-gradient(135deg, #581c87, #7e22ce)',
+  neon: 'linear-gradient(135deg, #065f46, #059669)',
+  galaxy: 'linear-gradient(135deg, #4c1d95, #6d28d9)',
+  gold: 'linear-gradient(135deg, #92400e, #d97706)',
+  frost: 'linear-gradient(135deg, #164e63, #0891b2)',
+  shadow: 'linear-gradient(135deg, #1f2937, #4b5563)',
+  cherry: 'linear-gradient(135deg, #9d174d, #db2777)',
+  forest: 'linear-gradient(135deg, #14532d, #15803d)',
+  ocean: 'linear-gradient(135deg, #1e3a8a, #2563eb)',
+  ember: 'linear-gradient(135deg, #9a3412, #ea580c)',
+};
 
 function nameHash(name: string): number {
   let h = 0;
@@ -57,6 +73,7 @@ export default function OpponentStrip({
         const cardCount = handCounts[player.id] ?? 0;
         const isRed = trickCard && (trickCard.suit === 'hearts' || trickCard.suit === 'diamonds');
         const gradient = AVATAR_GRADIENTS[nameHash(player.name) % AVATAR_GRADIENTS.length];
+        const hasFrame = player.equippedFrameId && player.equippedFrameId !== 'none';
 
         return (
           <div
@@ -101,7 +118,7 @@ export default function OpponentStrip({
                 /* Card count badge when no trick card yet */
                 <div style={{
                   width: 28, height: 40,
-                  background: 'linear-gradient(135deg, #1e3a8a, #2563eb)',
+                  background: BACK_GRADIENTS[player.equippedCardBackId ?? 'default'] ?? BACK_GRADIENTS['default'],
                   borderRadius: 4,
                   border: '1px solid rgba(96,165,250,0.4)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -115,15 +132,14 @@ export default function OpponentStrip({
 
             {/* Avatar */}
             <div
-              className={clsx('rounded-full overflow-hidden flex items-center justify-center font-bold text-xs text-white',
+              className={clsx('rounded-full flex items-center justify-center font-bold text-xs text-white',
                 !player.avatarUrl && !player.presetAvatarId && `bg-gradient-to-br ${gradient}`
               )}
               style={{
-                width: 28, height: 28,
-                boxShadow: isCurrentTurn
-                  ? '0 0 0 2px rgba(34,197,94,0.8), 0 0 10px rgba(34,197,94,0.5)'
-                  : isPartner
-                  ? '0 0 0 2px rgba(52,211,153,0.6)'
+                width: 36, height: 36,
+                boxShadow: hasFrame ? undefined
+                  : isCurrentTurn ? '0 0 0 2px rgba(34,197,94,0.8), 0 0 10px rgba(34,197,94,0.5)'
+                  : isPartner ? '0 0 0 2px rgba(52,211,153,0.6)'
                   : '0 0 0 1px rgba(255,255,255,0.1)',
               }}
             >
@@ -132,11 +148,15 @@ export default function OpponentStrip({
                   avatarType={player.avatarType ?? 'preset'}
                   presetAvatarId={player.presetAvatarId ?? 'spade'}
                   equippedFrameId={player.equippedFrameId}
-                  disableFrameRing
-                  size={28}
+                  size={36}
                 />
               ) : player.avatarUrl ? (
-                <img src={player.avatarUrl} alt={player.name} className="w-full h-full object-cover rounded-full" />
+                <AvatarDisplay
+                  avatarType="upload"
+                  avatarUrl={player.avatarUrl}
+                  equippedFrameId={player.equippedFrameId}
+                  size={36}
+                />
               ) : (
                 <span style={{ fontSize: 10 }}>{player.name.charAt(0)}</span>
               )}

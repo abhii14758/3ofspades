@@ -61,3 +61,67 @@ model PasswordResetToken {
   expiresAt DateTime
   used      Boolean  @default(false)
 }
+
+model RoomDB {
+  id           String          @id
+  name         String
+  hostId       String
+  config       Json
+  maxPlayers   Int
+  status       String          @default("lobby")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  players      PlayerRecord[]
+  gameState    GameStateDB?
+}
+
+model PlayerRecord {
+  id                 String   @id
+  roomId             String
+  name               String
+  type               String   @default("human")
+  status             String   @default("waiting")
+  isHost             Boolean  @default(false)
+  seatIndex          Int      @default(0)
+  avatarType         String   @default("preset")
+  presetAvatarId     String   @default("spade")
+  avatarUrl          String   @default("")
+  equippedFrameId    String   @default("none")
+  equippedCardBackId String   @default("default")
+  isSubstitutedBot   Boolean  @default(false)
+
+  room               RoomDB   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([id, roomId])
+}
+
+model GameStateDB {
+  id                  String   @id @default(uuid())
+  roomId              String   @unique
+  phase               String
+  roundNumber         Int      @default(1)
+  dealerIndex         Int      @default(0)
+  currentTurnPlayerId String?
+  bidWinnerId         String?
+  trumpSuit           String?
+  hands               Json     @default("{}")
+  bidState            Json?
+  currentTrick        Json?
+  calledCards         Json     @default("[]")
+  calledCardSlots     Json     @default("[]")
+  revealedPartnerIds  Json     @default("[]")
+  teams               Json?
+  roundHistory        Json     @default("[]")
+  completedTricks     Json     @default("[]")
+  playerTotals        Json     @default("{}")
+  voteEndVotes        Json     @default("{}")
+  turnTimerEndsAt     Float?
+  winnerTeamId        String?
+  players             Json     @default("[]")
+  partnerCards        Json     @default("[]")
+  partnerIds          Json     @default("[]")
+  playTypeCounters    Json     @default("{}")
+
+  room                RoomDB   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}

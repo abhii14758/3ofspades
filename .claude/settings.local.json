@@ -8,7 +8,17 @@
       "Bash(git commit *)",
       "Bash(npx tsc *)",
       "Bash(node -e \"const fs=require\\('fs'\\);const lines=fs.readFileSync\\('components/game/GameTable.tsx','utf8'\\).split\\('\\\\n'\\);for\\(let i=1151;i<1156;i++\\)console.log\\(i+1+': '+JSON.stringify\\(lines[i]\\)\\)\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node *)",
+      "Bash(dir D:\\\\3ofspades\\\\lib\\\\db\\\\ *)",
+      "Bash(npx prisma *)",
+      "Bash(powershell *)",
+      "Bash(Select-String -NotMatch \"\\\\.next\\\\\\\\\")",
+      "Bash(Select-Object -First 30)",
+      "Bash(Select-String \"error TS\")",
+      "Bash(Select-String -NotMatch \".next/\")",
+      "Bash(Select-Object -First 40)",
+      "Bash(npm install *)"
     ]
   }
 }

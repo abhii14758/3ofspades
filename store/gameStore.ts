@@ -13,6 +13,12 @@ import type {
   CalledCardSlot,
 } from '@/types';
 
+export interface ActiveEmote {
+  playerId: string;
+  emote: string;
+  timestamp: number;
+}
+
 interface GameStore {
   gameState: GameState | null;
   myHand: Card[];
@@ -26,6 +32,7 @@ interface GameStore {
   isBlackout: boolean;
   blackoutCount: number;
   blackoutVoterNames: string[];
+  activeEmotes: Record<string, ActiveEmote>;
 
   // Setters driven by socket events
   setGameState: (state: GameState) => void;
@@ -53,6 +60,7 @@ interface GameStore {
   ) => void;
   setGameEnd: (winnerTeamId: TeamId, teams: { A: Team; B: Team }, playerTotals?: Record<string, number>) => void;
   dismissRoundResult: () => void;
+  showEmote: (playerId: string, emote: string) => void;
   reset: () => void;
 
   // Derived selectors
@@ -78,6 +86,7 @@ const initialState = {
   isBlackout: false,
   blackoutCount: 0,
   blackoutVoterNames: [] as string[],
+  activeEmotes: {} as Record<string, ActiveEmote>,
 };
 
 export const useGameStore = create<GameStore>()((set, get) => ({
@@ -190,6 +199,24 @@ export const useGameStore = create<GameStore>()((set, get) => ({
     })),
 
   dismissRoundResult: () => set({ showRoundResult: false }),
+
+  showEmote: (playerId, emote) => {
+    const timestamp = Date.now();
+    set((s) => ({
+      activeEmotes: { ...s.activeEmotes, [playerId]: { playerId, emote, timestamp } },
+    }));
+    // Auto-clear after 3 seconds
+    setTimeout(() => {
+      set((s) => {
+        const current = s.activeEmotes[playerId];
+        if (current && current.timestamp === timestamp) {
+          const { [playerId]: _, ...rest } = s.activeEmotes;
+          return { activeEmotes: rest };
+        }
+        return {};
+      });
+    }, 3000);
+  },
 
   setTurnTimer: (endsAt) => set({ turnTimerEndsAt: endsAt }),
 

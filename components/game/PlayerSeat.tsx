@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import clsx from 'clsx';
 import type { Player, Card as CardType } from '@/types';
 import AvatarDisplay from '@/components/profile/AvatarDisplay';
+import EmoteBubble from '@/components/game/EmoteBubble';
+import type { ActiveEmote } from '@/store/gameStore';
 
 interface PlayerSeatProps {
   player: Player;
@@ -23,6 +25,7 @@ interface PlayerSeatProps {
   showCombinedLabel?: boolean;
   extraCompact?: boolean;
   miniCardCount?: number;
+  activeEmote?: ActiveEmote | undefined;
 }
 
 const AVATAR_GRADIENTS = [
@@ -112,6 +115,7 @@ function PlayerSeat({
   showCombinedLabel = false,
   extraCompact = false,
   miniCardCount = 0,
+  activeEmote,
 }: PlayerSeatProps) {
   const isDisconnected = player.status === 'disconnected';
   const gradient = isLocalPlayer
@@ -120,23 +124,22 @@ function PlayerSeat({
 
   const partnerRevealed = isPartner && isRevealed;
 
-  const avatarSize = extraCompact ? 34 : 56;
+  const avatarSize = extraCompact ? 44 : 72;
   const avatarFontSize = extraCompact ? 10 : 16;
+  const hasFrame = player.equippedFrameId && player.equippedFrameId !== 'none';
+  const containerSize = hasFrame ? avatarSize + 8 : avatarSize;
+  const timerSize = containerSize + 14;
 
-  const avatarBorder = isCurrentTurn
-    ? '2.5px solid #00ffcc'
-    : isLocalPlayer
-    ? '2.5px solid #f9d976'
-    : partnerRevealed
-    ? '2.5px solid #34d399'
+  const avatarBorder = hasFrame ? undefined
+    : isCurrentTurn ? '2.5px solid #00ffcc'
+    : isLocalPlayer ? '2.5px solid #f9d976'
+    : partnerRevealed ? '2.5px solid #34d399'
     : '2.5px solid #d4af37';
 
-  const avatarBoxShadow = isCurrentTurn
-    ? '0 0 0 4px rgba(0,255,204,.25), 0 0 14px rgba(0,255,204,.5)'
-    : isLocalPlayer
-    ? '0 0 0 3px rgba(249,217,118,.3)'
-    : partnerRevealed
-    ? '0 0 10px rgba(52,211,153,.45)'
+  const avatarBoxShadow = hasFrame ? undefined
+    : isCurrentTurn ? '0 0 0 4px rgba(0,255,204,.25), 0 0 14px rgba(0,255,204,.5)'
+    : isLocalPlayer ? '0 0 0 3px rgba(249,217,118,.3)'
+    : partnerRevealed ? '0 0 10px rgba(52,211,153,.45)'
     : undefined;
 
   const namePillColor = isCurrentTurn
@@ -158,19 +161,21 @@ function PlayerSeat({
   return (
     <div
       className={clsx(
-        'flex flex-col items-center gap-1 transition-opacity duration-300',
+        'relative flex flex-col items-center gap-1 transition-opacity duration-300',
         isDisconnected && 'opacity-40'
       )}
     >
+      {/* Emote bubble overlay — positioned above the entire seat */}
+      <EmoteBubble activeEmote={activeEmote} />
       {/* Avatar with timer ring */}
-      <div className="relative mt-1" style={{ width: avatarSize, height: avatarSize }}>
+      <div className="relative mt-1" style={{ width: containerSize, height: containerSize }}>
         {/* Timer ring */}
         {isCurrentTurn && turnTimerEndsAt && (
           <div className="absolute" style={{ inset: -7 }}>
             <TimerRing
               endsAt={turnTimerEndsAt}
               totalSeconds={turnTimerTotalSeconds}
-              size={54}
+              size={timerSize}
             />
           </div>
         )}
@@ -178,7 +183,7 @@ function PlayerSeat({
         {/* Avatar circle */}
         <div
           className={clsx(
-            'rounded-full flex items-center justify-center font-black uppercase text-white relative overflow-hidden',
+            'rounded-full flex items-center justify-center font-black uppercase text-white relative',
             isCurrentTurn && 'av-pulse',
             !player.avatarUrl && !player.presetAvatarId && `bg-gradient-to-br ${gradient}`
           )}
@@ -196,11 +201,15 @@ function PlayerSeat({
               avatarType={player.avatarType ?? 'preset'}
               presetAvatarId={player.presetAvatarId ?? 'spade'}
               equippedFrameId={player.equippedFrameId}
-              disableFrameRing
               size={avatarSize}
             />
           ) : player.avatarUrl ? (
-            <img src={player.avatarUrl} alt={player.name} className="absolute inset-0 w-full h-full object-cover rounded-full" />
+            <AvatarDisplay
+              avatarType="upload"
+              avatarUrl={player.avatarUrl}
+              equippedFrameId={player.equippedFrameId}
+              size={avatarSize}
+            />
           ) : (
             <span className="relative z-10">{player.name.charAt(0)}</span>
           )}

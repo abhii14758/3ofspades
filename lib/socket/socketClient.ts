@@ -117,4 +117,7 @@ export const socketEmit = {
 
   blackoutReveal: (roomId: string) =>
     getSocket().emit('room:blackoutReveal', { roomId }),
+
+  sendEmote: (roomId: string, emote: string) =>
+    getSocket().emit('room:emote', { roomId, emote }),
 };

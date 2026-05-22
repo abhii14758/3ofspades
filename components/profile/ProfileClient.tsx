@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 import AvatarDisplay from './AvatarDisplay';
+import ImageCropModal from './ImageCropModal';
 import { PRESET_AVATARS } from '@/config/avatars';
 import { FRAMES } from '@/config/frames';
 import { CARD_BACKS } from '@/config/cardBacks';
@@ -51,6 +52,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
   const [equippedTableThemeId, setEquippedTableThemeId] = useState('default');
   const [equippedEmoteIds, setEquippedEmoteIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 
   const { soundVolume, musicVolume, muted, language, setSoundVolume, setMusicVolume, setMuted, setLanguage } = useSettingsStore();
 
@@ -104,17 +106,26 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
     }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
       setUploadError('Image too large (max 2MB)');
       return;
     }
+    setUploadError('');
+    const reader = new FileReader();
+    reader.onload = () => setCropImageSrc(reader.result as string);
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setCropImageSrc(null);
     setUploading(true);
     setUploadError('');
     const fd = new FormData();
-    fd.append('file', file);
+    fd.append('file', croppedBlob, 'avatar.jpg');
     const res = await fetch('/api/profile/avatar', { method: 'POST', body: fd });
     const data = await res.json();
     setUploading(false);
@@ -127,8 +138,6 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
       setMsg('Avatar updated!');
       setTimeout(() => setMsg(''), 3000);
     }
-    // Reset input so same file can be re-selected
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -303,7 +312,7 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={handleAvatarUpload}
+                      onChange={handleAvatarSelect}
                     />
                   </label>
                   {avatarType === 'upload' && (
@@ -625,6 +634,13 @@ export default function ProfileClient({ userId, userEmail }: { userId: string; u
           </div>
         )}
       </div>
+      {cropImageSrc && (
+        <ImageCropModal
+          imageSrc={cropImageSrc}
+          onCropComplete={handleCropComplete}
+          onCancel={() => setCropImageSrc(null)}
+        />
+      )}
     </div>
   );
 }

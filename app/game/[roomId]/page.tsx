@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import GameTable from '@/components/game/GameTable';
@@ -39,6 +39,14 @@ export default function GamePage() {
   const preset = currentRoom?.config?.preset ?? '6p1d';
   const roomGameConfig = getConfigForPreset(preset);
 
+  const [tableThemeId, setTableThemeId] = useState('default');
+  useEffect(() => {
+    fetch('/api/profile')
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((data: Record<string, unknown>) => { if (data.equippedTableThemeId) setTableThemeId(data.equippedTableThemeId as string); })
+      .catch(() => {});
+  }, []);
+
   // ALL hooks must be declared before any conditional return (Rules of Hooks)
   const handlePlayCard = useCallback((card: Card) => playCard(card.id), [playCard]);
   const handleBid = useCallback((amount: number) => placeBid(amount), [placeBid]);
@@ -67,18 +75,25 @@ export default function GamePage() {
     return () => { socket.off('connect', attemptReconnect); };
   }, [roomId, storedPlayerId, userId, gameState]);
 
-  // Handle reconnect failure: server emits room:error when the room no longer exists
+  // Handle reconnect failure / kicked from room
   useEffect(() => {
     const socket = connectSocket();
 
-    const handleRoomError = ({ message }: { message: string }) => {
+    const redirectToLobby = (message: string) => {
       toast.error(message);
       setRoomId(null);
       setTimeout(() => router.push('/lobby'), 2000);
     };
 
+    const handleRoomError = ({ message }: { message: string }) => redirectToLobby(message);
+    const handleKicked = ({ reason }: { reason: string }) => redirectToLobby(reason ?? 'You were removed from the room');
+
     socket.on('room:error', handleRoomError);
-    return () => { socket.off('room:error', handleRoomError); };
+    socket.on('room:kicked', handleKicked);
+    return () => {
+      socket.off('room:error', handleRoomError);
+      socket.off('room:kicked', handleKicked);
+    };
   }, [router, setRoomId]);
 
   // Loading / reconnecting state
@@ -135,6 +150,7 @@ export default function GamePage() {
         totalTricks={roomGameConfig.totalTricks}
         turnTimerTotalSeconds={currentRoom?.config?.turnTimerSeconds ?? 30}
         deckCount={roomGameConfig.deckCount}
+        tableThemeId={tableThemeId}
       />
 
       {showRoundResult && lastRoundHistory && gameState.teams && (

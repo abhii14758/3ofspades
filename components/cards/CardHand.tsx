@@ -347,25 +347,6 @@ export default function CardHand({
             );
           })}
         </div>
-
-        {/* Play button */}
-        <AnimatePresence>
-          {selectedCardId && isMyTurn && (
-            <motion.button
-              key="play-btn"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="ml-3 mb-2 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-green-900/60 border border-green-500/60 shrink-0 min-h-[44px] transition-all"
-              onClick={() => {
-                const card = cards.find(c => c.id === selectedCardId);
-                if (card) onCardPlay?.(card);
-              }}
-            >
-              Play ▶
-            </motion.button>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );

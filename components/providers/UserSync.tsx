@@ -10,6 +10,7 @@ export default function UserSync() {
   const setPlayerName = usePlayerStore((s) => s.setPlayerName);
   const setPlayerId = usePlayerStore((s) => s.setPlayerId);
   const setRoomId = usePlayerStore((s) => s.setRoomId);
+  const setAvatar = usePlayerStore((s) => s.setAvatar);
   const prevUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -39,7 +40,21 @@ export default function UserSync() {
         }
       })
       .catch(() => {});
-  }, [session, setUserId, setPlayerName, setPlayerId, setRoomId]);
+
+    // Sync cosmetic settings from DB into playerStore
+    fetch('/api/profile')
+      .then(r => r.ok ? r.json() : {})
+      .then((data: Record<string, unknown>) => {
+        setAvatar({
+          presetAvatarId: data.presetAvatarId as string | undefined,
+          avatarType: data.avatarType as 'preset' | 'upload' | undefined,
+          avatarUrl: data.avatarUrl as string | undefined,
+          equippedFrameId: data.equippedFrameId as string | undefined,
+          equippedCardBackId: data.equippedCardBackId as string | undefined,
+        });
+      })
+      .catch(() => {});
+  }, [session, setUserId, setPlayerName, setPlayerId, setRoomId, setAvatar]);
 
   return null;
 }

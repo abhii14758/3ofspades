@@ -54,6 +54,7 @@ import {
   buildFullDeck,
 } from '@/lib/game-engine/botEngine';
 import { getCardTypeId } from '@/lib/game-engine/deck';
+import { persistRoom, persistGameState, deleteRoom, schedulePersist, cancelPersist, loadRoomFromDB, loadAllActiveRooms, flushAllPending, cleanupOldRooms } from '@/lib/db/roomPersistence';
 
 let userIdToSocketMap: Map<string, string>;
 
@@ -70,6 +71,9 @@ const disconnectTimers = new Map<string, NodeJS.Timeout>();
 
 /** Per-room active turn timer (auto-play fires when a human doesn't act in time). */
 const turnTimers = new Map<string, NodeJS.Timeout>();
+
+/** Kicked player IDs per room — prevents kicked players from reconnecting. */
+const kickedPlayers = new Map<string, Set<string>>();
 
 /** Pending new-round start timers (3-second delay between rounds). */
 const roundStartTimers = new Map<string, NodeJS.Timeout>();
@@ -135,6 +139,8 @@ function cleanupRoomTimers(roomId: string): void {
 
   const trickClear = trickClearTimers.get(roomId);
   if (trickClear) { clearTimeout(trickClear); trickClearTimers.delete(roomId); }
+
+  kickedPlayers.delete(roomId);
 
   roomTeamTotals.delete(roomId);
   blackoutVoters.delete(roomId);
@@ -594,12 +600,12 @@ function handleSelectPartners(
   return true;
 }
 
-function handlePlayCard(
+async function handlePlayCard(
   io: Server,
   roomId: string,
   playerId: string,
   cardId: string,
-): boolean {
+): Promise<boolean> {
   const room = rooms.get(roomId);
   if (!room?.gameState) return false;
 
@@ -721,7 +727,50 @@ function handlePlayCard(
         Promise.all(humanPlayers.map(p =>
           prisma.user.update({ where: { id: p.id }, data: { activeRoomId: null } }).catch(console.error)
         ));
+
+        // Update player stats for all human players
+        if (finalState.teams && finalState.winnerTeamId) {
+          const winnerTeam = finalState.teams[finalState.winnerTeamId];
+          for (const player of room.players) {
+            if (player.type !== 'human') continue;
+            const isWinner = winnerTeam.playerIds.includes(player.id);
+            const playerPoints = finalState.playerTotals?.[player.id] ?? 0;
+            try {
+              const stats = await prisma.playerStats.findUnique({ where: { userId: player.id } });
+              if (stats) {
+                const newStreak = isWinner ? stats.winStreak + 1 : 0;
+                await prisma.playerStats.update({
+                  where: { userId: player.id },
+                  data: {
+                    gamesPlayed: stats.gamesPlayed + 1,
+                    gamesWon: stats.gamesWon + (isWinner ? 1 : 0),
+                    totalPoints: stats.totalPoints + Math.max(0, playerPoints),
+                    totalTricks: stats.totalTricks + (isWinner ? winnerTeam.tricksWon : 0),
+                    winStreak: newStreak,
+                    maxWinStreak: Math.max(stats.maxWinStreak, newStreak),
+                  },
+                });
+              } else {
+                await prisma.playerStats.create({
+                  data: {
+                    userId: player.id,
+                    gamesPlayed: 1,
+                    gamesWon: isWinner ? 1 : 0,
+                    totalPoints: Math.max(0, playerPoints),
+                    totalTricks: isWinner ? winnerTeam.tricksWon : 0,
+                    winStreak: isWinner ? 1 : 0,
+                    maxWinStreak: isWinner ? 1 : 0,
+                  },
+                });
+              }
+            } catch (err) {
+              console.error(`[stats] Failed for ${player.id}:`, err);
+            }
+          }
+        }
       }
+      // Persist full room state on round/game end
+      persistRoom(room).catch(err => console.error('[persist] game:playCard round/game end:', err));
       // No auto-restart: host must emit game:nextRound to begin the next round
     } else {
       // Cancel any pending trick-clear timer for this room
@@ -757,13 +806,38 @@ function handlePlayCard(
  * Attaches all game socket event handlers to the provided Socket.IO server instance.
  * Called once from server.ts during application startup.
  */
-export function setupSocketServer(io: Server, userIdToSocket?: Map<string, string>): void {
+export function setupSocketServer(io: Server, userIdToSocket?: Map<string, string>): () => Promise<void> {
   userIdToSocketMap = userIdToSocket ?? new Map();
-  // On startup, clear all activeRoomId values — server restart wipes in-memory
-  // game state, so any DB-tracked "active room" is now stale.
-  prisma.user.updateMany({ data: { activeRoomId: null } })
-    .then(r => { if (r.count > 0) console.log(`[socket] Cleared stale activeRoomId for ${r.count} user(s)`); })
-    .catch(err => console.error('[socket] Failed to clear stale activeRoomIds:', err));
+  // On startup, recover rooms from database
+  loadAllActiveRooms()
+    .then(recoveredRooms => {
+      for (const room of recoveredRooms) {
+        rooms.set(room.id, room);
+      }
+      if (recoveredRooms.length > 0) {
+        console.log(`[socket] Recovered ${recoveredRooms.length} room(s) from database`);
+      }
+      // Clear stale activeRoomIds for users not in any recovered room
+      const activeRoomIds = new Set(recoveredRooms.map(r => r.id));
+      prisma.user.findMany({ where: { activeRoomId: { not: null } }, select: { id: true, activeRoomId: true } })
+        .then(users => {
+          const toClear = users.filter(u => u.activeRoomId && !activeRoomIds.has(u.activeRoomId));
+          if (toClear.length > 0) {
+            prisma.user.updateMany({
+              where: { id: { in: toClear.map(u => u.id) } },
+              data: { activeRoomId: null },
+            }).then(r => console.log(`[socket] Cleared ${r.count} stale activeRoomId(s)`));
+          }
+        });
+    })
+    .catch(err => console.error('[socket] Failed to recover rooms:', err));
+
+  // Periodic cleanup of old game_end rooms
+  setInterval(() => {
+    cleanupOldRooms().then(count => {
+      if (count > 0) console.log(`[cleanup] Deleted ${count} old game_end room(s)`);
+    });
+  }, 5 * 60 * 1000);
 
   io.on('connection', (socket: Socket) => {
     // ── room:create ───────────────────────────────────────────────────────
@@ -817,6 +891,8 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
           .catch(err => console.error('[socket] Failed to set activeRoomId:', err));
       }
 
+      persistRoom(room).catch(err => console.error('[persist] room:create:', err));
+
       socket.emit('room:created', { room: getSafeRoom(room), playerId });
       } catch (err) {
         console.error('[room:create]', err);
@@ -825,8 +901,18 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
     });
 
     // ── room:join ─────────────────────────────────────────────────────────
-    socket.on('room:join', (payload: JoinRoomPayload) => {
-      const room = rooms.get(payload.roomId);
+    socket.on('room:join', async (payload: JoinRoomPayload) => {
+      let room = rooms.get(payload.roomId);
+
+      if (!room) {
+        // Try loading from database (may have been lost on server restart)
+        const loaded = await loadRoomFromDB(payload.roomId).catch(() => null);
+        if (loaded) {
+          rooms.set(payload.roomId, loaded);
+          room = loaded;
+          console.log(`[socket] Loaded room ${payload.roomId} from database on join`);
+        }
+      }
 
       if (!room) {
         socket.emit('room:error', { message: 'Room not found' });
@@ -848,6 +934,12 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
       if (socket.data.userId) {
         const existingPlayer = room.players.find(p => p.id === socket.data.userId);
         if (existingPlayer) {
+          // Block kicked players from reconnecting
+          const kicked = kickedPlayers.get(payload.roomId);
+          if (kicked && kicked.has(socket.data.userId)) {
+            socket.emit('room:error', { message: 'You were removed from this room' });
+            return;
+          }
           // Player is already in room — reconnect them (lobby or game in progress)
           const existingTimer = disconnectTimers.get(existingPlayer.id);
           if (existingTimer) { clearTimeout(existingTimer); disconnectTimers.delete(existingPlayer.id); }
@@ -877,6 +969,7 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
               scheduleAutoPlayIfNeeded(io, room);
             }
           }
+          persistRoom(room).catch(err => console.error('[persist] room:join:', err));
           return;
         }
       }
@@ -915,6 +1008,8 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
         prisma.user.update({ where: { id: socket.data.userId }, data: { activeRoomId: payload.roomId } })
           .catch(err => console.error('[socket] Failed to set activeRoomId on join:', err));
       }
+
+      persistRoom(room).catch(err => console.error('[persist] room:join:', err));
 
       socket.emit('room:joined', { room: getSafeRoom(room), playerId });
       socket.to(payload.roomId).emit('room:updated', { room: getSafeRoom(room) });
@@ -1008,11 +1103,18 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
       prisma.user.update({ where: { id: payload.targetPlayerId }, data: { activeRoomId: null } })
         .catch(err => console.error('[socket] Failed to clear activeRoomId on kick:', err));
 
+      // Track kicked player so they can't reconnect
+      if (!kickedPlayers.has(payload.roomId)) kickedPlayers.set(payload.roomId, new Set());
+      kickedPlayers.get(payload.roomId)!.add(payload.targetPlayerId);
+
       // Notify the kicked player before modifying their state
       if (targetPlayer.socketId) {
         io.to(targetPlayer.socketId).emit('room:kicked', {
           reason: 'You were removed from the room by the host',
         });
+        // Remove from room channel and clean up mappings
+        const targetSocket = io.sockets.sockets.get(targetPlayer.socketId);
+        if (targetSocket) targetSocket.leave(payload.roomId);
         for (const [sid, sInfo] of socketToPlayer.entries()) {
           if (sInfo.playerId === payload.targetPlayerId) {
             socketToPlayer.delete(sid);
@@ -1037,6 +1139,7 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
         room.players = room.players.filter((p) => p.id !== payload.targetPlayerId);
         io.to(payload.roomId).emit('room:updated', { room: getSafeRoom(room) });
       }
+      persistRoom(room).catch(err => console.error('[persist] room:kickPlayer:', err));
     });
 
     // ── game:start ────────────────────────────────────────────────────────
@@ -1072,6 +1175,8 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
       gameState.playerTotals = {};
       gameState.voteEndVotes = {};
       room.gameState = gameState;
+
+      persistRoom(room).catch(err => console.error('[persist] game:start:', err));
 
       io.to(payload.roomId).emit('game:started', { gameState: getSafeGameState(gameState) });
 
@@ -1123,6 +1228,7 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
         if (!handlePlaceBid(io, payload.roomId, info.playerId, payload.amount)) {
           socket.emit('room:error', { message: 'Invalid bid' });
         }
+        schedulePersist(payload.roomId, rooms);
       } catch (err) {
         console.error('[game:placeBid]', err);
         socket.emit('room:error', { message: 'Server error processing action' });
@@ -1140,6 +1246,7 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
         if (!handleSelectTrump(io, payload.roomId, info.playerId, payload.suit)) {
           socket.emit('room:error', { message: 'Cannot select trump now' });
         }
+        schedulePersist(payload.roomId, rooms);
       } catch (err) {
         console.error('[game:selectTrump]', err);
         socket.emit('room:error', { message: 'Server error processing action' });
@@ -1158,6 +1265,7 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
         if (!handleSelectPartners(io, payload.roomId, info.playerId, slots)) {
           socket.emit('room:error', { message: 'Invalid partner selection' });
         }
+        schedulePersist(payload.roomId, rooms);
       } catch (err) {
         console.error('[game:selectPartners]', err);
         socket.emit('room:error', { message: 'Server error processing action' });
@@ -1165,16 +1273,17 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
     });
 
     // ── game:playCard ─────────────────────────────────────────────────────
-    socket.on('game:playCard', (payload: PlayCardPayload) => {
+    socket.on('game:playCard', async (payload: PlayCardPayload) => {
       try {
         const info = socketToPlayer.get(socket.id);
         if (!info || info.roomId !== payload.roomId) {
           socket.emit('room:error', { message: 'Invalid room' });
           return;
         }
-        if (!handlePlayCard(io, payload.roomId, info.playerId, payload.cardId)) {
+        if (!await handlePlayCard(io, payload.roomId, info.playerId, payload.cardId)) {
           socket.emit('room:error', { message: 'Invalid card play' });
         }
+        schedulePersist(payload.roomId, rooms);
       } catch (err) {
         console.error('[game:playCard]', err);
         socket.emit('room:error', { message: 'Server error processing action' });
@@ -1260,7 +1369,9 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
         room.gameState = null;
         room.players.forEach(p => { p.status = 'waiting'; });
         io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
+        persistRoom(room).catch(err => console.error('[persist] game:voteEnd:', err));
       }
+      schedulePersist(roomId, rooms);
     });
 
     // ── game:terminate ────────────────────────────────────────────────────
@@ -1275,6 +1386,8 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
         cleanupRoomTimers(payload.roomId);
         io.to(payload.roomId).emit('game:terminated', { message: 'Game terminated by host' });
         rooms.delete(payload.roomId);
+        deleteRoom(payload.roomId).catch(err => console.error('[persist] game:terminate:', err));
+        cancelPersist(payload.roomId);
       } catch (err) {
         console.error('[game:terminate]', err);
       }
@@ -1301,7 +1414,7 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
     });
 
     // ── player:reconnect ──────────────────────────────────────────────────
-    socket.on('player:reconnect', (payload: ReconnectPayload) => {
+    socket.on('player:reconnect', async (payload: ReconnectPayload) => {
       try {
         const { roomId, playerId } = payload;
 
@@ -1311,7 +1424,15 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
           return;
         }
 
-        const room = rooms.get(roomId);
+        let room = rooms.get(roomId);
+        if (!room) {
+          const loaded = await loadRoomFromDB(roomId);
+          if (loaded) {
+            rooms.set(roomId, loaded);
+            room = loaded;
+            console.log(`[socket] Loaded room ${roomId} from database on reconnect`);
+          }
+        }
 
       if (!room) {
         socket.emit('room:error', { message: 'Room not found' });
@@ -1338,6 +1459,13 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
 
       if (!player) {
         socket.emit('room:error', { message: 'Player not found in room' });
+        return;
+      }
+
+      // Block kicked players from reconnecting
+      const kicked = kickedPlayers.get(roomId);
+      if (kicked && kicked.has(player.id)) {
+        socket.emit('room:error', { message: 'You were removed from this room' });
         return;
       }
 
@@ -1471,6 +1599,8 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
             if (currentRoom.hostId === playerId) {
               rooms.delete(roomId);
               io.to(roomId).emit('room:closed', { reason: 'Host has left the room' });
+              deleteRoom(roomId).catch(err => console.error('[persist] disconnect host leave delete:', err));
+              cancelPersist(roomId);
               return;
             }
 
@@ -1478,12 +1608,15 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
 
             if (currentRoom.players.length === 0) {
               rooms.delete(roomId);
+              deleteRoom(roomId).catch(err => console.error('[persist] disconnect empty room delete:', err));
+              cancelPersist(roomId);
               return;
             }
           }
 
           if (rooms.has(roomId)) {
             io.to(roomId).emit('room:updated', { room: getSafeRoom(currentRoom) });
+            persistRoom(currentRoom).catch(err => console.error('[persist] disconnect:', err));
           }
         } catch (err) {
           console.error('[disconnectTimer]', err);
@@ -1531,20 +1664,26 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
           }
           io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
           syncStateToAll(io, room);
+          persistRoom(room).catch(err => console.error('[persist] room:leave:', err));
         } else {
           // Lobby or game_end — remove them; if host, close the room
           if (room.hostId === playerId) {
             rooms.delete(roomId);
             io.to(roomId).emit('room:closed', { reason: 'Host has left the room' });
+            deleteRoom(roomId).catch(err => console.error('[persist] room:leave delete:', err));
+            cancelPersist(roomId);
             return;
           }
           const idx = room.players.findIndex((p) => p.id === playerId);
           if (idx !== -1) room.players.splice(idx, 1);
           if (room.players.length === 0) {
             rooms.delete(roomId);
+            deleteRoom(roomId).catch(err => console.error('[persist] room:leave delete empty:', err));
+            cancelPersist(roomId);
             return;
           }
           io.to(roomId).emit('room:updated', { room: getSafeRoom(room) });
+          persistRoom(room).catch(err => console.error('[persist] room:leave:', err));
         }
 
         socket.emit('room:left', {});
@@ -1648,7 +1787,21 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
       };
       io.to(roomId).emit('chat:receive', msg);
     });
+
+    // ── room:emote ────────────────────────────────────────────────────────
+    socket.on('room:emote', ({ roomId, emote }: { roomId: string; emote: string }) => {
+      const info = socketToPlayer.get(socket.id);
+      if (!info || info.roomId !== roomId) return;
+      // Broadcast the emote to everyone in the room (including sender for echo)
+      io.to(roomId).emit('room:emote', {
+        playerId: info.playerId,
+        emote,
+        timestamp: Date.now(),
+      });
+    });
   });
+
+  return () => flushAllPending(rooms);
 }
 
 // Alias for any callers using the longer name

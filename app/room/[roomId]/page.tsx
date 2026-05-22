@@ -46,7 +46,8 @@ function PlayerAvatar({ player, isLocal }: { player: Player; isLocal: boolean })
         avatarType={player.avatarType ?? 'preset'}
         avatarUrl={player.avatarUrl}
         presetAvatarId={player.presetAvatarId ?? 'spade'}
-        size="md"
+        equippedFrameId={player.equippedFrameId}
+        size="lg"
       />
     </div>
   );

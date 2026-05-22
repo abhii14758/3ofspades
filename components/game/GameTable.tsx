@@ -14,11 +14,27 @@ import VotePanel from './VotePanel';
 // import ChatPanel from './ChatPanel';
 import { useGameStore } from '@/store/gameStore';
 import CardHand from '@/components/cards/CardHand';
-import AvatarUpload from './AvatarUpload';
 import OpponentStrip from './OpponentStrip';
 import PartnerTracker from './PartnerTracker';
 import BlackoutOverlay from './BlackoutOverlay';
+import EmoteWheel from './EmoteWheel';
 import { socketEmit } from '@/lib/socket/socketClient';
+import { getTableTheme } from '@/config/tableThemes';
+
+const BACK_GRADIENTS: Record<string, string> = {
+  default: 'linear-gradient(135deg, #1a2850 0%, #1e3570 55%, #243f8a 100%)',
+  midnight: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 55%, #4338ca 100%)',
+  royal: 'linear-gradient(135deg, #581c87 0%, #6b21a8 55%, #7e22ce 100%)',
+  neon: 'linear-gradient(135deg, #065f46 0%, #047857 55%, #059669 100%)',
+  galaxy: 'linear-gradient(135deg, #4c1d95 0%, #5b21b6 55%, #6d28d9 100%)',
+  gold: 'linear-gradient(135deg, #92400e 0%, #b45309 55%, #d97706 100%)',
+  frost: 'linear-gradient(135deg, #164e63 0%, #0e7490 55%, #0891b2 100%)',
+  shadow: 'linear-gradient(135deg, #1f2937 0%, #374151 55%, #4b5563 100%)',
+  cherry: 'linear-gradient(135deg, #9d174d 0%, #be185d 55%, #db2777 100%)',
+  forest: 'linear-gradient(135deg, #14532d 0%, #166534 55%, #15803d 100%)',
+  ocean: 'linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 55%, #2563eb 100%)',
+  ember: 'linear-gradient(135deg, #9a3412 0%, #c2410c 55%, #ea580c 100%)',
+};
 
 const SUIT_SYMBOLS: Record<Suit, string> = {
   spades: '♠',
@@ -183,6 +199,8 @@ function DealAnimation({
 }) {
   const N = players.length;
   const ROUNDS = cardsPerPlayer; // one visual round per card per player
+  const myP = players.find((p) => p.id === myPlayerId);
+  const deckGradient = BACK_GRADIENTS[myP?.equippedCardBackId ?? 'default'] ?? BACK_GRADIENTS['default'];
   const totalDuration = ROUNDS * ROUND_INTERVAL + CARD_FLIGHT;
 
   // Fire onComplete after all rounds finish
@@ -260,7 +278,7 @@ function DealAnimation({
                 position: 'absolute',
                 width: 42, height: 60,
                 borderRadius: 7,
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 55%, #2563eb 100%)',
+                background: deckGradient,
                 border: '1px solid rgba(96,165,250,0.5)',
                 boxShadow: i === 0 ? '0 6px 18px rgba(0,0,0,0.7), 0 0 10px rgba(59,130,246,0.3)' : 'none',
                 top: -(i * 0.9),
@@ -280,6 +298,7 @@ function DealAnimation({
       {/* Flying cards — all players get a card simultaneously each round */}
       {cards.map(({ key, playerDelay, playerIdx, rotation }) => {
         const { dx, dy } = positions[playerIdx];
+        const playerBack = BACK_GRADIENTS[players[playerIdx]?.equippedCardBackId ?? 'default'] ?? BACK_GRADIENTS['default'];
         return (
           <motion.div
             key={key}
@@ -290,7 +309,7 @@ function DealAnimation({
               width: 38,
               height: 54,
               borderRadius: 5,
-              background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 55%, #2563eb 100%)',
+              background: playerBack,
               border: '1px solid rgba(96,165,250,0.45)',
               boxShadow: '0 8px 20px rgba(0,0,0,0.6), 0 0 6px rgba(59,130,246,0.2)',
               zIndex: 10 + key,
@@ -331,10 +350,11 @@ const RANK_DISPLAY: Record<string, string> = {
 };
 const SUIT_SYM: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
 
-function DealHandReveal({ cards, revealedCount }: { cards: CardType[]; revealedCount: number }) {
+function DealHandReveal({ cards, revealedCount, cardBackId = 'default' }: { cards: CardType[]; revealedCount: number; cardBackId?: string }) {
   const visible = cards.slice(0, revealedCount);
   const allDealt = revealedCount >= cards.length && cards.length > 0;
   const isRed = (suit: string) => suit === 'hearts' || suit === 'diamonds';
+  const backGradient = BACK_GRADIENTS[cardBackId] ?? BACK_GRADIENTS['default'];
 
   return (
     <div className="flex flex-col items-center gap-1 py-1">
@@ -363,7 +383,7 @@ function DealHandReveal({ cards, revealedCount }: { cards: CardType[]; revealedC
                     exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.18 } }}
                     style={{
                       position: 'absolute', inset: 0, borderRadius: 8,
-                      background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 55%, #2563eb 100%)',
+                      background: backGradient,
                       border: '1.5px solid rgba(96,165,250,0.5)',
                       boxShadow: '0 3px 10px rgba(0,0,0,0.4)',
                     }}
@@ -485,6 +505,7 @@ interface GameTableProps {
   totalTricks?: number;
   turnTimerTotalSeconds?: number;
   deckCount?: number;
+  tableThemeId?: string;
 }
 
 export default function GameTable({
@@ -504,6 +525,7 @@ export default function GameTable({
   totalTricks = 8,
   turnTimerTotalSeconds = 30,
   deckCount = 1,
+  tableThemeId = 'default',
 }: GameTableProps) {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   // const [chatOpen, setChatOpen] = useState(false);
@@ -526,7 +548,9 @@ export default function GameTable({
   const setBlackout = useGameStore((s) => s.setBlackout);
   const blackoutCount = useGameStore((s) => s.blackoutCount);
   const blackoutVoterNames = useGameStore((s) => s.blackoutVoterNames);
+  const activeEmotes = useGameStore((s) => s.activeEmotes);
   const tableRef = useRef<HTMLDivElement>(null);
+  const tableTheme = getTableTheme(tableThemeId);
 
   const [tableDims, setTableDims] = useState({ w: 860, h: 540 });
   // True when the CSS viewport is small (e.g. 150%+ browser zoom) — used to shift
@@ -709,6 +733,11 @@ export default function GameTable({
   const isMyTurn = currentTurnPlayerId === myPlayerId;
   const currentTurnPlayer = players.find((p) => p.id === currentTurnPlayerId) ?? null;
 
+  const trickPts = useMemo(() => {
+    const trickInPlay = currentTrick ?? heldTrick;
+    return trickInPlay?.cards.reduce((sum, tc) => sum + tc.card.points, 0) ?? 0;
+  }, [currentTrick, heldTrick]);
+
   const getTrickCard = (playerId: string): CardType | null =>
     currentTrick?.cards.find((c) => c.playerId === playerId)?.card ?? null;
 
@@ -751,7 +780,7 @@ export default function GameTable({
         width: '100vw',
         position: 'relative',
         overflow: 'hidden',
-        background: 'radial-gradient(ellipse 160% 120% at 50% 55%, #051205 0%, #020802 50%, #000 100%)',
+        background: `radial-gradient(ellipse 160% 120% at 50% 55%, ${tableTheme.feltColor} 0%, #020802 50%, #000 100%)`,
       }}
     >
       {/* Shimmer keyframes */}
@@ -820,6 +849,11 @@ export default function GameTable({
             <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>
               {phase === 'playing' ? `${completedTricks.length + 1}/${totalTricks}` : '-'}
             </div>
+            {phase === 'playing' && (
+              <div style={{ fontSize: 12, fontWeight: 900, color: trickPts > 0 ? '#f9d976' : 'rgba(255,255,255,0.4)', lineHeight: 1.1 }}>
+                {trickPts} pts
+              </div>
+            )}
           </div>
           <div style={{ width: '72%', height: 1, background: 'rgba(212,160,23,0.18)', margin: '5px 0' }} />
           <VotePanel roomId={gameState.roomId} myPlayerId={myPlayerId} voteEndVotes={gameState.voteEndVotes ?? {}} totalPlayers={players.length} />
@@ -935,6 +969,41 @@ export default function GameTable({
           </div>
         )}
 
+        {/* PARTNER CARD INFO — bottom-left, visible to all players during playing phase */}
+        {phase === 'playing' && calledCardSlots.length > 0 && !(isMobile && isLandscape) && (
+          <div style={{ position:'absolute', bottom: isMobile ? 130 : 150, left:14, zIndex:50 }}>
+            <div style={{ background:'rgba(0,0,0,0.72)', border:'1px solid rgba(212,175,55,0.3)', borderRadius:12, padding:'6px 10px', display:'flex', flexDirection:'column', gap:4 }}>
+              <div style={{ fontSize:9, fontWeight:700, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'1px' }}>Partner Cards</div>
+              {calledCardSlots.map((slot, i) => {
+                const parts = slot.typeId.split('_');
+                const suit = parts[0] as Suit;
+                const rank = parts.slice(1).join('_');
+                const symbol = SUIT_SYMBOLS[suit] ?? '?';
+                const isRed = suit === 'hearts' || suit === 'diamonds';
+                const partner = slot.assignedPartnerId ? players.find(p => p.id === slot.assignedPartnerId) : null;
+                return (
+                  <div key={i} style={{ display:'flex', alignItems:'center', gap:6 }}>
+                    <div style={{
+                      width:28, height:38, borderRadius:4, background:'#fff', border: slot.isVoid ? '1px solid #f87171' : slot.assignedPartnerId ? '1px solid #6ee7b7' : '1px solid #ccc',
+                      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:0, padding:2,
+                      opacity: slot.isVoid ? 0.5 : 1,
+                    }}>
+                      <span style={{ fontSize:9, fontWeight:800, lineHeight:1, color: isRed ? '#c0152a' : '#1a1a2e' }}>{rank}</span>
+                      <span style={{ fontSize:11, lineHeight:1, color: isRed ? '#c0152a' : '#1a1a2e' }}>{symbol}</span>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
+                      <span style={{ fontSize:8, color:'rgba(255,255,255,0.35)', fontWeight:600 }}>{slot.ordinal === 1 ? '1st' : '2nd'}</span>
+                      <span style={{ fontSize:10, fontWeight:700, color: slot.isVoid ? '#f87171' : partner ? '#6ee7b7' : 'rgba(255,255,255,0.5)' }}>
+                        {slot.isVoid ? 'Void' : partner ? partner.name.slice(0, 10) : 'Waiting…'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* RIGHT HUD */}
         {!(isMobile && isLandscape) && (
           <div style={{ position:'absolute', top:8, right:14, zIndex:50, display:'flex', flexDirection:'column', gap:8, alignItems:'flex-end' }}>
@@ -981,7 +1050,7 @@ export default function GameTable({
           if (isLocalPlayer) return null;
           return (
             <div key={player.id} className="absolute" style={{ left:`${x}%`, top:`${y}%`, transform:'translate(-50%, -50%)', zIndex: 1 }}>
-              <PlayerSeat player={player} cardCount={cardCount} isCurrentTurn={isCurrentTurn} isLocalPlayer={false} isPartner={isPartner} isRevealed={isPartner} isBidWinner={player.id === bidWinnerId && !!bidWinnerId} trickCard={trickCard} position="bottom" compact={isMobile} extraCompact={isMobile && isLandscape} displayPoints={getDisplayPoints(player.id)} teamId={getPlayerTeamId(player.id)} turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null} turnTimerTotalSeconds={turnTimerTotalSeconds} showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)} miniCardCount={hands[player.id]?.length ?? 0} />
+              <PlayerSeat player={player} cardCount={cardCount} isCurrentTurn={isCurrentTurn} isLocalPlayer={false} isPartner={isPartner} isRevealed={isPartner} isBidWinner={player.id === bidWinnerId && !!bidWinnerId} trickCard={trickCard} position="bottom" compact={isMobile} extraCompact={isMobile && isLandscape} displayPoints={getDisplayPoints(player.id)} teamId={getPlayerTeamId(player.id)} turnTimerEndsAt={isCurrentTurn ? turnTimerEndsAt : null} turnTimerTotalSeconds={turnTimerTotalSeconds} showCombinedLabel={allPartnersRevealed && teamBIds.includes(player.id)} miniCardCount={hands[player.id]?.length ?? 0} activeEmote={activeEmotes[player.id]} />
               {/* Host kick button — only shown to host, not for bots */}
               {myPlayer?.isHost && player.type !== 'bot' && (
                 <button
@@ -1042,6 +1111,7 @@ export default function GameTable({
                 turnTimerTotalSeconds={turnTimerTotalSeconds}
                 showCombinedLabel={allPartnersRevealed && teamBIds.includes(myPlayerId)}
                 miniCardCount={myHand.length}
+                activeEmote={activeEmotes[myPlayerId]}
               />
             </div>
           );
@@ -1087,11 +1157,12 @@ export default function GameTable({
             <div style={{ background:'rgba(0,0,0,0.6)', border:'1px solid rgba(212,175,55,0.25)', borderRadius:8, padding: isMobile ? '1px 6px' : '2px 9px', fontSize: isMobile ? 8 : 9, color:'#e2d88b', fontWeight:700, whiteSpace:'nowrap' }}>
               {phase === 'playing' ? `Bid Won: ${bidState.currentBid} pts` : `Current Bid: ${bidState.currentBid}`}
               {phase === 'playing' && ` · Trick ${completedTricks.length + (currentTrick?.cards.length === players.length ? 1 : 0)}/${totalTricks}`}
+              {phase === 'playing' && trickPts > 0 && ` · ${trickPts} pts`}
             </div>
           )}
           {phase === 'bidding' && bidState && bidState.bids.length > 0 && (
             <div style={{
-              maxHeight:72, overflowY:'auto', display:'flex', flexDirection:'column', gap:2,
+              display:'flex', flexDirection:'column', gap:2,
               background:'rgba(0,0,0,0.5)', borderRadius:8, padding:'4px 8px',
               border:'1px solid rgba(212,175,55,.15)', minWidth:120,
             }}>
@@ -1112,18 +1183,6 @@ export default function GameTable({
               <TrickPile trick={currentTrick ?? heldTrick} players={players} trumpSuit={trumpSuit} completedTricksCount={completedTricks.length} totalTricks={totalTricks} />
             </div>
           )}
-          {phase === 'playing' && (() => {
-            const trickInPlay = currentTrick ?? heldTrick;
-            const trickPts = trickInPlay?.cards.reduce((sum, tc) => sum + tc.card.points, 0) ?? 0;
-            return (
-              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:0 }}>
-                <div style={{ fontSize: isMobile ? 9 : 11, letterSpacing:'1.5px', textTransform:'uppercase', color:'rgba(255,255,255,0.35)', fontWeight:600 }}>Pts</div>
-                <div style={{ fontSize: isMobile ? (isLandscape ? 22 : 26) : 42, fontWeight:900, color:'#f9d976', textShadow:'0 0 18px rgba(212,175,55,0.7)', lineHeight:1 }}>
-                  {trickPts}
-                </div>
-              </div>
-            );
-          })()}
           {!trumpSuit && phase !== 'playing' && (
             <div style={{ opacity:0.35, fontSize:28, color:'#d4a017', lineHeight:1 }}>♠</div>
           )}
@@ -1145,47 +1204,9 @@ export default function GameTable({
           display: 'flex', flexDirection: 'column', alignItems: 'center',
           gap: isMobile && isLandscape ? 3 : 6,
         }}>
-          {showDealAnim && <DealHandReveal cards={myHand} revealedCount={dealRevealedCount} />}
+          {showDealAnim && <DealHandReveal cards={myHand} revealedCount={dealRevealedCount} cardBackId={myPlayer?.equippedCardBackId} />}
           {!showDealAnim && (
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, paddingTop: isMobile && isLandscape ? 4 : 8, width:'100%' }}>
-              {(calledCardSlots.length > 0 ? calledCardSlots.length : calledCards.length) > 0 && phase === 'playing' && (
-                <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                  {calledCardSlots.length > 0
-                    ? (() => {
-                        const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
-                        const showOrdinal = deckCount > 1;
-                        return calledCardSlots.map((slot, idx) => {
-                          const parts = slot.typeId.split('_');
-                          const suit = parts[0] as import('@/types').Suit;
-                          const rank = parts.slice(1).join('_') as import('@/types').Card['rank'];
-                          const isRed = suit === 'hearts' || suit === 'diamonds';
-                          const isMyCard = myHand.some((c) => c.suit === suit && c.rank === rank);
-                          const ordinalLabel = slot.ordinal === 1 ? '1st' : '2nd';
-                          return (
-                            <span key={`${slot.typeId}-${slot.ordinal}-${idx}`}
-                              className={`inline-flex items-center gap-0.5 text-base font-bold px-2 py-1 rounded-lg border ${isMyCard ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40' : isRed ? 'text-red-400 border-red-700/50 bg-red-950/40' : 'text-slate-200 border-slate-600/50 bg-slate-800/60'}`}
-                              title={isMyCard ? 'You hold this partner card!' : undefined}>
-                              {showOrdinal && <span className="text-[9px] font-semibold opacity-70 leading-none">{ordinalLabel}</span>}
-                              {rank}{SUIT_SYM2[suit]}{isMyCard ? ' ��' : ''}
-                            </span>
-                          );
-                        });
-                      })()
-                    : calledCards.map((card) => {
-                        const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
-                        const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
-                        const isMyCard = myHand.some((c) => c.suit === card.suit && c.rank === card.rank);
-                        return (
-                          <span key={card.id}
-                            className={`text-base font-bold px-2 py-1 rounded-lg border ${isMyCard ? 'text-emerald-300 border-emerald-500/60 bg-emerald-950/50 ring-1 ring-emerald-400/40' : isRed ? 'text-red-400 border-red-700/50 bg-red-950/40' : 'text-slate-200 border-slate-600/50 bg-slate-800/60'}`}
-                            title={isMyCard ? 'You hold this partner card!' : undefined}>
-                            {card.rank}{SUIT_SYM2[card.suit]}{isMyCard ? ' 🤝' : ''}
-                          </span>
-                        );
-                      })
-                  }
-                </div>
-              )}
               <CardHand
                 cards={myHand}
                 playableCardIds={playableCardIds}
@@ -1220,56 +1241,6 @@ export default function GameTable({
                   {getDisplayPoints(myPlayerId) > 0 ? '+' : ''}{getDisplayPoints(myPlayerId)}
                 </span>
               </div>
-              {/* Partner cards — desktop bottom bar */}
-              {!isMobile && (calledCardSlots.length > 0 ? calledCardSlots.length : calledCards.length) > 0 && phase === 'playing' && (
-                <div style={{ display:'flex', alignItems:'center', gap:4, flexWrap:'wrap', background:'rgba(0,0,0,.55)', border:'1px solid rgba(212,175,55,0.25)', borderRadius:14, padding:'3px 8px' }}>
-                  <span style={{ fontSize:10, color:'rgba(255,255,255,0.45)', fontWeight:700, whiteSpace:'nowrap' }}>
-                    {bidWinnerId === myPlayerId ? '🤝 Partner:' : '🤝 Partner:'}
-                  </span>
-                  {calledCardSlots.length > 0
-                    ? (() => {
-                        const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
-                        const showOrdinal = deckCount > 1;
-                        return calledCardSlots.map((slot, idx) => {
-                          const parts = slot.typeId.split('_');
-                          const suit = parts[0] as import('@/types').Suit;
-                          const rank = parts.slice(1).join('_') as import('@/types').Card['rank'];
-                          const isRed = suit === 'hearts' || suit === 'diamonds';
-                          const isMyCard = myHand.some((c) => c.suit === suit && c.rank === rank);
-                          const ordinalLabel = slot.ordinal === 1 ? '1st' : '2nd';
-                          return (
-                            <span key={`${slot.typeId}-${slot.ordinal}-${idx}`}
-                              style={{ display:'inline-flex', alignItems:'center', gap:2, fontSize:12, fontWeight:800, padding:'1px 6px', borderRadius:8,
-                                border: isMyCard ? '1px solid rgba(52,211,153,0.6)' : isRed ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(148,163,184,0.3)',
-                                background: isMyCard ? 'rgba(6,78,59,0.5)' : isRed ? 'rgba(127,29,29,0.4)' : 'rgba(30,41,59,0.5)',
-                                color: isMyCard ? '#6ee7b7' : isRed ? '#f87171' : '#e2e8f0',
-                              }}
-                              title={isMyCard ? 'You hold this partner card!' : undefined}>
-                              {showOrdinal && <span style={{ fontSize:8, opacity:0.7 }}>{ordinalLabel}</span>}
-                              {rank}{SUIT_SYM2[suit]}{isMyCard ? ' 🤝' : ''}
-                            </span>
-                          );
-                        });
-                      })()
-                    : calledCards.map((card) => {
-                        const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
-                        const SUIT_SYM2: Record<string, string> = { spades: '♠', hearts: '♥', diamonds: '♦', clubs: '♣' };
-                        const isMyCard = myHand.some((c) => c.suit === card.suit && c.rank === card.rank);
-                        return (
-                          <span key={card.id}
-                            style={{ display:'inline-flex', alignItems:'center', fontSize:12, fontWeight:800, padding:'1px 6px', borderRadius:8,
-                              border: isMyCard ? '1px solid rgba(52,211,153,0.6)' : isRed ? '1px solid rgba(239,68,68,0.4)' : '1px solid rgba(148,163,184,0.3)',
-                              background: isMyCard ? 'rgba(6,78,59,0.5)' : isRed ? 'rgba(127,29,29,0.4)' : 'rgba(30,41,59,0.5)',
-                              color: isMyCard ? '#6ee7b7' : isRed ? '#f87171' : '#e2e8f0',
-                            }}
-                            title={isMyCard ? 'You hold this partner card!' : undefined}>
-                            {card.rank}{SUIT_SYM2[card.suit]}{isMyCard ? ' 🤝' : ''}
-                          </span>
-                        );
-                      })
-                  }
-                </div>
-              )}
             </div>
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, flex:1, justifyContent:'center' }}>
               {showBidPanel && bidState?.currentBidderId === myPlayerId && (
@@ -1343,10 +1314,10 @@ export default function GameTable({
                 style={{ width:isMobile && isLandscape ? 30 : 44, height:isMobile && isLandscape ? 30 : 44, borderRadius:8, border:'1px solid rgba(255,255,255,.1)', background: handHidden ? 'rgba(217,119,6,.3)' : 'rgba(255,255,255,.07)', color:'#fff', cursor:'pointer', fontSize:15, display:'flex', alignItems:'center', justifyContent:'center' }}>
                 {handHidden ? '👁️' : '🙈'}
               </button>
+              <EmoteWheel roomId={gameState.roomId} />
               <div style={{ position:'relative' }}>
                 <Scoreboard teams={teams} players={players} bidWinnerId={bidWinnerId} bidAmount={bidState?.currentBid ?? null} trumpSuit={trumpSuit} roundNumber={roundNumber} revealedPartnerIds={revealedPartnerIds} playerTotals={gameState.playerTotals ?? {}} />
               </div>
-              <AvatarUpload roomId={gameState.roomId} className="shrink-0" />
             </div>
           </div>
         </div>
