@@ -35,6 +35,7 @@ COPY --from=builder /app/config ./config
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 EXPOSE 3000
 
