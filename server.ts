@@ -114,11 +114,11 @@ app.prepare().then(async () => {
     }
   });
 
-  const flushRooms = initSocketServer(io, userIdToSocket);
-
-  // Wait for DB to be ready before socket server starts querying
+  // Wait for DB to be ready before starting socket server
   const { waitForDb } = await import('./lib/db/prisma');
   await waitForDb();
+
+  const flushRooms = initSocketServer(io, userIdToSocket);
 
   // Clean up userIdToSocket on disconnect
   io.on('connection', (socket) => {
