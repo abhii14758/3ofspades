@@ -836,7 +836,7 @@ export function setupSocketServer(io: Server, userIdToSocket?: Map<string, strin
   setInterval(() => {
     cleanupOldRooms().then(count => {
       if (count > 0) console.log(`[cleanup] Deleted ${count} old game_end room(s)`);
-    });
+    }).catch(err => console.error('[cleanup] Failed:', err.message));
   }, 5 * 60 * 1000);
 
   io.on('connection', (socket: Socket) => {
