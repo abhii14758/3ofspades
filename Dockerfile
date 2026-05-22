@@ -13,6 +13,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NODE_ENV=production
+RUN npx prisma generate
 RUN npm run build
 
 # ── Stage 3: Production runtime ───────────────────────────────────────────────
