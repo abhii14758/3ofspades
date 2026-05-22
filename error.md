@@ -1,32 +1,9 @@
-
-Invalid `prisma.user.findFirst()` invocation:
-The table `public.User` does not exist in the current database.
-[db] Attempt 14/15 failed: 
-Invalid `prisma.user.findFirst()` invocation:
-The table `public.User` does not exist in the current database.
-prisma:error 
-Invalid `prisma.user.findFirst()` invocation:
-The table `public.User` does not exist in the current database.
-[db] Attempt 15/15 failed: 
-Invalid `prisma.user.findFirst()` invocation:
-The table `public.User` does not exist in the current database.
-[db] All connection attempts failed — starting without DB
-> Ready on http://9dedecfbafbc:8080
-> Socket.IO server running
-prisma:error 
-Invalid `prisma.roomDB.findMany()` invocation:
-The table `public.RoomDB` does not exist in the current database.
-      [cause]: [Object]
-    }
-  },
-  clientVersion: '7.8.0'
-}
-[socket] Failed to recover rooms: Error [PrismaClientKnownRequestError]: 
-Invalid `prisma.roomDB.findMany()` invocation:
-The table `public.RoomDB` does not exist in the current database.
-    at async loadAllActiveRooms (lib/db/roomPersistence.ts:188:19) {
-  code: 'P2021',
-  meta: {
-    modelName: 'RoomDB',
-    driverAdapterError: Error [DriverAdapterError]: TableDoesNotExist
-        at ignore-listed frames {
+> node ./node_modules/.bin/prisma migrate deploy && cross-env NODE_ENV=production tsx server.ts
+Prisma schema loaded from prisma/schema.prisma.
+Error: The datasource.url property is required in your Prisma config file when using prisma migrate deploy.
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.15.0
+npm notice To update run: npm install -g npm@11.15.0
+npm notice
+Starting Container
+Prisma schema loaded from prisma/schema.prisma.
