@@ -14,7 +14,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/lib/generated ./lib/generated
 COPY . .
 
-ENV NODE_ENV=production
 RUN npm run build
 
 # ── Stage 3: Production runtime ───────────────────────────────────────────────
@@ -35,6 +34,7 @@ COPY --from=builder /app/types ./types
 COPY --from=builder /app/config ./config
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 

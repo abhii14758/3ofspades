@@ -6,6 +6,3 @@ dockerfilePath = "Dockerfile"
 startCommand = "npm run start"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
-
-[[services]]
-name = "3ofspades"

@@ -10,7 +10,7 @@ import { parse as parseCookies } from 'cookie';
 // until AFTER prepare() resolves, otherwise Prisma gets DATABASE_URL=undefined.
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = process.env.HOSTNAME || '0.0.0.0';
+const hostname = process.env.HOSTNAME || '::';
 const port = parseInt(process.env.PORT || '3000', 10);
 
 const app = next({ dev, hostname, port });

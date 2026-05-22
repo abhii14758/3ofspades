@@ -18,7 +18,8 @@
       "Bash(Select-String \"error TS\")",
       "Bash(Select-String -NotMatch \".next/\")",
       "Bash(Select-Object -First 40)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "WebSearch"
     ]
   }
 }
