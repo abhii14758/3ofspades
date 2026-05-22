@@ -3,6 +3,7 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
+COPY prisma ./prisma
 RUN npm ci
 
 # ── Stage 2: Build Next.js ────────────────────────────────────────────────────
@@ -10,6 +11,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/lib/generated ./lib/generated
 COPY . .
 
 ENV NODE_ENV=production
