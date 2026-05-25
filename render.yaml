@@ -21,7 +21,9 @@ services:
       - key: AUTH_SECRET
         generateValue: true
       - key: NEXTAUTH_URL
-        value: https://threeofspades-x438.onrender.com
+        value: https://threeofspades-7hcj.onrender.com
+      - key: AUTH_TRUST_HOST
+        value: "true"
       # The following variables can be set/modified in the Render dashboard and will not be overwritten by blueprint updates.
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
