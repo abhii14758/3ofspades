@@ -4,6 +4,7 @@ import type { JWT } from 'next-auth/jwt';
 // Edge-compatible auth config — NO Prisma, NO bcrypt, NO Node.js built-ins.
 // Used by middleware. The full auth.ts spreads this and adds Credentials provider.
 export const authConfig = {
+  trustHost: true,
   pages: {
     signIn: '/login',
   },
