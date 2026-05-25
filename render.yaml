@@ -7,7 +7,7 @@ databases:
 services:
   - type: web
     name: threeofspades
-    env: docker
+    runtime: docker
     plan: free
     dockerContext: .
     dockerfilePath: Dockerfile
@@ -33,4 +33,3 @@ services:
         sync: false
       - key: RESEND_FROM
         value: noreply@example.com
-        sync: false
