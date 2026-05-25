@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 
 const FROM = process.env.RESEND_FROM || 'noreply@example.com';
-const BASE_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+const BASE_URL = process.env.NEXTAUTH_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
 
 export async function sendPasswordResetEmail(toEmail: string, rawToken: string): Promise<void> {
   const resetUrl = `${BASE_URL}/reset-password/${rawToken}`;

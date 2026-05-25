@@ -1,0 +1,36 @@
+databases:
+  - name: spades-db
+    databaseName: spades
+    user: spades
+    plan: free
+
+services:
+  - type: web
+    name: threeofspades
+    env: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: spades-db
+          property: connectionString
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: NEXTAUTH_URL
+        value: https://threeofspades-x438.onrender.com
+      # The following variables can be set/modified in the Render dashboard and will not be overwritten by blueprint updates.
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        value: noreply@example.com
+        sync: false
